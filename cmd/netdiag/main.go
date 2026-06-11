@@ -56,7 +56,7 @@ func main() {
 }
 
 func render(args []string) {
-	var input, output, backend, layout, reportPath string
+	var input, output, backend, layout, reportPath, iconDir string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "-o", "--output":
@@ -87,6 +87,13 @@ func render(args []string) {
 			}
 			i++
 			layout = args[i]
+		case "--icons", "--icon-dir":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: --icons requires a directory")
+				os.Exit(2)
+			}
+			i++
+			iconDir = args[i]
 		default:
 			if strings.HasPrefix(args[i], "-") || input != "" {
 				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
@@ -96,8 +103,11 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--renderer native|d2] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--renderer native|d2] [--icons directory] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
+	}
+	if iconDir == "" {
+		iconDir = os.Getenv("NETDIAG_ICONS")
 	}
 
 	doc, err := loadDocument(input)
@@ -117,9 +127,13 @@ func render(args []string) {
 	var result []byte
 	switch backend {
 	case "native":
-		result, err = svg.Render(diag)
+		result, err = svg.RenderWithOptions(diag, svg.Options{IconDir: iconDir})
 	case "d2":
-		result, err = d2backend.Render(diag, d2backend.Options{Layout: layout})
+		if iconDir != "" {
+			err = fmt.Errorf("custom SVG icon packs require the native renderer")
+		} else {
+			result, err = d2backend.Render(diag, d2backend.Options{Layout: layout})
+		}
 	default:
 		err = fmt.Errorf("unknown backend %q; use native or d2", backend)
 	}
@@ -431,7 +445,7 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--backend native|d2] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--backend native|d2] [--icons directory] [--layout elk|dagre]
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>

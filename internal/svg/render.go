@@ -67,9 +67,18 @@ type bundleVisual struct {
 	Count  int
 }
 
+type Options struct {
+	IconDir string
+}
+
 func Render(doc *model.Diagram) ([]byte, error) {
+	return RenderWithOptions(doc, Options{})
+}
+
+func RenderWithOptions(doc *model.Diagram, options Options) ([]byte, error) {
 	roles, byRole := groupNodes(doc)
 	layout := layoutDiagram(doc, roles, byRole)
+	iconPack := icons.NewPack(options.IconDir)
 
 	var out bytes.Buffer
 	fmt.Fprintf(&out, `<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f" role="img">`, layout.Width, layout.Height, layout.Width, layout.Height)
@@ -88,7 +97,7 @@ func Render(doc *model.Diagram) ([]byte, error) {
 		return nil, err
 	}
 	renderBundleLegend(&out, doc)
-	renderNodes(&out, layout.Nodes)
+	renderNodes(&out, layout.Nodes, iconPack)
 	out.WriteString(`</svg>`)
 	return out.Bytes(), nil
 }
@@ -702,7 +711,7 @@ func renderLabel(out *bytes.Buffer, x, y float64, label, color, anchor string, s
 	fmt.Fprintf(out, `<text x="%.1f" y="%.1f" text-anchor="%s" fill="%s" font-family="ui-monospace,SFMono-Regular,monospace" font-size="%d" font-weight="%d">%s</text>`, x, y, anchor, color, size, weight, escape(label))
 }
 
-func renderNodes(out *bytes.Buffer, nodes map[string]placedNode) {
+func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons.Pack) {
 	ids := make([]string, 0, len(nodes))
 	for id := range nodes {
 		ids = append(ids, id)
@@ -723,7 +732,7 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode) {
 		if icon == "" {
 			icon = item.Node.Role
 		}
-		renderDeviceIcon(out, b.X+40, b.Y+b.H/2, color, icon)
+		renderDeviceIcon(out, b.X+40, b.Y+b.H/2, color, icon, id, iconPack)
 		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#0f172a" font-family="Inter,Segoe UI,sans-serif" font-size="15" font-weight="700">%s</text>`, b.X+78, b.Y+34, escape(item.Node.Label))
 		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#64748b" font-family="ui-monospace,SFMono-Regular,monospace" font-size="11">%s</text>`, b.X+78, b.Y+55, escape(strings.ToUpper(item.Node.Role)))
 		out.WriteString(`</g>`)
@@ -731,11 +740,18 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode) {
 	out.WriteString(`</g>`)
 }
 
-func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role string) {
+func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role, instanceID string, iconPack *icons.Pack) {
 	canonical := role
 	if icon, ok := icons.Resolve(role); ok {
 		canonical = icon.ID
 		color = icon.Color
+	}
+	if custom, ok := resolveCustomIcon(iconPack, role, canonical); ok {
+		fmt.Fprintf(out, `<g class="device-icon device-icon-%s custom-device-icon" transform="translate(%.1f %.1f)">`, escapeID(role), x, y)
+		fmt.Fprintf(out, `<svg x="-29" y="-24" width="58" height="48" viewBox="%s" preserveAspectRatio="xMidYMid meet">`, escape(custom.ViewBox))
+		out.WriteString(strings.ReplaceAll(custom.Content, custom.Prefix, "netdiag-icon-"+escapeID(instanceID)+"-"))
+		out.WriteString(`</svg></g>`)
+		return
 	}
 	iconColor := color
 	fmt.Fprintf(out, `<g class="device-icon device-icon-%s" transform="translate(%.1f %.1f)" stroke="%s" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">`, escapeID(role), x, y, iconColor)
@@ -764,6 +780,16 @@ func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role string) {
 		renderGenericSwitchIcon(out, color)
 	}
 	out.WriteString(`</g>`)
+}
+
+func resolveCustomIcon(pack *icons.Pack, requested, canonical string) (icons.SVG, bool) {
+	if icon, ok := pack.Resolve(requested); ok {
+		return icon, true
+	}
+	if canonical != requested {
+		return pack.Resolve(canonical)
+	}
+	return icons.SVG{}, false
 }
 
 func renderRouterIcon(out *bytes.Buffer, color string) {

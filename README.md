@@ -43,6 +43,7 @@ netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
 netdiag validate examples/includes/mpls-wan.yaml
 netdiag templates
 netdiag icons
+netdiag render examples/custom-icon-pack.yaml --icons examples/custom-icons -o custom-icons.svg
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
@@ -101,6 +102,8 @@ rules, parameters, and Phase 1 limitations.
 
 The native renderer's deterministic offline icon catalog is available through
 `netdiag icons` and `netdiag icons --json`. See [docs/icons.md](docs/icons.md).
+Replace built-ins with a local SVG pack using `render --icons <directory>` or
+`NETDIAG_ICONS`; missing or unsafe files fall back to the built-in catalog.
 
 ## Explicit includes
 

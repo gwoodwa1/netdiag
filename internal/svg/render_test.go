@@ -2,12 +2,52 @@ package svg
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 )
+
+func TestRenderUsesCustomIconAndFallsBackToBuiltIn(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Nodes: map[string]spec.Node{
+			"custom":   {Role: "edge-router"},
+			"custom-2": {Role: "edge-router"},
+			"fallback": {Role: "firewall"},
+		},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	custom := `<svg viewBox="0 0 100 100"><path id="custom-router-marker" d="M0 0h100v100z"/></svg>`
+	if err := os.WriteFile(filepath.Join(dir, "router.svg"), []byte(custom), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "firewall.svg"), []byte(`<svg><script/></svg>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RenderWithOptions(diag, Options{IconDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	if !strings.Contains(got, "custom-device-icon") || !strings.Contains(got, "custom-router-marker") {
+		t.Fatal("render missing custom canonical router icon")
+	}
+	if !strings.Contains(got, "netdiag-icon-custom-custom-router-marker") || !strings.Contains(got, "netdiag-icon-custom-2-custom-router-marker") {
+		t.Fatal("repeated custom icons must have instance-specific internal IDs")
+	}
+	if !strings.Contains(got, `device-icon-firewall`) || !strings.Contains(got, `stroke="#dc2626"`) {
+		t.Fatal("invalid custom firewall icon did not fall back to built-in")
+	}
+}
 
 func TestRenderIncludesEndpointLabels(t *testing.T) {
 	doc := &spec.Document{

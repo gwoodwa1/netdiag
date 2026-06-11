@@ -1,0 +1,19 @@
+version: 1
+diagram:
+  title: Custom SVG Icon Pack
+  subtitle: Local router and firewall SVGs with built-in fallback for the cloud
+  badge: CUSTOM ICONS
+nodes:
+  edge:
+    label: Internet Edge
+    role: edge-router
+    icon: router
+  firewall:
+    label: Perimeter Firewall
+    role: firewall
+  internet:
+    label: Internet
+    role: internet
+links:
+  - {from: internet:Transit, to: edge:Ethernet0/0, label: eBGP}
+  - {from: edge:Ethernet0/1, to: firewall:outside, label: Transit}
