@@ -79,27 +79,47 @@ func RenderWithOptions(doc *model.Diagram, options Options) ([]byte, error) {
 	roles, byRole := groupNodes(doc)
 	layout := layoutDiagram(doc, roles, byRole)
 	iconPack := icons.NewPack(options.IconDir)
+	premium := doc.Theme.Name == "premium"
 
 	var out bytes.Buffer
-	fmt.Fprintf(&out, `<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f" role="img">`, layout.Width, layout.Height, layout.Width, layout.Height)
-	out.WriteString(`<defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity=".14"/></filter></defs>`)
-	out.WriteString(`<rect width="100%" height="100%" fill="#f8fafc"/>`)
+	fmt.Fprintf(&out, `<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f" role="img" shape-rendering="geometricPrecision">`, layout.Width, layout.Height, layout.Width, layout.Height)
+	renderDefinitions(&out, premium)
+	if premium {
+		out.WriteString(`<rect width="100%" height="100%" fill="url(#canvasGradient)"/><rect width="100%" height="100%" fill="url(#technicalGrid)"/>`)
+	} else {
+		out.WriteString(`<rect width="100%" height="100%" fill="#f8fafc"/>`)
+	}
 	renderTitle(&out, doc, layout.Width)
 	if doc.Theme.Layout == "ring" {
-		renderRingBackground(&out, doc)
+		renderRingBackground(&out, doc, premium)
 	} else if doc.Theme.Layout == "sites" {
-		renderSiteBackgrounds(&out, layout.Groups)
+		renderSiteBackgrounds(&out, layout.Groups, premium)
 	} else {
-		renderRowBackgrounds(&out, roles)
+		renderRowBackgrounds(&out, roles, premium)
 		renderRowHeadings(&out, roles, byRole)
 	}
 	if err := renderLinks(&out, doc, layout.Nodes); err != nil {
 		return nil, err
 	}
 	renderBundleLegend(&out, doc)
-	renderNodes(&out, layout.Nodes, iconPack)
+	renderNodes(&out, layout.Nodes, iconPack, premium)
 	out.WriteString(`</svg>`)
 	return out.Bytes(), nil
+}
+
+func renderDefinitions(out *bytes.Buffer, premium bool) {
+	out.WriteString(`<defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity=".14"/></filter>`)
+	if premium {
+		out.WriteString(`<linearGradient id="canvasGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8fbff"/><stop offset="1" stop-color="#eef4fa"/></linearGradient>`)
+		out.WriteString(`<linearGradient id="deviceCardGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".58" stop-color="#f8fafc"/><stop offset="1" stop-color="#e8eef5"/></linearGradient>`)
+		out.WriteString(`<linearGradient id="siteGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eff6ff" stop-opacity=".96"/><stop offset="1" stop-color="#dbeafe" stop-opacity=".72"/></linearGradient>`)
+		out.WriteString(`<linearGradient id="titleGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0f172a"/><stop offset=".72" stop-color="#172554"/><stop offset="1" stop-color="#0c4a6e"/></linearGradient>`)
+		out.WriteString(`<pattern id="technicalGrid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#94a3b8" stroke-width=".55" stroke-opacity=".12"/><circle cx="0" cy="0" r="1" fill="#64748b" fill-opacity=".16"/></pattern>`)
+		out.WriteString(`<filter id="deviceShadow" x="-25%" y="-30%" width="150%" height="175%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity=".12"/><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity=".15"/></filter>`)
+		out.WriteString(`<filter id="portGlow" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`)
+		out.WriteString(`<style>.premium-link{paint-order:stroke;}.label-mask+text{paint-order:stroke fill;stroke:#fff;stroke-width:2.2px;stroke-linejoin:round}.node-title{paint-order:stroke fill;stroke:#fff;stroke-width:1.4px;stroke-linejoin:round}</style>`)
+	}
+	out.WriteString(`</defs>`)
 }
 
 func groupNodes(doc *model.Diagram) ([]string, map[string][]string) {
@@ -215,19 +235,27 @@ func nodeWidth(role string) float64 {
 }
 
 func renderTitle(out *bytes.Buffer, doc *model.Diagram, width float64) {
-	fmt.Fprintf(out, `<rect x="0" y="0" width="%.0f" height="112" fill="#0f172a"/>`, width)
+	fill := "#0f172a"
+	if doc.Theme.Name == "premium" {
+		fill = "url(#titleGradient)"
+	}
+	fmt.Fprintf(out, `<rect x="0" y="0" width="%.0f" height="112" fill="%s"/>`, width, fill)
 	fmt.Fprintf(out, `<text x="70" y="56" fill="#f8fafc" font-family="Inter,Segoe UI,sans-serif" font-size="30" font-weight="700">%s</text>`, escape(doc.Theme.Title))
 	fmt.Fprintf(out, `<text x="70" y="84" fill="#94a3b8" font-family="Inter,Segoe UI,sans-serif" font-size="15">%s</text>`, escape(doc.Theme.Subtitle))
 	fmt.Fprintf(out, `<text x="%.0f" y="66" text-anchor="end" fill="#38bdf8" font-family="ui-monospace,SFMono-Regular,monospace" font-size="14">%s</text>`, width-70, escape(strings.ToUpper(doc.Theme.Badge)))
 }
 
-func renderSiteBackgrounds(out *bytes.Buffer, groups []placedGroup) {
+func renderSiteBackgrounds(out *bytes.Buffer, groups []placedGroup, premium bool) {
 	out.WriteString(`<g id="site-backgrounds">`)
 	for _, group := range groups {
 		b := group.Box
 		if group.Depth == 0 {
 			fmt.Fprintf(out, `<g class="site site-%s">`, escapeID(group.ID))
-			fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="24" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>`, b.X, b.Y, b.W, b.H)
+			fill := "#eff6ff"
+			if premium {
+				fill = "url(#siteGradient)"
+			}
+			fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="24" fill="%s" stroke="#93c5fd" stroke-width="2"/>`, b.X, b.Y, b.W, b.H, fill)
 			fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="58" rx="24" fill="#dbeafe"/>`, b.X, b.Y, b.W)
 			fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#1e3a8a" font-family="Inter,Segoe UI,sans-serif" font-size="16" font-weight="800">%s</text>`, b.X+26, b.Y+35, escape(group.Label))
 			fmt.Fprintf(out, `<text x="%.1f" y="%.1f" text-anchor="end" fill="#64748b" font-family="ui-monospace,SFMono-Regular,monospace" font-size="10" font-weight="700">%s</text>`, b.X+b.W-24, b.Y+34, escape(strings.ToUpper(group.Kind)))
@@ -242,10 +270,14 @@ func renderSiteBackgrounds(out *bytes.Buffer, groups []placedGroup) {
 	out.WriteString(`</g>`)
 }
 
-func renderRowBackgrounds(out *bytes.Buffer, roles []string) {
+func renderRowBackgrounds(out *bytes.Buffer, roles []string, premium bool) {
 	for row, role := range roles {
 		y := headerHeight + float64(row)*rowHeight + rowInset
-		fmt.Fprintf(out, `<rect x="42" y="%.1f" width="%.1f" height="%.1f" rx="20" fill="%s" stroke="#e2e8f0"/>`, y, canvasWidth-84, rowBandHeight, roleFill(role))
+		opacity := ""
+		if premium {
+			opacity = ` fill-opacity=".88"`
+		}
+		fmt.Fprintf(out, `<rect x="42" y="%.1f" width="%.1f" height="%.1f" rx="20" fill="%s"%s stroke="#e2e8f0"/>`, y, canvasWidth-84, rowBandHeight, roleFill(role), opacity)
 	}
 }
 
@@ -261,9 +293,13 @@ func renderRowHeadings(out *bytes.Buffer, roles []string, byRole map[string][]st
 	out.WriteString(`</g>`)
 }
 
-func renderRingBackground(out *bytes.Buffer, doc *model.Diagram) {
+func renderRingBackground(out *bytes.Buffer, doc *model.Diagram, premium bool) {
 	out.WriteString(`<g id="ring-background">`)
-	out.WriteString(`<rect x="42" y="197" width="2316" height="950" rx="24" fill="#eff6ff" stroke="#dbeafe"/>`)
+	fill := "#eff6ff"
+	if premium {
+		fill = "url(#siteGradient)"
+	}
+	fmt.Fprintf(out, `<rect x="42" y="197" width="2316" height="950" rx="24" fill="%s" stroke="#dbeafe"/>`, fill)
 	out.WriteString(`<ellipse cx="1435" cy="690" rx="700" ry="385" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="8 8"/>`)
 	fmt.Fprintf(out, `<text x="1435" y="675" text-anchor="middle" fill="#334155" font-family="Inter,Segoe UI,sans-serif" font-size="23" font-weight="750">%s</text>`, escape(strings.ToUpper(doc.Theme.Badge)))
 	fmt.Fprintf(out, `<text x="1435" y="705" text-anchor="middle" fill="#64748b" font-family="ui-monospace,SFMono-Regular,monospace" font-size="13">%d-NODE RESILIENT RING</text>`, len(doc.Nodes))
@@ -283,6 +319,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 	}
 
 	out.WriteString(`<g id="links">`)
+	premium := doc.Theme.Name == "premium"
 	for index, link := range doc.Links {
 		from := link.From
 		to := link.To
@@ -305,9 +342,16 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 			visual := bundleVisuals[link.Bundle]
 			path = pathDataVia(start, point{X: visual.X, Y: visual.Y}, end, doc.Theme.LinkStyle)
 		}
-		fmt.Fprintf(out, `<path id="link-%d" d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, index+1, path, color, strokeWidth, dash)
-		renderPortMarker(out, start, color)
-		renderPortMarker(out, end, color)
+		if premium {
+			fmt.Fprintf(out, `<path class="link-underlay" d="%s" fill="none" stroke="#ffffff" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" opacity=".88"/>`, path, strokeWidth+3.8)
+		}
+		className := ""
+		if premium {
+			className = ` class="premium-link"`
+		}
+		fmt.Fprintf(out, `<path id="link-%d"%s d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, index+1, className, path, color, strokeWidth, dash)
+		renderPortMarker(out, start, color, premium)
+		renderPortMarker(out, end, color, premium)
 		renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, color)
 		renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, color)
 		renderEndpointAddress(out, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
@@ -569,8 +613,12 @@ func horizontalLabelVerticalOffset(lane int) float64 {
 	return float64(lane) * 20
 }
 
-func renderPortMarker(out *bytes.Buffer, endpoint point, color string) {
-	fmt.Fprintf(out, `<circle cx="%.1f" cy="%.1f" r="3.2" fill="#ffffff" stroke="%s" stroke-width="2"/>`, endpoint.X, endpoint.Y, color)
+func renderPortMarker(out *bytes.Buffer, endpoint point, color string, premium bool) {
+	filter := ""
+	if premium {
+		filter = ` filter="url(#portGlow)"`
+	}
+	fmt.Fprintf(out, `<circle cx="%.1f" cy="%.1f" r="3.2" fill="#ffffff" stroke="%s" stroke-width="2"%s/>`, endpoint.X, endpoint.Y, color, filter)
 }
 
 func renderCenterLabel(out *bytes.Buffer, start, end point, startSide, endSide, label, color string, index int) {
@@ -711,7 +759,7 @@ func renderLabel(out *bytes.Buffer, x, y float64, label, color, anchor string, s
 	fmt.Fprintf(out, `<text x="%.1f" y="%.1f" text-anchor="%s" fill="%s" font-family="ui-monospace,SFMono-Regular,monospace" font-size="%d" font-weight="%d">%s</text>`, x, y, anchor, color, size, weight, escape(label))
 }
 
-func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons.Pack) {
+func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons.Pack, premium bool) {
 	ids := make([]string, 0, len(nodes))
 	for id := range nodes {
 		ids = append(ids, id)
@@ -725,15 +773,25 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons
 		if color == "" {
 			color = roleColor(item.Node.Role)
 		}
-		fmt.Fprintf(out, `<g id="%s" filter="url(#shadow)">`, escapeID(id))
-		fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="14" fill="#ffffff" stroke="%s" stroke-width="2"/>`, b.X, b.Y, b.W, b.H, color)
+		filter := "shadow"
+		fill := "#ffffff"
+		if premium {
+			filter = "deviceShadow"
+			fill = "url(#deviceCardGradient)"
+		}
+		fmt.Fprintf(out, `<g id="%s" filter="url(#%s)">`, escapeID(id), filter)
+		fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="14" fill="%s" stroke="%s" stroke-width="2"/>`, b.X, b.Y, b.W, b.H, fill, color)
 		fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="8" height="%.1f" rx="4" fill="%s"/>`, b.X, b.Y, b.H, color)
+		if premium {
+			fmt.Fprintf(out, `<path d="M%.1f %.1f H%.1f" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity=".92"/>`, b.X+17, b.Y+7, b.X+b.W-16)
+			fmt.Fprintf(out, `<circle cx="%.1f" cy="%.1f" r="3" fill="#22c55e" stroke="#ffffff" stroke-width="1.2"/><circle cx="%.1f" cy="%.1f" r="2.2" fill="#38bdf8" stroke="#ffffff" stroke-width="1"/>`, b.X+b.W-17, b.Y+17, b.X+b.W-27, b.Y+17)
+		}
 		icon := item.Node.Icon
 		if icon == "" {
 			icon = item.Node.Role
 		}
 		renderDeviceIcon(out, b.X+40, b.Y+b.H/2, color, icon, item.Node.IconLabel, id, iconPack)
-		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#0f172a" font-family="Inter,Segoe UI,sans-serif" font-size="15" font-weight="700">%s</text>`, b.X+78, b.Y+34, escape(item.Node.Label))
+		fmt.Fprintf(out, `<text class="node-title" x="%.1f" y="%.1f" fill="#0f172a" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700">%s</text>`, b.X+78, b.Y+34, escape(item.Node.Label))
 		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#64748b" font-family="ui-monospace,SFMono-Regular,monospace" font-size="11">%s</text>`, b.X+78, b.Y+55, escape(strings.ToUpper(item.Node.Role)))
 		out.WriteString(`</g>`)
 	}

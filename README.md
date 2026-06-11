@@ -104,6 +104,8 @@ The native renderer's deterministic offline icon catalog is available through
 `netdiag icons` and `netdiag icons --json`. See [docs/icons.md](docs/icons.md).
 Replace built-ins with a local SVG pack using `render --icons <directory>` or
 `NETDIAG_ICONS`; missing or unsafe files fall back to the built-in catalog.
+Use `diagram.theme: premium` for opt-in gradients, layered device cards,
+status LEDs, cable underlays, and a subtle technical-grid background.
 
 ## Explicit includes
 

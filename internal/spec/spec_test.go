@@ -74,6 +74,17 @@ func TestValidateAcceptsSiteLayout(t *testing.T) {
 	}
 }
 
+func TestValidateAcceptsPremiumThemeAndRejectsUnknownTheme(t *testing.T) {
+	doc := &Document{Version: 1, Diagram: Diagram{Theme: "premium"}, Nodes: map[string]Node{"router": {Role: "router"}}}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("premium theme should validate: %v", err)
+	}
+	doc.Diagram.Theme = "glossy"
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected unknown theme validation error")
+	}
+}
+
 func TestLinkTags(t *testing.T) {
 	link := Link{
 		Bundle:       "Port-Channel10",

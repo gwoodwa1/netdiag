@@ -52,6 +52,47 @@ func TestRenderUsesCustomIconAndFallsBackToBuiltIn(t *testing.T) {
 	}
 }
 
+func TestPremiumThemeAddsFidelityEffects(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Diagram: spec.Diagram{Theme: "premium"},
+		Nodes: map[string]spec.Node{
+			"a": {Role: "router"},
+			"b": {Role: "router"},
+		},
+		Links: []spec.Link{{From: spec.LinkEndpoint{Node: "a", Port: "Eth0/0"}, To: spec.LinkEndpoint{Node: "b", Port: "Eth0/0"}}},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	for _, expected := range []string{`id="technicalGrid"`, `id="deviceCardGradient"`, `id="deviceShadow"`, `id="portGlow"`, `class="link-underlay"`, `fill="url(#deviceCardGradient)"`} {
+		if !strings.Contains(got, expected) {
+			t.Fatalf("premium render missing %q", expected)
+		}
+	}
+}
+
+func TestDefaultThemeOmitsPremiumEffects(t *testing.T) {
+	doc := &spec.Document{Version: 1, Nodes: map[string]spec.Node{"router": {Role: "router"}}}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(result), `id="technicalGrid"`) || strings.Contains(string(result), `fill="url(#deviceCardGradient)"`) {
+		t.Fatal("default render unexpectedly contains premium effects")
+	}
+}
+
 func TestRenderIncludesEndpointLabels(t *testing.T) {
 	doc := &spec.Document{
 		Version: 1,

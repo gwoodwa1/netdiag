@@ -213,6 +213,9 @@ func Validate(doc *Document) error {
 	if doc.Diagram.Renderer != "" && doc.Diagram.Renderer != "native" && doc.Diagram.Renderer != "d2" {
 		problems = append(problems, "diagram renderer must be native or d2")
 	}
+	if doc.Diagram.Theme != "" && doc.Diagram.Theme != "light" && doc.Diagram.Theme != "premium" {
+		problems = append(problems, "diagram theme must be light or premium")
+	}
 
 	for id, node := range doc.Nodes {
 		if strings.TrimSpace(id) == "" {

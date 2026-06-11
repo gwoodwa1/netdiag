@@ -33,3 +33,18 @@ group containment and deterministic orthogonal routing.
 
 Reusable blocks derived from these examples are composed in
 `examples/templates/gallery-blocks-template.yaml`.
+
+## Premium native theme
+
+Set `diagram.theme: premium` to opt into the higher-fidelity native SVG style:
+layered device cards, status LEDs, cable underlays, illuminated port markers,
+a subtle technical grid, and refined gradients. Layout and source semantics
+remain unchanged.
+
+`examples/templates/national-telco-template.yaml` is the showcase composition:
+
+```sh
+netdiag render examples/templates/national-telco-template.yaml \
+  --icons examples/custom-icons \
+  -o national-telco-premium.svg
+```

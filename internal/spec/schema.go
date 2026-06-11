@@ -36,7 +36,7 @@ func JSONSchema() ([]byte, error) {
 					"direction":        map[string]interface{}{"enum": []string{"up", "down", "left", "right"}},
 					"link_style":       map[string]interface{}{"type": "string"},
 					"interface_labels": map[string]interface{}{"type": "string"},
-					"theme":            map[string]interface{}{"type": "string"},
+					"theme":            map[string]interface{}{"enum": []string{"light", "premium"}},
 					"renderer":         map[string]interface{}{"enum": []string{"native", "d2"}},
 				},
 			},

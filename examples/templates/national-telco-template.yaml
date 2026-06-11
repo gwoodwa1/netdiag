@@ -4,6 +4,7 @@ diagram:
   title: National Telco - MPLS Core, Route Reflectors and Metro Ring
   layout: sites
   link_style: orthogonal
+  theme: premium
 
 use:
   - template: site.dual-pe
