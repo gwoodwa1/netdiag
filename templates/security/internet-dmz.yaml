@@ -1,0 +1,29 @@
+id: security.internet-dmz
+version: 1
+description: Internet edge firewall and dual-server DMZ
+params:
+  edge_label: {type: string, default: Internet DMZ}
+groups:
+  "{{ instance }}":
+    label: "{{ edge_label }}"
+    kind: security
+    nodes:
+      "{{ instance }}-internet": {}
+      "{{ instance }}-edge": {}
+      "{{ instance }}-firewall": {}
+      "{{ instance }}-dmz": {}
+      "{{ instance }}-web1": {}
+      "{{ instance }}-web2": {}
+nodes:
+  "{{ instance }}-internet": {label: Internet, role: internet}
+  "{{ instance }}-edge": {label: Edge Router, role: edge-router}
+  "{{ instance }}-firewall": {label: Perimeter Firewall, role: firewall}
+  "{{ instance }}-dmz": {label: DMZ Switch, role: access-switch}
+  "{{ instance }}-web1": {label: Public Web 1, role: server, order: 10}
+  "{{ instance }}-web2": {label: Public Web 2, role: server, order: 20}
+links:
+  - {from: "{{ instance }}-internet:Transit", to: "{{ instance }}-edge:Ethernet0/0", label: eBGP, style: internet}
+  - {from: "{{ instance }}-edge:Ethernet0/1", to: "{{ instance }}-firewall:Ethernet0/0", label: Outside, style: security}
+  - {from: "{{ instance }}-firewall:Ethernet0/1", to: "{{ instance }}-dmz:Ethernet1/49", label: DMZ, style: security}
+  - {from: "{{ instance }}-dmz:Ethernet1/1", to: "{{ instance }}-web1:Ethernet0/0", label: VLAN 200}
+  - {from: "{{ instance }}-dmz:Ethernet1/2", to: "{{ instance }}-web2:Ethernet0/0", label: VLAN 200}

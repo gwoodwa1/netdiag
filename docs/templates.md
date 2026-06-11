@@ -57,6 +57,11 @@ The built-in catalog includes:
 - `core.route-reflector-pair`
 - `edge.internet-dual-isp`
 - `metro.ethernet-ring`
+- `campus.hierarchical-lan`
+- `security.internet-dmz`
+- `cloud.aws-hybrid`
+- `branch.sdwan-site`
+- `ot.secure-plant`
 
 ## Using blocks
 

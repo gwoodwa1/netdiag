@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 )
@@ -121,8 +122,9 @@ func groupNodes(doc *model.Diagram) ([]string, map[string][]string) {
 		"ospf-backbone", "ospf-area-10", "ospf-area-20",
 		"isis-level-2", "isis-level-1",
 		"route-reflector", "rr-client", "external-peer",
-		"edge-router", "router", "firewall", "core-switch",
+		"edge-router", "router", "core-router", "firewall", "core-switch",
 		"distribution-switch", "access-switch", "wireless",
+		"metro-switch",
 		"super-spine", "spine", "leaf", "server", "endpoint",
 	}
 	var roles []string
@@ -194,9 +196,9 @@ func nodeWidth(role string) float64 {
 	switch role {
 	case "super-spine", "spine":
 		return 380
-	case "leaf", "core-switch", "distribution-switch", "access-switch":
+	case "leaf", "core-switch", "distribution-switch", "access-switch", "metro-switch":
 		return 300
-	case "server", "router", "edge-router", "firewall", "wan-cloud", "public-cloud", "dwdm":
+	case "server", "router", "edge-router", "core-router", "firewall", "wan-cloud", "public-cloud", "dwdm":
 		return 280
 	default:
 		return 240
@@ -730,31 +732,31 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode) {
 }
 
 func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role string) {
-	iconColor := color
-	if role == "spine" || role == "super-spine" || role == "leaf" || strings.Contains(role, "switch") || role == "router" || role == "edge-router" {
-		iconColor = "#0878b9"
+	canonical := role
+	if icon, ok := icons.Resolve(role); ok {
+		canonical = icon.ID
+		color = icon.Color
 	}
+	iconColor := color
 	fmt.Fprintf(out, `<g class="device-icon device-icon-%s" transform="translate(%.1f %.1f)" stroke="%s" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">`, escapeID(role), x, y, iconColor)
-	switch role {
-	case "spine", "super-spine":
+	switch canonical {
+	case "spine":
 		renderSpineIcon(out, iconColor)
 	case "leaf":
 		renderLeafIcon(out, iconColor)
-	case "core-switch", "distribution-switch", "access-switch", "switch":
-		renderLeafIcon(out, iconColor)
-	case "router", "edge-router":
+	case "router":
 		renderRouterIcon(out, iconColor)
 	case "firewall":
 		renderFirewallIcon(out)
-	case "wan-cloud", "cloud", "internet":
+	case "cloud":
 		renderCloudIcon(out, "#64748b")
-	case "public-cloud", "aws":
+	case "public-cloud":
 		renderCloudIcon(out, "#f59e0b")
 	case "dwdm":
 		renderDWDMIcon(out)
-	case "wireless", "access-point":
+	case "wireless":
 		renderWirelessIcon(out, iconColor)
-	case "endpoint", "users":
+	case "endpoint":
 		renderEndpointIcon(out, iconColor)
 	case "server":
 		renderServerIcon(out, color)
@@ -843,7 +845,7 @@ func roleColor(role string) string {
 		return "#f59e0b"
 	case "dwdm":
 		return "#7c3aed"
-	case "router", "edge-router", "ospf-backbone", "ospf-area-10", "ospf-area-20", "isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer", "core-switch", "distribution-switch", "access-switch", "wireless":
+	case "router", "edge-router", "core-router", "ospf-backbone", "ospf-area-10", "ospf-area-20", "isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer", "core-switch", "distribution-switch", "access-switch", "metro-switch", "wireless":
 		return "#0878b9"
 	case "endpoint", "users":
 		return "#475569"
@@ -870,7 +872,7 @@ func roleFill(role string) string {
 		return "#fffbeb"
 	case "dwdm":
 		return "#f5f3ff"
-	case "router", "edge-router", "ospf-backbone", "ospf-area-10", "ospf-area-20", "isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer", "core-switch", "distribution-switch", "access-switch", "wireless":
+	case "router", "edge-router", "core-router", "ospf-backbone", "ospf-area-10", "ospf-area-20", "isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer", "core-switch", "distribution-switch", "access-switch", "metro-switch", "wireless":
 		return "#eff6ff"
 	case "endpoint", "users":
 		return "#f8fafc"

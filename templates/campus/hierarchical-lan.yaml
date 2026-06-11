@@ -1,0 +1,23 @@
+id: campus.hierarchical-lan
+version: 1
+description: Collapsed campus core with access and wireless
+params:
+  campus_label: {type: string, required: true}
+groups:
+  "{{ instance }}":
+    label: "{{ campus_label }}"
+    kind: site
+    nodes:
+      "{{ instance }}-core": {}
+      "{{ instance }}-access1": {}
+      "{{ instance }}-access2": {}
+      "{{ instance }}-ap": {}
+nodes:
+  "{{ instance }}-core": {label: "{{ campus_label }} Core", role: core-switch, order: 10}
+  "{{ instance }}-access1": {label: Access 1, role: access-switch, order: 10}
+  "{{ instance }}-access2": {label: Access 2, role: access-switch, order: 20}
+  "{{ instance }}-ap": {label: Wireless AP, role: wireless, order: 10}
+links:
+  - {from: "{{ instance }}-core:Ethernet1/1", to: "{{ instance }}-access1:Ethernet1/49", label: 10G}
+  - {from: "{{ instance }}-core:Ethernet1/2", to: "{{ instance }}-access2:Ethernet1/49", label: 10G}
+  - {from: "{{ instance }}-access1:Ethernet1/1", to: "{{ instance }}-ap:Ethernet0/0", label: PoE+}

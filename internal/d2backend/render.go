@@ -175,7 +175,7 @@ func nodeShape(role string) string {
 	switch role {
 	case "wan-cloud", "public-cloud", "internet":
 		return "cloud"
-	case "router", "edge-router", "ospf-backbone", "isis-level-1", "isis-level-2":
+	case "router", "edge-router", "core-router", "ospf-backbone", "isis-level-1", "isis-level-2":
 		return "oval"
 	default:
 		return "rectangle"

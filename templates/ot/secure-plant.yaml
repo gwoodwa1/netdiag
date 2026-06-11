@@ -1,0 +1,26 @@
+id: ot.secure-plant
+version: 1
+description: Segmented OT plant with SCADA and production lines
+params:
+  plant_label: {type: string, required: true}
+groups:
+  "{{ instance }}":
+    label: "{{ plant_label }}"
+    kind: site
+    nodes:
+      "{{ instance }}-firewall": {}
+      "{{ instance }}-core": {}
+      "{{ instance }}-scada": {}
+      "{{ instance }}-line1": {}
+      "{{ instance }}-line2": {}
+nodes:
+  "{{ instance }}-firewall": {label: OT Firewall, role: firewall}
+  "{{ instance }}-core": {label: Plant Core, role: core-switch}
+  "{{ instance }}-scada": {label: SCADA Server, role: server}
+  "{{ instance }}-line1": {label: Production Line 1, role: endpoint, order: 10}
+  "{{ instance }}-line2": {label: Production Line 2, role: endpoint, order: 20}
+links:
+  - {from: "{{ instance }}-firewall:Ethernet0/1", to: "{{ instance }}-core:Ethernet1/49", label: OT Zone, style: security}
+  - {from: "{{ instance }}-core:Ethernet1/1", to: "{{ instance }}-scada:Ethernet0/0", label: SCADA}
+  - {from: "{{ instance }}-core:Ethernet1/2", to: "{{ instance }}-line1:Ethernet0/0", label: PROFINET}
+  - {from: "{{ instance }}-core:Ethernet1/3", to: "{{ instance }}-line2:Ethernet0/0", label: PROFINET}

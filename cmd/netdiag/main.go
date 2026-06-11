@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
+	"github.com/gwoodwa1/netdiag/internal/export"
+	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/planner"
 	"github.com/gwoodwa1/netdiag/internal/source"
@@ -36,6 +38,8 @@ func main() {
 		format(os.Args[2:])
 	case "templates":
 		listTemplates(os.Args[2:])
+	case "icons":
+		listIcons(os.Args[2:])
 	case "capabilities":
 		capabilities(os.Args[2:])
 	case "plan":
@@ -92,7 +96,7 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg] [--renderer native|d2] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--renderer native|d2] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
 	}
 
@@ -125,7 +129,7 @@ func render(args []string) {
 	if target == "" {
 		target = strings.TrimSuffix(input, filepath.Ext(input)) + ".svg"
 	}
-	exitOnError(os.WriteFile(target, result, 0o644))
+	exitOnError(export.Write(target, result))
 	reportLayout := diag.Theme.Layout
 	if backend == "d2" {
 		reportLayout = layout
@@ -364,6 +368,27 @@ func listTemplates(args []string) {
 	}
 }
 
+func listIcons(args []string) {
+	flags := flag.NewFlagSet("icons", flag.ExitOnError)
+	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
+	flags.Parse(args)
+	if flags.NArg() != 0 {
+		fmt.Fprintln(os.Stderr, "usage: netdiag icons [--json]")
+		os.Exit(2)
+	}
+	items := icons.List()
+	if *jsonOutput {
+		writeJSON(items)
+		return
+	}
+	for _, item := range items {
+		fmt.Printf("%-14s %-10s %s\n", item.ID, item.Category, item.Description)
+		if len(item.Aliases) > 0 {
+			fmt.Printf("  aliases: %s\n", strings.Join(item.Aliases, ", "))
+		}
+	}
+}
+
 func templateRegistry() (*templates.TemplateRegistry, error) {
 	root := os.Getenv("NETDIAG_TEMPLATES")
 	if root == "" {
@@ -406,7 +431,7 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg] [--backend native|d2] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--backend native|d2] [--layout elk|dagre]
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
@@ -414,6 +439,7 @@ Usage:
   netdiag expand <diagram.yaml> [-o expanded.yaml]
   netdiag fmt [-w] <diagram.yaml>
   netdiag templates [--json]
+  netdiag icons [--json]
   netdiag schema
 `)
 }

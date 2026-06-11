@@ -1,0 +1,24 @@
+id: cloud.aws-hybrid
+version: 1
+description: AWS Direct Connect with VPN backup
+params:
+  cloud_label: {type: string, default: AWS Hybrid Connectivity}
+groups:
+  "{{ instance }}":
+    label: "{{ cloud_label }}"
+    kind: cloud
+    nodes:
+      "{{ instance }}-aws": {}
+      "{{ instance }}-dx": {}
+      "{{ instance }}-vpn": {}
+      "{{ instance }}-firewall": {}
+nodes:
+  "{{ instance }}-aws": {label: AWS Public Cloud, role: public-cloud}
+  "{{ instance }}-dx": {label: Direct Connect Router, role: edge-router, order: 10}
+  "{{ instance }}-vpn": {label: VPN Backup Router, role: edge-router, order: 20}
+  "{{ instance }}-firewall": {label: On-Prem Firewall, role: firewall}
+links:
+  - {from: "{{ instance }}-aws:DXGW", to: "{{ instance }}-dx:Ethernet0/0", label: Direct Connect, style: wan}
+  - {from: "{{ instance }}-aws:VGW", to: "{{ instance }}-vpn:Ethernet0/0", label: IPsec Backup, style: internet}
+  - {from: "{{ instance }}-dx:Ethernet0/1", to: "{{ instance }}-firewall:Ethernet0/0", label: Private VIF, style: security}
+  - {from: "{{ instance }}-vpn:Ethernet0/1", to: "{{ instance }}-firewall:Ethernet0/1", label: VPN, style: security}

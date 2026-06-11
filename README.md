@@ -22,6 +22,18 @@ go build -o netdiag ./cmd/netdiag
 ./netdiag render examples/spine-leaf.yaml
 ```
 
+Try it in Docker with no local Go installation:
+
+```sh
+docker build -t netdiag . && docker run --rm -v "$PWD:/work" -w /work netdiag render examples/templates/national-telco-template.yaml -o /work/national-telco.png
+```
+
+## Rendered gallery
+
+| Telco composition | Site-aware WAN | Metro Ethernet |
+| --- | --- | --- |
+| [![Telco MPLS topology](examples/15-metro-mpls-core.svg)](examples/15-metro-mpls-core.svg) | [![Site-aware WAN](examples/16-site-aware-wan.svg)](examples/16-site-aware-wan.svg) | [![Metro Ethernet ring](examples/14-metro-ethernet-ring.svg)](examples/14-metro-ethernet-ring.svg) |
+
 ## CLI workflow
 
 ```sh
@@ -30,11 +42,14 @@ netdiag validate --json examples/spine-leaf.yaml
 netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
 netdiag validate examples/includes/mpls-wan.yaml
 netdiag templates
+netdiag icons
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
 netdiag plan --renderer d2 examples/spine-leaf.yaml
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.svg
+netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.png
+netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.pdf
 ```
 
 When no renderer is selected, `netdiag render` recommends and selects one from
@@ -46,6 +61,10 @@ Use `--report` to persist the capability assessment and warnings:
 netdiag render examples/skills/d2-elk-hard-cases.yaml --renderer d2 --layout elk \
   --report render-report.json -o examples/skills/d2-elk-hard-cases.elk.svg
 ```
+
+The output extension selects SVG, PNG, or PDF. SVG is native; PNG and PDF use
+a locally installed `rsvg-convert`, Inkscape, or ImageMagick converter. See
+[docs/export.md](docs/export.md).
 
 D2 is used as an automatic-layout experiment, not assumed to solve every
 network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)
@@ -79,6 +98,9 @@ netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
 
 See [docs/templates.md](docs/templates.md) for the template format, naming
 rules, parameters, and Phase 1 limitations.
+
+The native renderer's deterministic offline icon catalog is available through
+`netdiag icons` and `netdiag icons --json`. See [docs/icons.md](docs/icons.md).
 
 ## Explicit includes
 

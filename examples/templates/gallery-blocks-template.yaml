@@ -1,0 +1,25 @@
+version: 1
+diagram:
+  title: Reusable Gallery Blocks
+  layout: sites
+  link_style: orthogonal
+use:
+  - template: campus.hierarchical-lan
+    as: hq
+    params: {campus_label: Headquarters Campus}
+  - template: security.internet-dmz
+    as: dmz
+    params: {edge_label: Public Services Edge}
+  - template: cloud.aws-hybrid
+    as: hybrid
+  - template: branch.sdwan-site
+    as: branch
+    params: {site_label: Branch 101}
+  - template: ot.secure-plant
+    as: plant
+    params: {plant_label: Manufacturing Plant}
+connect:
+  - {from: hq-core:Ethernet1/49, to: dmz-firewall:Ethernet0/2, label: Security Transit}
+  - {from: hq-core:Ethernet1/48, to: hybrid-firewall:Ethernet0/2, label: Cloud Transit}
+  - {from: branch-edge:Ethernet0/0, to: hq-core:Ethernet1/47, label: SD-WAN Overlay, style: wan}
+  - {from: plant-firewall:Ethernet0/0, to: hq-core:Ethernet1/46, label: OT WAN, style: security}

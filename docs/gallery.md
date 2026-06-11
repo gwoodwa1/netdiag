@@ -30,3 +30,6 @@ wireless, endpoint, and server SVG icons. It also demonstrates OSPF, IS-IS,
 iBGP, and eBGP protocol link styles. Full circuit IDs remain in YAML and are
 displayed as central link labels. The site-aware WAN also exercises native
 group containment and deterministic orthogonal routing.
+
+Reusable blocks derived from these examples are composed in
+`examples/templates/gallery-blocks-template.yaml`.

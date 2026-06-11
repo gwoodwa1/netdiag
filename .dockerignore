@@ -1,0 +1,8 @@
+.git
+.gocache
+.gomodcache
+netdiag
+docs/planning.md
+docs/strategy.md
+examples/**/*.svg
+test_spike.svg
