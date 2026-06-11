@@ -13,6 +13,7 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/planner"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 	"github.com/gwoodwa1/netdiag/internal/svg"
+	"github.com/gwoodwa1/netdiag/internal/templates"
 )
 
 func main() {
@@ -26,6 +27,8 @@ func main() {
 		render(os.Args[2:])
 	case "validate":
 		validate(os.Args[2:])
+	case "expand":
+		expand(os.Args[2:])
 	case "schema":
 		schema(os.Args[2:])
 	case "fmt":
@@ -90,7 +93,7 @@ func render(args []string) {
 		os.Exit(2)
 	}
 
-	doc, err := spec.Load(input)
+	doc, err := loadDocument(input)
 	exitOnError(err)
 
 	diag, err := model.Compile(doc)
@@ -168,7 +171,7 @@ func plan(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: netdiag plan [--renderer native|d2] [--json] <diagram.yaml>")
 		os.Exit(2)
 	}
-	doc, err := spec.Load(flags.Arg(0))
+	doc, err := loadDocument(flags.Arg(0))
 	exitOnError(err)
 	diag, err := model.Compile(doc)
 	exitOnError(err)
@@ -205,7 +208,7 @@ func recommend(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: netdiag recommend [--json] <diagram.yaml>")
 		os.Exit(2)
 	}
-	doc, err := spec.Load(flags.Arg(0))
+	doc, err := loadDocument(flags.Arg(0))
 	exitOnError(err)
 	diag, err := model.Compile(doc)
 	exitOnError(err)
@@ -237,7 +240,7 @@ func validate(args []string) {
 		os.Exit(2)
 	}
 
-	doc, err := spec.Load(flags.Arg(0))
+	doc, err := loadDocument(flags.Arg(0))
 	if err != nil {
 		if *jsonOutput {
 			writeJSON(map[string]interface{}{"valid": false, "errors": []string{err.Error()}})
@@ -271,6 +274,41 @@ func schema(args []string) {
 	fmt.Println(string(result))
 }
 
+func expand(args []string) {
+	var input, output string
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "-o", "--output":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
+				os.Exit(2)
+			}
+			i++
+			output = args[i]
+		default:
+			if strings.HasPrefix(args[i], "-") || input != "" {
+				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
+				os.Exit(2)
+			}
+			input = args[i]
+		}
+	}
+	if input == "" {
+		fmt.Fprintln(os.Stderr, "usage: netdiag expand <diagram.yaml> [-o expanded.yaml]")
+		os.Exit(2)
+	}
+	doc, err := loadDocument(input)
+	exitOnError(err)
+	result, err := spec.Format(doc)
+	exitOnError(err)
+	if output == "" {
+		fmt.Print(string(result))
+		return
+	}
+	exitOnError(os.WriteFile(output, result, 0o644))
+	fmt.Printf("expanded %s\n", output)
+}
+
 func format(args []string) {
 	flags := flag.NewFlagSet("fmt", flag.ExitOnError)
 	write := flags.Bool("w", false, "write formatted YAML back to the input file")
@@ -279,7 +317,7 @@ func format(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: netdiag fmt [-w] <diagram.yaml>")
 		os.Exit(2)
 	}
-	doc, err := spec.Load(flags.Arg(0))
+	doc, err := loadDocument(flags.Arg(0))
 	exitOnError(err)
 	result, err := spec.Format(doc)
 	exitOnError(err)
@@ -289,6 +327,18 @@ func format(args []string) {
 		return
 	}
 	fmt.Print(string(result))
+}
+
+func loadDocument(path string) (*spec.Document, error) {
+	root := os.Getenv("NETDIAG_TEMPLATES")
+	if root == "" {
+		root = "templates"
+	}
+	result, err := templates.Load(path, &templates.FileTemplateLoader{Root: root})
+	if err != nil {
+		return nil, err
+	}
+	return result.Document, nil
 }
 
 func writeJSON(value interface{}) {
@@ -323,6 +373,7 @@ Usage:
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
   netdiag validate [--json] <diagram.yaml>
+  netdiag expand <diagram.yaml> [-o expanded.yaml]
   netdiag fmt [-w] <diagram.yaml>
   netdiag schema
 `)

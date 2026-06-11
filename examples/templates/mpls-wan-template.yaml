@@ -1,0 +1,36 @@
+version: 1
+
+diagram:
+  title: Template Demo - MPLS WAN
+  layout: sites
+  link_style: orthogonal
+
+use:
+  - template: site.dual-pe
+    as: london
+    params:
+      site_label: London
+  - template: site.dual-pe
+    as: manchester
+    params:
+      site_label: Manchester
+  - template: core.mpls-two-p
+    as: uk-core
+    params:
+      core_label: UK MPLS Core
+
+connect:
+  - from:
+      node: london-pe1
+      port: Ethernet0/0
+      address: 10.10.0.1/30
+    to:
+      node: uk-core-p1
+      port: Ethernet0/0
+      address: 10.10.0.2/30
+    label: 100G LON-P1
+    labels: {source: Eth0/0, middle: 100G LON-P1, target: Eth0/0}
+  - from: manchester-pe1:Ethernet0/0
+    to: uk-core-p2:Ethernet0/0
+    label: 100G MAN-P2
+    labels: {source: Eth0/0, middle: 100G MAN-P2, target: Eth0/0}

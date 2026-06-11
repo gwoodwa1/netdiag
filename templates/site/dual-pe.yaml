@@ -1,0 +1,38 @@
+id: site.dual-pe
+version: 1
+description: Dual PE site block
+
+params:
+  site_label:
+    type: string
+    required: true
+  pe1_label:
+    type: string
+    default: "{{ site_label }} PE1"
+  pe2_label:
+    type: string
+    default: "{{ site_label }} PE2"
+
+groups:
+  "{{ instance }}":
+    label: "{{ site_label }}"
+    kind: site
+    nodes:
+      "{{ instance }}-pe1": {}
+      "{{ instance }}-pe2": {}
+
+nodes:
+  "{{ instance }}-pe1":
+    label: "{{ pe1_label }}"
+    role: edge-router
+    order: 10
+  "{{ instance }}-pe2":
+    label: "{{ pe2_label }}"
+    role: edge-router
+    order: 20
+
+links:
+  - from: "{{ instance }}-pe1:Loopback0"
+    to: "{{ instance }}-pe2:Loopback0"
+    label: iBGP / IGP
+    style: control-plane

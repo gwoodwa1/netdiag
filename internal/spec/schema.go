@@ -17,7 +17,11 @@ func JSONSchema() ([]byte, error) {
 		"title":                "netdiag diagram",
 		"type":                 "object",
 		"additionalProperties": false,
-		"required":             []string{"version", "nodes", "links"},
+		"required":             []string{"version"},
+		"anyOf": []interface{}{
+			map[string]interface{}{"required": []string{"nodes"}},
+			map[string]interface{}{"required": []string{"use"}},
+		},
 		"properties": map[string]interface{}{
 			"version": map[string]interface{}{"const": 1},
 			"diagram": map[string]interface{}{
@@ -38,8 +42,23 @@ func JSONSchema() ([]byte, error) {
 			"groups": map[string]interface{}{"type": "object", "additionalProperties": map[string]interface{}{"$ref": "#/$defs/group"}},
 			"nodes":  map[string]interface{}{"type": "object", "additionalProperties": map[string]interface{}{"$ref": "#/$defs/node"}, "minProperties": 1},
 			"links":  map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/$defs/link"}},
+			"use":    map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/$defs/templateUse"}},
+			"connect": map[string]interface{}{
+				"type":  "array",
+				"items": map[string]interface{}{"$ref": "#/$defs/link"},
+			},
 		},
 		"$defs": map[string]interface{}{
+			"templateUse": map[string]interface{}{
+				"type":                 "object",
+				"additionalProperties": false,
+				"required":             []string{"template", "as"},
+				"properties": map[string]interface{}{
+					"template": map[string]interface{}{"type": "string"},
+					"as":       map[string]interface{}{"type": "string"},
+					"params":   map[string]interface{}{"type": "object", "additionalProperties": map[string]interface{}{"type": "string"}},
+				},
+			},
 			"endpoint": map[string]interface{}{
 				"oneOf": []interface{}{
 					map[string]interface{}{"type": "string", "pattern": "^[^:]+:.+$"},

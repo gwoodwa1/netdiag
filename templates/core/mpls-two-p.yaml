@@ -1,0 +1,41 @@
+id: core.mpls-two-p
+version: 1
+description: Two-node MPLS P-router core
+
+params:
+  core_label:
+    type: string
+    default: MPLS Core
+  p1_label:
+    type: string
+    default: P1
+  p2_label:
+    type: string
+    default: P2
+
+groups:
+  "{{ instance }}":
+    label: "{{ core_label }}"
+    kind: core
+    nodes:
+      "{{ instance }}-p1": {}
+      "{{ instance }}-p2": {}
+
+nodes:
+  "{{ instance }}-p1":
+    label: "{{ p1_label }}"
+    role: core-router
+    order: 10
+  "{{ instance }}-p2":
+    label: "{{ p2_label }}"
+    role: core-router
+    order: 20
+
+links:
+  - from: "{{ instance }}-p1:Ethernet0/1"
+    to: "{{ instance }}-p2:Ethernet0/1"
+    label: Core 400G
+    labels:
+      source: Eth0/1
+      middle: 400G
+      target: Eth0/1

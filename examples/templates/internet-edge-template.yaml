@@ -1,0 +1,31 @@
+version: 1
+
+diagram:
+  title: Template Demo - Internet Edge
+  layout: sites
+  link_style: orthogonal
+
+use:
+  - template: edge.internet-dual-isp
+    as: london-edge
+    params:
+      edge_label: London Internet Edge
+      isp1_label: TransitNet
+      isp2_label: Global Carrier
+  - template: site.dual-pe
+    as: london
+    params:
+      site_label: London WAN
+
+connect:
+  - from:
+      node: london-pe1
+      port: Ethernet0/0
+      label: WAN Eth0/0
+      address: 172.16.0.1/30
+    to:
+      node: london-edge-edge1
+      port: Ethernet0/1
+      label: EDGE Eth0/1
+      address: 172.16.0.2/30
+    label: 100G Internet Handoff

@@ -1,0 +1,38 @@
+id: edge.internet-dual-isp
+version: 1
+description: Dual-router internet edge with two providers
+
+params:
+  edge_label:
+    type: string
+    default: Internet Edge
+  isp1_label:
+    type: string
+    default: ISP A
+  isp2_label:
+    type: string
+    default: ISP B
+
+groups:
+  "{{ instance }}":
+    label: "{{ edge_label }}"
+    kind: site
+    nodes:
+      "{{ instance }}-edge1": {}
+      "{{ instance }}-edge2": {}
+      "{{ instance }}-isp1": {}
+      "{{ instance }}-isp2": {}
+
+nodes:
+  "{{ instance }}-edge1": {label: Edge Router 1, role: edge-router, order: 10}
+  "{{ instance }}-edge2": {label: Edge Router 2, role: edge-router, order: 20}
+  "{{ instance }}-isp1": {label: "{{ isp1_label }}", role: internet, order: 10}
+  "{{ instance }}-isp2": {label: "{{ isp2_label }}", role: internet, order: 20}
+
+links:
+  - from: "{{ instance }}-edge1:Ethernet0/0"
+    to: "{{ instance }}-isp1:Ethernet0/0"
+    label: eBGP Transit
+  - from: "{{ instance }}-edge2:Ethernet0/0"
+    to: "{{ instance }}-isp2:Ethernet0/0"
+    label: eBGP Transit

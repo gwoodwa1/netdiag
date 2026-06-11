@@ -1,0 +1,29 @@
+version: 1
+
+diagram:
+  title: Dual PE Sites
+  layout: sites
+  link_style: orthogonal
+
+use:
+  - template: site.dual-pe
+    as: london
+    params:
+      site_label: London
+  - template: site.dual-pe
+    as: manchester
+    params:
+      site_label: Manchester
+
+connect:
+  - from:
+      node: london-pe1
+      port: Ethernet0/0
+      label: LON Eth0/0
+      address: 10.0.0.1/30
+    to:
+      node: manchester-pe1
+      port: Ethernet0/0
+      label: MAN Eth0/0
+      address: 10.0.0.2/30
+    label: 100G Inter-site

@@ -13,38 +13,38 @@ import (
 
 type Document struct {
 	Version int               `yaml:"version"`
-	Diagram Diagram           `yaml:"diagram"`
-	Groups  map[string]*Group `yaml:"groups"`
-	Nodes   map[string]Node   `yaml:"nodes"`
-	Links   []Link            `yaml:"links"`
+	Diagram Diagram           `yaml:"diagram,omitempty"`
+	Groups  map[string]*Group `yaml:"groups,omitempty"`
+	Nodes   map[string]Node   `yaml:"nodes,omitempty"`
+	Links   []Link            `yaml:"links,omitempty"`
 }
 
 type Diagram struct {
-	Title       string `yaml:"title"`
-	Subtitle    string `yaml:"subtitle"`
-	Badge       string `yaml:"badge"`
-	Layout      string `yaml:"layout"`
-	Direction   string `yaml:"direction"`
-	LinkStyle   string `yaml:"link_style"`
-	InterfaceAt string `yaml:"interface_labels"`
-	Theme       string `yaml:"theme"`
+	Title       string `yaml:"title,omitempty"`
+	Subtitle    string `yaml:"subtitle,omitempty"`
+	Badge       string `yaml:"badge,omitempty"`
+	Layout      string `yaml:"layout,omitempty"`
+	Direction   string `yaml:"direction,omitempty"`
+	LinkStyle   string `yaml:"link_style,omitempty"`
+	InterfaceAt string `yaml:"interface_labels,omitempty"`
+	Theme       string `yaml:"theme,omitempty"`
 	Renderer    string `yaml:"renderer,omitempty"`
 }
 
 type Group struct {
-	Label  string                 `yaml:"label"`
-	Kind   string                 `yaml:"kind"`
-	Groups map[string]*Group      `yaml:"groups"`
-	Nodes  map[string]interface{} `yaml:"nodes"`
+	Label  string                 `yaml:"label,omitempty"`
+	Kind   string                 `yaml:"kind,omitempty"`
+	Groups map[string]*Group      `yaml:"groups,omitempty"`
+	Nodes  map[string]interface{} `yaml:"nodes,omitempty"`
 }
 
 type Node struct {
-	Label    string                 `yaml:"label"`
+	Label    string                 `yaml:"label,omitempty"`
 	Role     string                 `yaml:"role"`
-	Icon     string                 `yaml:"icon"`
-	Color    string                 `yaml:"color"`
-	Order    int                    `yaml:"order"`
-	Metadata map[string]interface{} `yaml:"metadata"`
+	Icon     string                 `yaml:"icon,omitempty"`
+	Color    string                 `yaml:"color,omitempty"`
+	Order    int                    `yaml:"order,omitempty"`
+	Metadata map[string]interface{} `yaml:"metadata,omitempty"`
 }
 
 type LinkEndpoint struct {
@@ -92,12 +92,12 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 type Link struct {
 	From         LinkEndpoint `yaml:"from"`
 	To           LinkEndpoint `yaml:"to"`
-	Label        string       `yaml:"label"`
-	Style        string       `yaml:"style"`
-	Bundle       string       `yaml:"bundle"`
-	LACP         bool         `yaml:"lacp"`
-	MultiChassis bool         `yaml:"multi_chassis"`
-	Trunk        *Trunk       `yaml:"trunk"`
+	Label        string       `yaml:"label,omitempty"`
+	Style        string       `yaml:"style,omitempty"`
+	Bundle       string       `yaml:"bundle,omitempty"`
+	LACP         bool         `yaml:"lacp,omitempty"`
+	MultiChassis bool         `yaml:"multi_chassis,omitempty"`
+	Trunk        *Trunk       `yaml:"trunk,omitempty"`
 	Labels       *LinkLabels  `yaml:"labels,omitempty"`
 }
 
@@ -108,8 +108,8 @@ type LinkLabels struct {
 }
 
 type Trunk struct {
-	Encapsulation string   `yaml:"encapsulation"`
-	AllowedVLANs  []string `yaml:"allowed_vlans"`
+	Encapsulation string   `yaml:"encapsulation,omitempty"`
+	AllowedVLANs  []string `yaml:"allowed_vlans,omitempty"`
 }
 
 type Endpoint struct {
@@ -150,11 +150,16 @@ func Load(path string) (*Document, error) {
 	if err := decoder.Decode(&doc); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	applyDefaults(&doc)
-	if err := Validate(&doc); err != nil {
+	if err := Prepare(&doc); err != nil {
 		return nil, fmt.Errorf("validate %s: %w", path, err)
 	}
 	return &doc, nil
+}
+
+// Prepare applies canonical defaults and validates a document before compile or rendering.
+func Prepare(doc *Document) error {
+	applyDefaults(doc)
+	return Validate(doc)
 }
 
 func ParseEndpoint(value string) (Endpoint, error) {

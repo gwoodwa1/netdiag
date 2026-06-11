@@ -27,6 +27,7 @@ go build -o netdiag ./cmd/netdiag
 ```sh
 netdiag schema > netdiag.schema.json
 netdiag validate --json examples/spine-leaf.yaml
+netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
@@ -46,8 +47,36 @@ netdiag render examples/skills/d2-elk-hard-cases.yaml --renderer d2 --layout elk
 
 D2 is used as an automatic-layout experiment, not assumed to solve every
 network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)
-for the hard-case results, [docs/planning.md](docs/planning.md) for capability
-planning, and [SKILLS.md](SKILLS.md) for the LLM repair loop.
+for the hard-case results and [SKILLS.md](SKILLS.md) for the LLM repair loop.
+
+## Template blocks
+
+Reusable template blocks compose larger telco-style diagrams while keeping the
+renderers simple. A diagram's `use` entries instantiate templates from
+`templates/`, and `connect` adds links after expansion:
+
+```yaml
+use:
+  - template: site.dual-pe
+    as: london
+    params:
+      site_label: London
+
+connect:
+  - from: london-pe1:Ethernet0/0
+    to: uk-core-p1:Ethernet0/0
+    label: 100G
+```
+
+Render template diagrams directly, or inspect their normal canonical form:
+
+```sh
+netdiag render examples/templates/mpls-wan-template.yaml -o mpls-wan.svg
+netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
+```
+
+See [docs/templates.md](docs/templates.md) for the template format, naming
+rules, parameters, and Phase 1 limitations.
 
 ```yaml
 links:
@@ -152,9 +181,6 @@ chassis with a visible port bank.
 Layer headings occupy a dedicated left gutter outside the topology placement
 area. Links and devices cannot enter that gutter, so headings never mask or
 overlap diagram geometry.
-
-See [docs/strategy.md](docs/strategy.md) for the research findings, proposed
-architecture, and delivery plan.
 
 See [docs/gallery.md](docs/gallery.md) for sixteen additional rendered
 examples covering WAN, DWDM, campus LAN, firewalls, wireless, SD-WAN, OT, AWS,
