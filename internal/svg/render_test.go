@@ -2,6 +2,7 @@ package svg
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -290,6 +291,35 @@ func TestSiteLayoutLeavesLabelGutterBetweenSameRoleNodes(t *testing.T) {
 	gap := layout.Nodes["p2"].Box.X - (layout.Nodes["p1"].Box.X + layout.Nodes["p1"].Box.W)
 	if gap < siteLinkGap {
 		t.Fatalf("same-role site node gap = %.1f, want at least %.1f", gap, siteLinkGap)
+	}
+}
+
+func TestSiteLayoutWrapsWideCompositionsIntoRows(t *testing.T) {
+	diagram := &model.Diagram{Theme: model.Theme{Layout: "sites"}}
+	for site := 1; site <= 4; site++ {
+		group := model.Group{ID: fmt.Sprintf("site-%d", site), Kind: "site"}
+		for node := 1; node <= 4; node++ {
+			id := fmt.Sprintf("site-%d-router-%d", site, node)
+			group.NodeIDs = append(group.NodeIDs, id)
+			diagram.Nodes = append(diagram.Nodes, model.Node{ID: id, Role: "router"})
+		}
+		diagram.Groups = append(diagram.Groups, group)
+	}
+
+	layout := placeSiteLayout(diagram)
+	if layout.Width > siteCanvasMax {
+		t.Fatalf("wrapped site layout width = %.1f, want at most %.1f", layout.Width, siteCanvasMax)
+	}
+	firstRowY := layout.Groups[0].Box.Y
+	wrapped := false
+	for _, group := range layout.Groups[1:] {
+		if group.Box.Y > firstRowY {
+			wrapped = true
+			break
+		}
+	}
+	if !wrapped {
+		t.Fatal("expected wide site composition to wrap onto another row")
 	}
 }
 

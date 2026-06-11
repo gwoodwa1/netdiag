@@ -22,5 +22,6 @@ NETDIAG_CONVERTER=/usr/local/bin/rsvg-convert \
   netdiag render diagram.yaml -o diagram.pdf
 ```
 
-The default Docker image includes `rsvg-convert`, so SVG, PNG, and PDF exports
-work without host-side converter installation.
+The default Docker image includes `rsvg-convert` and DejaVu Sans/Mono fonts, so
+SVG, PNG, and PDF exports work without host-side converter or font
+installation.

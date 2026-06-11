@@ -445,9 +445,13 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 		toSide := to.Side
 		defaultFromSide, defaultToSide := computeDefaultSides(fromCenter, toCenter, doc.Theme.Layout)
 		if doc.Theme.Layout == "sites" && rootGroups[from.Node] != rootGroups[to.Node] {
-			defaultFromSide, defaultToSide = "right", "left"
-			if toCenter.X < fromCenter.X {
-				defaultFromSide, defaultToSide = "left", "right"
+			deltaX := math.Abs(toCenter.X - fromCenter.X)
+			deltaY := math.Abs(toCenter.Y - fromCenter.Y)
+			if deltaX >= deltaY {
+				defaultFromSide, defaultToSide = "right", "left"
+				if toCenter.X < fromCenter.X {
+					defaultFromSide, defaultToSide = "left", "right"
+				}
 			}
 		}
 		if fromSide == "" {

@@ -14,6 +14,7 @@ const (
 	siteRoleHeight = 205.0
 	siteNodeGap    = 42.0
 	siteLinkGap    = 220.0
+	siteCanvasMax  = 4200.0
 )
 
 type placedGroup struct {
@@ -134,7 +135,14 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 	result := layoutResult{Nodes: make(map[string]placedNode)}
 	x := 70.0
 	siteY := headerHeight + 55
+	rowHeight := 0.0
+	maxRight := 0.0
 	for _, plan := range plans {
+		if x > 70 && x+plan.Width+70 > siteCanvasMax {
+			x = 70
+			siteY += rowHeight + siteGap
+			rowHeight = 0
+		}
 		siteBox := box{X: x, Y: siteY, W: plan.Width, H: plan.Height}
 		result.Groups = append(result.Groups, placedGroup{ID: plan.ID, Label: plan.Label, Kind: plan.Kind, Box: siteBox})
 		for row, role := range plan.Roles {
@@ -155,9 +163,11 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 			}
 		}
 		x += plan.Width + siteGap
+		rowHeight = math.Max(rowHeight, plan.Height)
+		maxRight = math.Max(maxRight, siteBox.X+siteBox.W)
 		result.Height = math.Max(result.Height, siteBox.Y+siteBox.H+80)
 	}
-	result.Width = math.Max(canvasWidth, x-siteGap+70)
+	result.Width = math.Max(canvasWidth, maxRight+70)
 
 	for _, rootID := range children[""] {
 		appendNestedGroupBoxes(&result, rootID, 1, groupsByID, children)
