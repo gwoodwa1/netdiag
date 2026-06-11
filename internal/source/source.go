@@ -1,6 +1,7 @@
 package source
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,6 +39,29 @@ func Load(path string) (*Document, error) {
 	}
 	resolver := &Resolver{Root: filepath.Dir(absolute)}
 	return resolver.Load(absolute)
+}
+
+// Format preserves the authored document structure without resolving includes
+// or expanding templates.
+func Format(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var document yaml.Node
+	if err := yaml.Unmarshal(data, &document); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	var output bytes.Buffer
+	encoder := yaml.NewEncoder(&output)
+	encoder.SetIndent(2)
+	if err := encoder.Encode(&document); err != nil {
+		return nil, err
+	}
+	if err := encoder.Close(); err != nil {
+		return nil, err
+	}
+	return output.Bytes(), nil
 }
 
 func (resolver *Resolver) Load(path string) (*Document, error) {

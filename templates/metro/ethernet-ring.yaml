@@ -1,0 +1,50 @@
+id: metro.ethernet-ring
+version: 1
+description: Four-node resilient Metro Ethernet ring
+
+params:
+  ring_label:
+    type: string
+    required: true
+  n1_label:
+    type: string
+    default: "{{ ring_label }} N1"
+  n2_label:
+    type: string
+    default: "{{ ring_label }} N2"
+  n3_label:
+    type: string
+    default: "{{ ring_label }} N3"
+  n4_label:
+    type: string
+    default: "{{ ring_label }} N4"
+
+groups:
+  "{{ instance }}":
+    label: "{{ ring_label }}"
+    kind: metro
+    nodes:
+      "{{ instance }}-n1": {}
+      "{{ instance }}-n2": {}
+      "{{ instance }}-n3": {}
+      "{{ instance }}-n4": {}
+
+nodes:
+  "{{ instance }}-n1": {label: "{{ n1_label }}", role: metro-switch, order: 10}
+  "{{ instance }}-n2": {label: "{{ n2_label }}", role: metro-switch, order: 20}
+  "{{ instance }}-n3": {label: "{{ n3_label }}", role: metro-switch, order: 30}
+  "{{ instance }}-n4": {label: "{{ n4_label }}", role: metro-switch, order: 40}
+
+links:
+  - from: "{{ instance }}-n1:Ethernet1/1"
+    to: "{{ instance }}-n2:Ethernet1/1"
+    label: 100G ERPS
+  - from: "{{ instance }}-n2:Ethernet1/2"
+    to: "{{ instance }}-n3:Ethernet1/1"
+    label: 100G ERPS
+  - from: "{{ instance }}-n3:Ethernet1/2"
+    to: "{{ instance }}-n4:Ethernet1/1"
+    label: 100G ERPS
+  - from: "{{ instance }}-n4:Ethernet1/2"
+    to: "{{ instance }}-n1:Ethernet1/2"
+    label: 100G ERPS

@@ -11,6 +11,7 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/planner"
+	"github.com/gwoodwa1/netdiag/internal/source"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 	"github.com/gwoodwa1/netdiag/internal/svg"
 	"github.com/gwoodwa1/netdiag/internal/templates"
@@ -33,6 +34,8 @@ func main() {
 		schema(os.Args[2:])
 	case "fmt":
 		format(os.Args[2:])
+	case "templates":
+		listTemplates(os.Args[2:])
 	case "capabilities":
 		capabilities(os.Args[2:])
 	case "plan":
@@ -317,9 +320,7 @@ func format(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: netdiag fmt [-w] <diagram.yaml>")
 		os.Exit(2)
 	}
-	doc, err := loadDocument(flags.Arg(0))
-	exitOnError(err)
-	result, err := spec.Format(doc)
+	result, err := source.Format(flags.Arg(0))
 	exitOnError(err)
 	if *write {
 		exitOnError(os.WriteFile(flags.Arg(0), result, 0o644))
@@ -330,15 +331,52 @@ func format(args []string) {
 }
 
 func loadDocument(path string) (*spec.Document, error) {
-	root := os.Getenv("NETDIAG_TEMPLATES")
-	if root == "" {
-		root = "templates"
+	registry, err := templateRegistry()
+	if err != nil {
+		return nil, err
 	}
-	result, err := templates.Load(path, &templates.FileTemplateLoader{Root: root})
+	result, err := templates.Load(path, registry)
 	if err != nil {
 		return nil, err
 	}
 	return result.Document, nil
+}
+
+func listTemplates(args []string) {
+	flags := flag.NewFlagSet("templates", flag.ExitOnError)
+	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
+	flags.Parse(args)
+	if flags.NArg() != 0 {
+		fmt.Fprintln(os.Stderr, "usage: netdiag templates [--json]")
+		os.Exit(2)
+	}
+	registry, err := templateRegistry()
+	exitOnError(err)
+	items := registry.List()
+	if *jsonOutput {
+		writeJSON(items)
+		return
+	}
+	for _, item := range items {
+		fmt.Printf("%s v%d - %s\n", item.ID, item.Version, item.Description)
+		fmt.Printf("  required: %s\n", formatParamList(item.RequiredParams))
+		fmt.Printf("  optional: %s\n", formatParamList(item.OptionalParams))
+	}
+}
+
+func templateRegistry() (*templates.TemplateRegistry, error) {
+	root := os.Getenv("NETDIAG_TEMPLATES")
+	if root == "" {
+		root = "templates"
+	}
+	return templates.NewTemplateRegistry(root)
+}
+
+func formatParamList(params []string) string {
+	if len(params) == 0 {
+		return "-"
+	}
+	return strings.Join(params, ", ")
 }
 
 func writeJSON(value interface{}) {
@@ -375,6 +413,7 @@ Usage:
   netdiag validate [--json] <diagram.yaml>
   netdiag expand <diagram.yaml> [-o expanded.yaml]
   netdiag fmt [-w] <diagram.yaml>
+  netdiag templates [--json]
   netdiag schema
 `)
 }

@@ -29,6 +29,7 @@ netdiag schema > netdiag.schema.json
 netdiag validate --json examples/spine-leaf.yaml
 netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
 netdiag validate examples/includes/mpls-wan.yaml
+netdiag templates
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml

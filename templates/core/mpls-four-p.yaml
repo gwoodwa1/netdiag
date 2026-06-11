@@ -1,0 +1,50 @@
+id: core.mpls-four-p
+version: 1
+description: Four-node resilient MPLS P-router core
+
+params:
+  core_label:
+    type: string
+    default: MPLS Core
+  p1_label:
+    type: string
+    default: P1
+  p2_label:
+    type: string
+    default: P2
+  p3_label:
+    type: string
+    default: P3
+  p4_label:
+    type: string
+    default: P4
+
+groups:
+  "{{ instance }}":
+    label: "{{ core_label }}"
+    kind: core
+    nodes:
+      "{{ instance }}-p1": {}
+      "{{ instance }}-p2": {}
+      "{{ instance }}-p3": {}
+      "{{ instance }}-p4": {}
+
+nodes:
+  "{{ instance }}-p1": {label: "{{ p1_label }}", role: core-router, order: 10}
+  "{{ instance }}-p2": {label: "{{ p2_label }}", role: core-router, order: 20}
+  "{{ instance }}-p3": {label: "{{ p3_label }}", role: core-router, order: 30}
+  "{{ instance }}-p4": {label: "{{ p4_label }}", role: core-router, order: 40}
+
+links:
+  - from: "{{ instance }}-p1:Ethernet0/1"
+    to: "{{ instance }}-p2:Ethernet0/1"
+    label: 400G Core
+  - from: "{{ instance }}-p2:Ethernet0/2"
+    to: "{{ instance }}-p3:Ethernet0/1"
+    label: 400G Core
+  - from: "{{ instance }}-p3:Ethernet0/2"
+    to: "{{ instance }}-p4:Ethernet0/1"
+    label: 400G Core
+  - from: "{{ instance }}-p4:Ethernet0/2"
+    to: "{{ instance }}-p1:Ethernet0/2"
+    label: 400G Core

@@ -1,0 +1,44 @@
+version: 1
+
+diagram:
+  title: Regional Metro Ethernet into MPLS Core
+  layout: sites
+  link_style: orthogonal
+
+use:
+  - template: metro.ethernet-ring
+    as: regional-metro
+    params:
+      ring_label: Regional Metro Ring
+  - template: core.mpls-four-p
+    as: regional-core
+    params:
+      core_label: Regional MPLS Core
+  - template: core.route-reflector-pair
+    as: regional-control
+    params:
+      rr_label: Regional Route Reflectors
+
+connect:
+  - from:
+      node: regional-metro-n1
+      port: Ethernet1/3
+      label: Metro NNI
+      address: 10.40.0.1/30
+    to:
+      node: regional-core-p1
+      port: Ethernet0/0
+      label: Core NNI
+      address: 10.40.0.2/30
+    label: 100G Metro-Core
+  - from: regional-metro-n3:Ethernet1/3
+    to: regional-core-p3:Ethernet0/0
+    label: 100G Metro-Core
+  - from: regional-control-rr1:Ethernet0/0
+    to: regional-core-p1:Ethernet0/3
+    label: RR Session
+    style: control-plane
+  - from: regional-control-rr2:Ethernet0/0
+    to: regional-core-p3:Ethernet0/3
+    label: RR Session
+    style: control-plane

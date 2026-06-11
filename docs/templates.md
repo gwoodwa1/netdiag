@@ -42,6 +42,22 @@ nodes:
 Phase 1 supports string interpolation for `{{ instance }}` and declared
 parameters. Defaults may refer to other parameters.
 
+List the available registry, including required and optional parameters:
+
+```sh
+netdiag templates
+netdiag templates --json
+```
+
+The built-in catalog includes:
+
+- `site.dual-pe`
+- `core.mpls-two-p`
+- `core.mpls-four-p`
+- `core.route-reflector-pair`
+- `edge.internet-dual-isp`
+- `metro.ethernet-ring`
+
 ## Using blocks
 
 Add `use` entries to a diagram. `as` supplies the instance name used for
@@ -93,6 +109,12 @@ netdiag render expanded.yaml -o expanded.svg
 ```
 
 Set `NETDIAG_TEMPLATES` to use a template directory other than `templates/`.
+The template registry discovers and parses that directory once per command.
+Duplicate template IDs are rejected with both conflicting file paths.
+
+`netdiag fmt` formats the authored source document and preserves `include`,
+`use`, and `connect`. Use `netdiag expand` only when canonical expanded YAML is
+desired.
 
 ## Phase 1 limitations
 

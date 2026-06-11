@@ -1,0 +1,32 @@
+id: core.route-reflector-pair
+version: 1
+description: Redundant BGP route-reflector pair
+
+params:
+  rr_label:
+    type: string
+    default: Route Reflectors
+  rr1_label:
+    type: string
+    default: RR1
+  rr2_label:
+    type: string
+    default: RR2
+
+groups:
+  "{{ instance }}":
+    label: "{{ rr_label }}"
+    kind: core
+    nodes:
+      "{{ instance }}-rr1": {}
+      "{{ instance }}-rr2": {}
+
+nodes:
+  "{{ instance }}-rr1": {label: "{{ rr1_label }}", role: route-reflector, order: 10}
+  "{{ instance }}-rr2": {label: "{{ rr2_label }}", role: route-reflector, order: 20}
+
+links:
+  - from: "{{ instance }}-rr1:Loopback0"
+    to: "{{ instance }}-rr2:Loopback0"
+    label: iBGP / IGP
+    style: control-plane

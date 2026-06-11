@@ -36,8 +36,18 @@ type TemplateLoader interface {
 	Load(id string) (*Template, error)
 }
 
-type FileTemplateLoader struct {
-	Root string
+type TemplateInfo struct {
+	ID             string   `json:"id"`
+	Version        int      `json:"version"`
+	Description    string   `json:"description"`
+	RequiredParams []string `json:"required_params"`
+	OptionalParams []string `json:"optional_params"`
+}
+
+type TemplateRegistry struct {
+	root      string
+	templates map[string]*Template
+	infos     []TemplateInfo
 }
 
 type TemplateExpander struct {
@@ -65,9 +75,9 @@ func Load(path string, loader TemplateLoader) (*ExpansionResult, error) {
 	return result, nil
 }
 
-func (loader *FileTemplateLoader) Load(id string) (*Template, error) {
+func NewTemplateRegistry(root string) (*TemplateRegistry, error) {
 	var matches []string
-	err := filepath.WalkDir(loader.Root, func(path string, entry os.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -77,19 +87,70 @@ func (loader *FileTemplateLoader) Load(id string) (*Template, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("load templates from %s: %w", loader.Root, err)
+		return nil, fmt.Errorf("load templates from %s: %w", root, err)
 	}
 	sort.Strings(matches)
+	registry := &TemplateRegistry{
+		root:      root,
+		templates: make(map[string]*Template),
+	}
+	paths := make(map[string]string)
 	for _, path := range matches {
 		template, err := loadTemplateFile(path)
 		if err != nil {
 			return nil, err
 		}
-		if template.ID == id {
-			return template, nil
+		if existingPath, exists := paths[template.ID]; exists {
+			return nil, fmt.Errorf("duplicate template ID %q in %s and %s", template.ID, existingPath, path)
+		}
+		paths[template.ID] = path
+		registry.templates[template.ID] = template
+		registry.infos = append(registry.infos, templateInfo(template))
+	}
+	sort.Slice(registry.infos, func(i, j int) bool {
+		return registry.infos[i].ID < registry.infos[j].ID
+	})
+	return registry, nil
+}
+
+func (registry *TemplateRegistry) Load(id string) (*Template, error) {
+	template, ok := registry.templates[id]
+	if !ok {
+		return nil, fmt.Errorf("template %q not found in %s", id, registry.root)
+	}
+	return template, nil
+}
+
+func (registry *TemplateRegistry) List() []TemplateInfo {
+	items := make([]TemplateInfo, len(registry.infos))
+	for i, info := range registry.infos {
+		items[i] = info
+		items[i].RequiredParams = make([]string, len(info.RequiredParams))
+		copy(items[i].RequiredParams, info.RequiredParams)
+		items[i].OptionalParams = make([]string, len(info.OptionalParams))
+		copy(items[i].OptionalParams, info.OptionalParams)
+	}
+	return items
+}
+
+func templateInfo(template *Template) TemplateInfo {
+	info := TemplateInfo{
+		ID:             template.ID,
+		Version:        template.Version,
+		Description:    template.Description,
+		RequiredParams: make([]string, 0),
+		OptionalParams: make([]string, 0),
+	}
+	for name, param := range template.Params {
+		if param.Required {
+			info.RequiredParams = append(info.RequiredParams, name)
+		} else {
+			info.OptionalParams = append(info.OptionalParams, name)
 		}
 	}
-	return nil, fmt.Errorf("template %q not found in %s", id, loader.Root)
+	sort.Strings(info.RequiredParams)
+	sort.Strings(info.OptionalParams)
+	return info
 }
 
 func loadTemplateFile(path string) (*Template, error) {

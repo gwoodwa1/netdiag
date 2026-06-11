@@ -1,0 +1,57 @@
+version: 1
+
+diagram:
+  title: National Telco - MPLS Core, Route Reflectors and Metro Ring
+  layout: sites
+  link_style: orthogonal
+
+use:
+  - template: site.dual-pe
+    as: london
+    params:
+      site_label: London POP
+  - template: core.mpls-four-p
+    as: national-core
+    params:
+      core_label: National MPLS Core
+      p1_label: London P1
+      p2_label: Birmingham P2
+      p3_label: Manchester P3
+      p4_label: Leeds P4
+  - template: core.route-reflector-pair
+    as: control
+    params:
+      rr_label: National BGP Control Plane
+  - template: metro.ethernet-ring
+    as: london-metro
+    params:
+      ring_label: London Metro
+
+connect:
+  - from:
+      node: london-pe1
+      port: Ethernet0/0
+      address: 10.30.0.1/30
+    to:
+      node: national-core-p1
+      port: Ethernet0/0
+      address: 10.30.0.2/30
+    label: 100G PE-P
+    labels: {source: Eth0/0, middle: 100G PE-P, target: Eth0/0}
+  - from: london-pe2:Ethernet0/0
+    to: national-core-p4:Ethernet0/0
+    label: 100G PE-P
+  - from: control-rr1:Ethernet0/0
+    to: national-core-p1:Ethernet0/3
+    label: RR Session
+    style: control-plane
+  - from: control-rr2:Ethernet0/0
+    to: national-core-p3:Ethernet0/3
+    label: RR Session
+    style: control-plane
+  - from: london-metro-n1:Ethernet1/3
+    to: london-pe1:Ethernet0/1
+    label: 100G Metro Handoff
+  - from: london-metro-n3:Ethernet1/3
+    to: london-pe2:Ethernet0/1
+    label: 100G Metro Handoff

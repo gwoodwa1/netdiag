@@ -120,6 +120,36 @@ func TestLoadRejectsSymlinkOutsideProjectRoot(t *testing.T) {
 	}
 }
 
+func TestFormatPreservesAuthoredTemplateStructure(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "diagram.yaml", `
+version: 1
+include: [parts/core.yaml]
+use:
+  - template: site.dual-pe
+    as: london
+    params: {site_label: London}
+connect:
+  - from: london-pe1:Ethernet0/0
+    to: core-p1:Ethernet0/0
+    label: 100G
+`)
+
+	formatted, err := Format(filepath.Join(root, "diagram.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(formatted)
+	for _, authoredKey := range []string{"include:", "use:", "connect:", "template: site.dual-pe", "from: london-pe1:Ethernet0/0"} {
+		if !strings.Contains(text, authoredKey) {
+			t.Fatalf("formatted source lost %q:\n%s", authoredKey, text)
+		}
+	}
+	if strings.Contains(text, "nodes:") || strings.Contains(text, "groups:") {
+		t.Fatalf("formatted source was expanded:\n%s", text)
+	}
+}
+
 func writeFile(t *testing.T, root, name, contents string) {
 	t.Helper()
 	path := filepath.Join(root, name)
