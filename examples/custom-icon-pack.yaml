@@ -8,6 +8,7 @@ nodes:
     label: Internet Edge
     role: edge-router
     icon: router
+    icon_label: PE
   firewall:
     label: Perimeter Firewall
     role: firewall

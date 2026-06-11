@@ -25,10 +25,12 @@ nodes:
   "{{ instance }}-p1":
     label: "{{ p1_label }}"
     role: core-router
+    icon_label: P
     order: 10
   "{{ instance }}-p2":
     label: "{{ p2_label }}"
     role: core-router
+    icon_label: P
     order: 20
 
 links:

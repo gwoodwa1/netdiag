@@ -25,10 +25,12 @@ nodes:
   "{{ instance }}-pe1":
     label: "{{ pe1_label }}"
     role: edge-router
+    icon_label: PE
     order: 10
   "{{ instance }}-pe2":
     label: "{{ pe2_label }}"
     role: edge-router
+    icon_label: PE
     order: 20
 
 links:

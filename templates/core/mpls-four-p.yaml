@@ -30,10 +30,10 @@ groups:
       "{{ instance }}-p4": {}
 
 nodes:
-  "{{ instance }}-p1": {label: "{{ p1_label }}", role: core-router, order: 10}
-  "{{ instance }}-p2": {label: "{{ p2_label }}", role: core-router, order: 20}
-  "{{ instance }}-p3": {label: "{{ p3_label }}", role: core-router, order: 30}
-  "{{ instance }}-p4": {label: "{{ p4_label }}", role: core-router, order: 40}
+  "{{ instance }}-p1": {label: "{{ p1_label }}", role: core-router, icon_label: P, order: 10}
+  "{{ instance }}-p2": {label: "{{ p2_label }}", role: core-router, icon_label: P, order: 20}
+  "{{ instance }}-p3": {label: "{{ p3_label }}", role: core-router, icon_label: P, order: 30}
+  "{{ instance }}-p4": {label: "{{ p4_label }}", role: core-router, icon_label: P, order: 40}
 
 links:
   - from: "{{ instance }}-p1:Ethernet0/1"

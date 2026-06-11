@@ -15,13 +15,14 @@ type Diagram struct {
 }
 
 type Node struct {
-	ID       string
-	Label    string
-	Role     string
-	Icon     string
-	Color    string
-	Order    int
-	Metadata map[string]interface{}
+	ID        string
+	Label     string
+	Role      string
+	Icon      string
+	IconLabel string
+	Color     string
+	Order     int
+	Metadata  map[string]interface{}
 }
 
 type Group struct {
@@ -145,13 +146,14 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 			label = id
 		}
 		nodes = append(nodes, Node{
-			ID:       id,
-			Label:    label,
-			Role:     nodeSpec.Role,
-			Icon:     nodeSpec.Icon,
-			Color:    nodeSpec.Color,
-			Order:    nodeSpec.Order,
-			Metadata: nodeSpec.Metadata,
+			ID:        id,
+			Label:     label,
+			Role:      nodeSpec.Role,
+			Icon:      nodeSpec.Icon,
+			IconLabel: nodeSpec.IconLabel,
+			Color:     nodeSpec.Color,
+			Order:     nodeSpec.Order,
+			Metadata:  nodeSpec.Metadata,
 		})
 	}
 	// Sort nodes by ID for determinism

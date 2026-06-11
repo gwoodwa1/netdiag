@@ -732,7 +732,7 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons
 		if icon == "" {
 			icon = item.Node.Role
 		}
-		renderDeviceIcon(out, b.X+40, b.Y+b.H/2, color, icon, id, iconPack)
+		renderDeviceIcon(out, b.X+40, b.Y+b.H/2, color, icon, item.Node.IconLabel, id, iconPack)
 		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#0f172a" font-family="Inter,Segoe UI,sans-serif" font-size="15" font-weight="700">%s</text>`, b.X+78, b.Y+34, escape(item.Node.Label))
 		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#64748b" font-family="ui-monospace,SFMono-Regular,monospace" font-size="11">%s</text>`, b.X+78, b.Y+55, escape(strings.ToUpper(item.Node.Role)))
 		out.WriteString(`</g>`)
@@ -740,7 +740,7 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons
 	out.WriteString(`</g>`)
 }
 
-func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role, instanceID string, iconPack *icons.Pack) {
+func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role, label, instanceID string, iconPack *icons.Pack) {
 	canonical := role
 	if icon, ok := icons.Resolve(role); ok {
 		canonical = icon.ID
@@ -750,7 +750,9 @@ func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role, instanceID s
 		fmt.Fprintf(out, `<g class="device-icon device-icon-%s custom-device-icon" transform="translate(%.1f %.1f)">`, escapeID(role), x, y)
 		fmt.Fprintf(out, `<svg x="-29" y="-24" width="58" height="48" viewBox="%s" preserveAspectRatio="xMidYMid meet">`, escape(custom.ViewBox))
 		out.WriteString(strings.ReplaceAll(custom.Content, custom.Prefix, "netdiag-icon-"+escapeID(instanceID)+"-"))
-		out.WriteString(`</svg></g>`)
+		out.WriteString(`</svg>`)
+		renderIconLabel(out, label)
+		out.WriteString(`</g>`)
 		return
 	}
 	iconColor := color
@@ -779,7 +781,18 @@ func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role, instanceID s
 	default:
 		renderGenericSwitchIcon(out, color)
 	}
+	renderIconLabel(out, label)
 	out.WriteString(`</g>`)
+}
+
+func renderIconLabel(out *bytes.Buffer, label string) {
+	label = strings.ToUpper(strings.TrimSpace(label))
+	if label == "" {
+		return
+	}
+	width := math.Max(15, float64(len([]rune(label)))*6+8)
+	fmt.Fprintf(out, `<g class="device-icon-label"><rect x="%.1f" y="9" width="%.1f" height="13" rx="5" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>`, -width/2, width)
+	fmt.Fprintf(out, `<text x="0" y="18.5" text-anchor="middle" fill="#0f172a" stroke="none" font-family="ui-monospace,SFMono-Regular,monospace" font-size="8.5" font-weight="800">%s</text></g>`, escape(label))
 }
 
 func resolveCustomIcon(pack *icons.Pack, requested, canonical string) (icons.SVG, bool) {

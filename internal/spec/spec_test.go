@@ -189,6 +189,16 @@ func TestValidateRejectsInvalidEndpointAddress(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsLongIconLabel(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"router": {Role: "router", IconLabel: "TOO-LONG"}},
+	}
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected icon label length validation error")
+	}
+}
+
 func TestFormatIsDeterministic(t *testing.T) {
 	doc := &Document{
 		Version: 1,

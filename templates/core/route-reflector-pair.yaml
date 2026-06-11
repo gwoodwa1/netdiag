@@ -22,8 +22,8 @@ groups:
       "{{ instance }}-rr2": {}
 
 nodes:
-  "{{ instance }}-rr1": {label: "{{ rr1_label }}", role: route-reflector, order: 10}
-  "{{ instance }}-rr2": {label: "{{ rr2_label }}", role: route-reflector, order: 20}
+  "{{ instance }}-rr1": {label: "{{ rr1_label }}", role: route-reflector, icon_label: RR, order: 10}
+  "{{ instance }}-rr2": {label: "{{ rr2_label }}", role: route-reflector, icon_label: RR, order: 20}
 
 links:
   - from: "{{ instance }}-rr1:Loopback0"

@@ -28,6 +28,7 @@ groups:
 nodes:
   leaf-01:
     role: leaf
+    icon_label: PE
     metadata:
       mgmt_ip: 10.0.0.1
   leaf-02:
@@ -74,6 +75,9 @@ links:
 	}
 	if diag.Nodes[0].Metadata["mgmt_ip"] != "10.0.0.1" {
 		t.Errorf("expected mgmt_ip 10.0.0.1, got %v", diag.Nodes[0].Metadata["mgmt_ip"])
+	}
+	if diag.Nodes[0].IconLabel != "PE" {
+		t.Errorf("expected icon label PE, got %q", diag.Nodes[0].IconLabel)
 	}
 
 	// Verify groups

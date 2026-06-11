@@ -39,12 +39,13 @@ type Group struct {
 }
 
 type Node struct {
-	Label    string                 `yaml:"label,omitempty"`
-	Role     string                 `yaml:"role"`
-	Icon     string                 `yaml:"icon,omitempty"`
-	Color    string                 `yaml:"color,omitempty"`
-	Order    int                    `yaml:"order,omitempty"`
-	Metadata map[string]interface{} `yaml:"metadata,omitempty"`
+	Label     string                 `yaml:"label,omitempty"`
+	Role      string                 `yaml:"role"`
+	Icon      string                 `yaml:"icon,omitempty"`
+	IconLabel string                 `yaml:"icon_label,omitempty"`
+	Color     string                 `yaml:"color,omitempty"`
+	Order     int                    `yaml:"order,omitempty"`
+	Metadata  map[string]interface{} `yaml:"metadata,omitempty"`
 }
 
 type LinkEndpoint struct {
@@ -219,6 +220,9 @@ func Validate(doc *Document) error {
 		}
 		if node.Role == "" {
 			problems = append(problems, fmt.Sprintf("node %q must have a role", id))
+		}
+		if len([]rune(strings.TrimSpace(node.IconLabel))) > 6 {
+			problems = append(problems, fmt.Sprintf("node %q icon_label must be at most 6 characters", id))
 		}
 	}
 

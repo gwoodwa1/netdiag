@@ -15,7 +15,7 @@ func TestRenderUsesCustomIconAndFallsBackToBuiltIn(t *testing.T) {
 	doc := &spec.Document{
 		Version: 1,
 		Nodes: map[string]spec.Node{
-			"custom":   {Role: "edge-router"},
+			"custom":   {Role: "edge-router", IconLabel: "PE"},
 			"custom-2": {Role: "edge-router"},
 			"fallback": {Role: "firewall"},
 		},
@@ -43,6 +43,9 @@ func TestRenderUsesCustomIconAndFallsBackToBuiltIn(t *testing.T) {
 	}
 	if !strings.Contains(got, "netdiag-icon-custom-custom-router-marker") || !strings.Contains(got, "netdiag-icon-custom-2-custom-router-marker") {
 		t.Fatal("repeated custom icons must have instance-specific internal IDs")
+	}
+	if !strings.Contains(got, `class="device-icon-label"`) || !strings.Contains(got, ">PE</text>") {
+		t.Fatal("render missing custom icon label")
 	}
 	if !strings.Contains(got, `device-icon-firewall`) || !strings.Contains(got, `stroke="#dc2626"`) {
 		t.Fatal("invalid custom firewall icon did not fall back to built-in")

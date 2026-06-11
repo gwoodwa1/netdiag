@@ -17,7 +17,12 @@ nodes:
     label: Internet Edge
     role: edge-router
     icon: router
+    icon_label: PE
 ```
+
+`icon_label` adds an optional badge of up to six characters over the icon.
+This is useful when several devices share the router artwork but have distinct
+network functions such as `P`, `PE`, or `RR`.
 
 When `icon` is omitted, the node role is resolved through the same registry.
 Aliases such as `route-reflector`, `core-router`, `metro-switch`, and
