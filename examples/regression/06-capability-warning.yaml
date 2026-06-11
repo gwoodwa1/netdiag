@@ -1,0 +1,11 @@
+version: 1
+diagram:
+  title: D2 Best Effort Warning
+  renderer: d2
+nodes:
+  a: {role: router}
+  b: {role: router}
+links:
+  - from: {node: a, port: Ethernet0/0, side: right, address: 192.0.2.1/30}
+    to: {node: b, port: Ethernet0/0, side: left, address: 192.0.2.2/30}
+    label: Explicit sides on D2

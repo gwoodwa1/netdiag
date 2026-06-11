@@ -1,0 +1,25 @@
+version: 1
+diagram:
+  title: iBGP Route Reflector Design
+  subtitle: Redundant route reflectors serving regional clients and external peers
+  badge: BGP ROUTE REFLECTION
+nodes:
+  rr-01: {label: Route Reflector 01, role: route-reflector, icon: router}
+  rr-02: {label: Route Reflector 02, role: route-reflector, icon: router}
+  client-west-01: {label: West PE 01, role: rr-client, icon: router}
+  client-west-02: {label: West PE 02, role: rr-client, icon: router}
+  client-east-01: {label: East PE 01, role: rr-client, icon: router}
+  client-east-02: {label: East PE 02, role: rr-client, icon: router}
+  transit-a: {label: Transit AS64501, role: external-peer, icon: wan-cloud}
+  transit-b: {label: Transit AS64502, role: external-peer, icon: wan-cloud}
+links:
+  - {from: rr-01:Loopback0, to: rr-02:Loopback0, label: "iBGP · Cluster 10.255.0.1", style: ibgp}
+  - {from: rr-01:Loopback0, to: client-west-01:Loopback0, label: "RR Client · VPNv4", style: ibgp}
+  - {from: rr-01:Loopback0, to: client-west-02:Loopback0, label: "RR Client · VPNv4", style: ibgp}
+  - {from: rr-01:Loopback0, to: client-east-01:Loopback0, label: "RR Client · VPNv4", style: ibgp}
+  - {from: rr-02:Loopback0, to: client-west-01:Loopback0, label: "RR Client · EVPN", style: ibgp}
+  - {from: rr-02:Loopback0, to: client-west-02:Loopback0, label: "RR Client · EVPN", style: ibgp}
+  - {from: rr-02:Loopback0, to: client-east-01:Loopback0, label: "RR Client · EVPN", style: ibgp}
+  - {from: rr-02:Loopback0, to: client-east-02:Loopback0, label: "RR Client · EVPN", style: ibgp}
+  - {from: client-west-01:TenGigabitEthernet0/0, to: transit-a:Peer1, label: "eBGP · AS64501", style: ebgp}
+  - {from: client-east-02:TenGigabitEthernet0/0, to: transit-b:Peer1, label: "eBGP · AS64502", style: ebgp}

@@ -1,0 +1,79 @@
+version: 1
+diagram:
+  title: Site-Aware Enterprise WAN
+  subtitle: Native site containment with obstacle-aware orthogonal routing
+  badge: SITE-AWARE NATIVE
+  layout: sites
+  link_style: orthogonal
+  renderer: native
+groups:
+  london:
+    label: London Headquarters
+    kind: site
+    groups:
+      london-lan:
+        label: Campus LAN
+        kind: lan
+        nodes:
+          london-core: {}
+          london-access: {}
+          london-users: {}
+    nodes:
+      london-pe: {}
+      london-fw: {}
+  mpls-core:
+    label: MPLS Core
+    kind: core
+    nodes:
+      p-01: {}
+      p-02: {}
+  manchester:
+    label: Manchester Branch
+    kind: site
+    groups:
+      manchester-lan:
+        label: Branch LAN
+        kind: lan
+        nodes:
+          manchester-access: {}
+          manchester-users: {}
+    nodes:
+      manchester-pe: {}
+      manchester-fw: {}
+nodes:
+  london-pe: {label: London PE, role: edge-router, icon: router}
+  london-fw: {label: London Firewall, role: firewall, icon: firewall}
+  london-core: {label: London Core, role: core-switch, icon: core-switch}
+  london-access: {label: London Access, role: access-switch, icon: access-switch}
+  london-users: {label: London Users, role: endpoint, icon: users}
+  p-01: {label: MPLS P01, role: router, icon: router}
+  p-02: {label: MPLS P02, role: router, icon: router}
+  manchester-pe: {label: Manchester PE, role: edge-router, icon: router}
+  manchester-fw: {label: Manchester Firewall, role: firewall, icon: firewall}
+  manchester-access: {label: Manchester Access, role: access-switch, icon: access-switch}
+  manchester-users: {label: Manchester Users, role: endpoint, icon: users}
+links:
+  - from: {node: london-pe, port: HundredGigE0/0, address: 10.0.0.1/30}
+    to: {node: p-01, port: HundredGigE0/0, address: 10.0.0.2/30}
+    labels: {middle: LON-P01 · 100G}
+    style: wan
+  - from: {node: london-pe, port: HundredGigE0/1, address: 10.0.0.5/30}
+    to: {node: p-02, port: HundredGigE0/0, address: 10.0.0.6/30}
+    labels: {middle: LON-P02 · 100G}
+    style: wan
+  - from: {node: p-01, port: HundredGigE0/1, address: 10.0.0.9/30}
+    to: {node: manchester-pe, port: HundredGigE0/0, address: 10.0.0.10/30}
+    labels: {middle: P01-MAN · 100G}
+    style: wan
+  - from: {node: p-02, port: HundredGigE0/1, address: 10.0.0.13/30}
+    to: {node: manchester-pe, port: HundredGigE0/1, address: 10.0.0.14/30}
+    labels: {middle: P02-MAN · 100G}
+    style: wan
+  - {from: p-01:HundredGigE0/2, to: p-02:HundredGigE0/2, label: CORE · 100G, style: wan}
+  - {from: london-pe:TenGigabitEthernet0/0, to: london-fw:TenGigabitEthernet0/0, label: INSIDE, style: security}
+  - {from: london-fw:TenGigabitEthernet0/1, to: london-core:TenGigabitEthernet0/1, label: TRUST, style: security}
+  - {from: london-core:Ethernet1/1, to: london-access:Ethernet1/49, label: 40G}
+  - {from: london-access:Ethernet1/1, to: london-users:Ethernet0/0, label: VLAN 10}
+  - {from: manchester-pe:TenGigabitEthernet0/0, to: manchester-fw:TenGigabitEthernet0/0, label: INSIDE, style: security}
+  - {from: manchester-fw:TenGigabitEthernet0/1, to: manchester-access:TenGigabitEthernet0/1, label: TRUST, style: security}
+  - {from: manchester-access:Ethernet1/1, to: manchester-users:Ethernet0/0, label: VLAN 20}

@@ -1,0 +1,23 @@
+version: 1
+diagram:
+  title: Structured Link Labels and Addresses
+  renderer: native
+nodes:
+  london-pe: {label: London PE, role: router, icon: router}
+  manchester-pe: {label: Manchester PE, role: router, icon: router}
+links:
+  - from:
+      node: london-pe
+      port: TenGigabitEthernet0/0
+      side: right
+      address: 10.10.10.1/30
+    to:
+      node: manchester-pe
+      port: TenGigabitEthernet0/0
+      side: left
+      address: 10.10.10.2/30
+    labels:
+      source: Te0/0
+      middle: DWDM CKT-1001
+      target: Te0/0
+    style: dwdm

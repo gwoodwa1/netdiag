@@ -1,0 +1,29 @@
+{
+  "renderer": "native",
+  "recommended_renderer": "native",
+  "layout": "rows",
+  "output": "examples/regression/05-native-network-cards.svg",
+  "features": [
+    {
+      "feature": "custom_icons",
+      "level": "strict",
+      "reason": "at least one node selects a network icon"
+    },
+    {
+      "feature": "network_cards",
+      "level": "strict",
+      "reason": "network-specific device presentation is requested"
+    },
+    {
+      "feature": "source_labels",
+      "level": "strict",
+      "reason": "source interface labels are required"
+    },
+    {
+      "feature": "target_labels",
+      "level": "strict",
+      "reason": "target interface labels are required"
+    }
+  ],
+  "warnings": []
+}

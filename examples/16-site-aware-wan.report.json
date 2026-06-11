@@ -1,0 +1,64 @@
+{
+  "renderer": "native",
+  "recommended_renderer": "native",
+  "layout": "sites",
+  "output": "examples/16-site-aware-wan.svg",
+  "features": [
+    {
+      "feature": "custom_icons",
+      "level": "strict",
+      "reason": "at least one node selects a network icon"
+    },
+    {
+      "feature": "endpoint_addresses",
+      "level": "strict",
+      "reason": "at least one endpoint has a CIDR address"
+    },
+    {
+      "feature": "groups",
+      "level": "strict",
+      "reason": "5 group(s) are declared"
+    },
+    {
+      "feature": "middle_labels",
+      "level": "strict",
+      "reason": "at least one middle link label is required"
+    },
+    {
+      "feature": "nested_groups",
+      "level": "best_effort",
+      "reason": "at least one group has a parent group"
+    },
+    {
+      "feature": "network_cards",
+      "level": "strict",
+      "reason": "network-specific device presentation is requested"
+    },
+    {
+      "feature": "orthogonal_routing",
+      "level": "strict",
+      "reason": "site-aware layout uses native orthogonal routing"
+    },
+    {
+      "feature": "site_aware_layout",
+      "level": "strict",
+      "reason": "diagram.layout is sites"
+    },
+    {
+      "feature": "source_labels",
+      "level": "strict",
+      "reason": "source interface labels are required"
+    },
+    {
+      "feature": "target_labels",
+      "level": "strict",
+      "reason": "target interface labels are required"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "best_effort_nested_groups",
+      "message": "native renderer handles nested groups as best effort: at least one group has a parent group"
+    }
+  ]
+}

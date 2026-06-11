@@ -1,0 +1,22 @@
+version: 1
+diagram:
+  title: IS-IS Level-1 and Level-2 Topology
+  subtitle: Level-2 backbone connecting two Level-1 routing domains
+  badge: IS-IS
+nodes:
+  l1l2-west: {label: West L1/L2 Router, role: isis-level-2, icon: router, order: 10}
+  l2-core-01: {label: L2 Core 01, role: isis-level-2, icon: router, order: 20}
+  l2-core-02: {label: L2 Core 02, role: isis-level-2, icon: router, order: 30}
+  l1l2-east: {label: East L1/L2 Router, role: isis-level-2, icon: router, order: 40}
+  west-l1-r1: {label: West L1 Router 01, role: isis-level-1, icon: router, order: 10}
+  west-l1-r2: {label: West L1 Router 02, role: isis-level-1, icon: router, order: 20}
+  east-l1-r2: {label: East L1 Router 02, role: isis-level-1, icon: router, order: 30}
+  east-l1-r1: {label: East L1 Router 01, role: isis-level-1, icon: router, order: 40}
+links:
+  - {from: l2-core-01:TenGigabitEthernet0/0, to: l2-core-02:TenGigabitEthernet0/0, label: "L2 · Metric 10", style: isis}
+  - {from: l2-core-01:TenGigabitEthernet0/1, to: l1l2-west:TenGigabitEthernet0/0, label: "L2 · P2P", style: isis}
+  - {from: l2-core-02:TenGigabitEthernet0/1, to: l1l2-east:TenGigabitEthernet0/0, label: "L2 · P2P", style: isis}
+  - {from: l1l2-west:GigabitEthernet0/1, to: west-l1-r1:GigabitEthernet0/0, label: "L1 · Area 49.0001", style: isis}
+  - {from: west-l1-r1:GigabitEthernet0/1, to: west-l1-r2:GigabitEthernet0/0, label: "L1 · Metric 20", style: isis}
+  - {from: l1l2-east:GigabitEthernet0/1, to: east-l1-r1:GigabitEthernet0/0, label: "L1 · Area 49.0002", style: isis}
+  - {from: east-l1-r1:GigabitEthernet0/1, to: east-l1-r2:GigabitEthernet0/0, label: "L1 · Metric 20", style: isis}

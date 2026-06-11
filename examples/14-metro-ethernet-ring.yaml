@@ -1,0 +1,25 @@
+version: 1
+diagram:
+  title: Metro Ethernet Protected Ring
+  subtitle: Eight aggregation nodes connected as a resilient 10G transport ring
+  badge: METRO ETHERNET
+  layout: ring
+  link_style: direct
+nodes:
+  ring-01: {label: Central POP, role: router, icon: router, order: 10}
+  ring-02: {label: North Exchange, role: router, icon: router, order: 20}
+  ring-03: {label: Airport POP, role: router, icon: router, order: 30}
+  ring-04: {label: East Exchange, role: router, icon: router, order: 40}
+  ring-05: {label: Riverside POP, role: router, icon: router, order: 50}
+  ring-06: {label: South Exchange, role: router, icon: router, order: 60}
+  ring-07: {label: Industrial POP, role: router, icon: router, order: 70}
+  ring-08: {label: West Exchange, role: router, icon: router, order: 80}
+links:
+  - {from: ring-01:TenGigabitEthernet0/0, to: ring-02:TenGigabitEthernet0/1, label: "Span R01 · 10G", style: ring}
+  - {from: ring-02:TenGigabitEthernet0/0, to: ring-03:TenGigabitEthernet0/1, label: "Span R02 · 10G", style: ring}
+  - {from: ring-03:TenGigabitEthernet0/0, to: ring-04:TenGigabitEthernet0/1, label: "Span R03 · 10G", style: ring}
+  - {from: ring-04:TenGigabitEthernet0/0, to: ring-05:TenGigabitEthernet0/1, label: "Span R04 · 10G", style: ring}
+  - {from: ring-05:TenGigabitEthernet0/0, to: ring-06:TenGigabitEthernet0/1, label: "Span R05 · 10G", style: ring}
+  - {from: ring-06:TenGigabitEthernet0/0, to: ring-07:TenGigabitEthernet0/1, label: "Span R06 · 10G", style: ring}
+  - {from: ring-07:TenGigabitEthernet0/0, to: ring-08:TenGigabitEthernet0/1, label: "Span R07 · 10G", style: ring}
+  - {from: ring-08:TenGigabitEthernet0/0, to: ring-01:TenGigabitEthernet0/1, label: "Span R08 · 10G", style: ring}

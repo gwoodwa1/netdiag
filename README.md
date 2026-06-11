@@ -1,0 +1,162 @@
+# Network Diagram Builder
+
+This repository contains an early modern, YAML-driven network diagram builder
+inspired by [cidrblock/drawthe.net](https://github.com/cidrblock/drawthe.net).
+
+The first working slice renders deterministic spine-leaf SVG diagrams with
+source interface labels, central link labels, and target interface labels.
+
+## Quick start
+
+```sh
+go run ./cmd/netdiag validate examples/spine-leaf.yaml
+go run ./cmd/netdiag render examples/spine-leaf.yaml
+```
+
+The render command creates `examples/spine-leaf.svg`.
+
+Build a standalone CLI:
+
+```sh
+go build -o netdiag ./cmd/netdiag
+./netdiag render examples/spine-leaf.yaml
+```
+
+## CLI workflow
+
+```sh
+netdiag schema > netdiag.schema.json
+netdiag validate --json examples/spine-leaf.yaml
+netdiag fmt -w examples/spine-leaf.yaml
+netdiag capabilities
+netdiag recommend examples/spine-leaf.yaml
+netdiag plan --renderer d2 examples/spine-leaf.yaml
+netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.svg
+```
+
+When no renderer is selected, `netdiag render` recommends and selects one from
+the diagram's requirements. CLI `--renderer` takes precedence over
+`diagram.renderer`, which takes precedence over automatic recommendation.
+Use `--report` to persist the capability assessment and warnings:
+
+```sh
+netdiag render examples/skills/d2-elk-hard-cases.yaml --renderer d2 --layout elk \
+  --report render-report.json -o examples/skills/d2-elk-hard-cases.elk.svg
+```
+
+D2 is used as an automatic-layout experiment, not assumed to solve every
+network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)
+for the hard-case results, [docs/planning.md](docs/planning.md) for capability
+planning, and [SKILLS.md](SKILLS.md) for the LLM repair loop.
+
+```yaml
+links:
+  - from:
+      node: spine-01
+      port: Ethernet1/1
+      address: 10.10.10.1/30
+    to:
+      node: leaf-01
+      port: Ethernet1/49
+      address: 10.10.10.2/30
+    labels:
+      source: Eth1/1
+      middle: 100G DWDM CKT-1001
+      target: Eth1/49
+```
+
+Scalar endpoints and the legacy middle `label:` remain supported. Structured
+endpoints add CIDR addresses and explicit source/middle/target labels without
+forcing a heavier syntax on simple diagrams.
+
+LACP bundles and VLAN trunks use structured link metadata:
+
+```yaml
+links:
+  - from: leaf-01:Ethernet1/1
+    to: app-01:Ethernet0/0
+    label: 25G
+    bundle: Port-Channel10
+    lacp: true
+    multi_chassis: true
+    trunk:
+      encapsulation: dot1q
+      allowed_vlans: ["10", "20", "100-120"]
+```
+
+Physical bundle members remain visible. The topology uses compact bundle
+markers such as `Po10`. Aggregate bandwidth, LACP, trunk encapsulation, and
+allowed VLANs move into a fixed bundle-details legend in the left gutter so
+adjacent bundles cannot create overlapping boxes.
+
+Set `multi_chassis: true` when bundle members terminate on different switches.
+The rendered caption then identifies the bundle as `MC-LAG · LACP`.
+
+Full interface names remain in YAML, while rendered endpoint labels use common
+network abbreviations. For example, `Ethernet0/0` renders as `Eth0/0`,
+`GigabitEthernet0/1` as `Gi0/1`, and `TenGigabitEthernet1/1` as `Te1/1`.
+Unknown long interface prefixes are shortened to five characters.
+
+Nodes are automatically placed into rows based on their `role`. Within a row,
+node IDs determine stable left-to-right placement. Add a small numeric `order`
+to a node when topology meaning should control placement:
+
+```yaml
+nodes:
+  west-router: {label: West Router, role: router, order: 10}
+  core-router: {label: Core Router, role: router, order: 20}
+  east-router: {label: East Router, role: router, order: 30}
+```
+
+Set `diagram.layout: ring` to arrange ordered nodes clockwise around a resilient
+ring. The first node is placed at the top:
+
+```yaml
+diagram: {title: Metro Ring, layout: ring, link_style: direct}
+nodes:
+  ring-01: {label: Ring Node 01, role: router, order: 10}
+  ring-02: {label: Ring Node 02, role: router, order: 20}
+```
+
+Set `diagram.layout: sites` to make top-level groups into native site
+containers. Devices are arranged into stable role rows inside each site,
+core/WAN groups are placed between sites, and nested groups render as
+subordinate boundaries. Site layouts automatically use deterministic,
+obstacle-aware orthogonal routing:
+
+```yaml
+diagram: {title: Enterprise WAN, layout: sites, link_style: orthogonal}
+groups:
+  london:
+    label: London
+    kind: site
+    nodes: {london-pe: {}}
+  mpls-core:
+    label: MPLS Core
+    kind: core
+    nodes: {p-01: {}}
+```
+
+See `examples/16-site-aware-wan.yaml` for a complete multi-site example.
+
+The default `clean` link style uses aligned vertical port lead-ins before
+crossing between layers. Bundled members converge through a compact circular
+port-channel marker, keeping trunk metadata separate from physical interface
+labels.
+
+Device cards include deterministic, original isometric SVG role icons inspired
+by familiar network-stencil conventions. Spine switches use a multilayer
+fabric-switch chassis, while leaf switches use a low-profile access-switch
+chassis with a visible port bank.
+
+Layer headings occupy a dedicated left gutter outside the topology placement
+area. Links and devices cannot enter that gutter, so headings never mask or
+overlap diagram geometry.
+
+See [docs/strategy.md](docs/strategy.md) for the research findings, proposed
+architecture, and delivery plan.
+
+See [docs/gallery.md](docs/gallery.md) for sixteen additional rendered
+examples covering WAN, DWDM, campus LAN, firewalls, wireless, SD-WAN, OT, AWS,
+OSPF, IS-IS, BGP route reflection, Metro Ethernet rings, and MPLS metro
+networks, including native site-aware containment and orthogonal routing.

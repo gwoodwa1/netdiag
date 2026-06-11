@@ -1,0 +1,13 @@
+version: 1
+diagram:
+  title: Parallel Links
+nodes:
+  pe1: {role: router}
+  pe2: {role: router}
+links:
+  - from: pe1:Ethernet0/0
+    to: pe2:Ethernet0/0
+    label: Primary
+  - from: pe1:Ethernet0/1
+    to: pe2:Ethernet0/1
+    label: Backup

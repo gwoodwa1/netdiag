@@ -1,0 +1,203 @@
+package svg
+
+import (
+	"fmt"
+	"math"
+	"strings"
+)
+
+type linkRoute struct {
+	Points          []point
+	Path            string
+	Label           point
+	LabelHorizontal bool
+}
+
+func orthogonalRoute(start, end point, startSide, endSide string, nodes map[string]placedNode, lane int) linkRoute {
+	stub := 42.0 + float64(lane%4)*12
+	startStub := movePoint(start, startSide, stub)
+	endStub := movePoint(end, endSide, stub)
+	margin := 34.0 + float64(lane%5)*18
+
+	minX, minY, maxX, maxY := start.X, start.Y, start.X, start.Y
+	for _, node := range nodes {
+		minX = math.Min(minX, node.Box.X)
+		minY = math.Min(minY, node.Box.Y)
+		maxX = math.Max(maxX, node.Box.X+node.Box.W)
+		maxY = math.Max(maxY, node.Box.Y+node.Box.H)
+	}
+
+	candidates := [][]point{
+		{start, startStub, {X: endStub.X, Y: startStub.Y}, endStub, end},
+		{start, startStub, {X: startStub.X, Y: endStub.Y}, endStub, end},
+		{start, startStub, {X: startStub.X, Y: minY - margin}, {X: endStub.X, Y: minY - margin}, endStub, end},
+		{start, startStub, {X: startStub.X, Y: maxY + margin}, {X: endStub.X, Y: maxY + margin}, endStub, end},
+		{start, startStub, {X: minX - margin, Y: startStub.Y}, {X: minX - margin, Y: endStub.Y}, endStub, end},
+		{start, startStub, {X: maxX + margin, Y: startStub.Y}, {X: maxX + margin, Y: endStub.Y}, endStub, end},
+	}
+
+	best := simplifyOrthogonal(candidates[0])
+	bestScore := routeScore(best, nodes, start, end)
+	for _, candidate := range candidates[1:] {
+		candidate = simplifyOrthogonal(candidate)
+		score := routeScore(candidate, nodes, start, end)
+		if score < bestScore {
+			best, bestScore = candidate, score
+		}
+	}
+	label, horizontal := longestSegmentLabel(best)
+	return linkRoute{Points: best, Path: orthogonalPath(best), Label: label, LabelHorizontal: horizontal}
+}
+
+func directRoute(start, end point, startSide, endSide, style string) linkRoute {
+	return linkRoute{Points: []point{start, end}, Path: pathData(start, end, startSide, endSide, style), Label: point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}}
+}
+
+func movePoint(value point, side string, distance float64) point {
+	switch side {
+	case "top":
+		value.Y -= distance
+	case "right":
+		value.X += distance
+	case "bottom":
+		value.Y += distance
+	case "left":
+		value.X -= distance
+	}
+	return value
+}
+
+func simplifyOrthogonal(points []point) []point {
+	var result []point
+	for _, current := range points {
+		if len(result) > 0 && samePoint(result[len(result)-1], current) {
+			continue
+		}
+		if len(result) >= 2 {
+			a, b := result[len(result)-2], result[len(result)-1]
+			if (a.X == b.X && b.X == current.X) || (a.Y == b.Y && b.Y == current.Y) {
+				result[len(result)-1] = current
+				continue
+			}
+		}
+		result = append(result, current)
+	}
+	return result
+}
+
+func routeScore(points []point, nodes map[string]placedNode, start, end point) float64 {
+	score := float64(len(points)-2) * 35
+	for i := 1; i < len(points); i++ {
+		a, b := points[i-1], points[i]
+		score += math.Abs(a.X-b.X) + math.Abs(a.Y-b.Y)
+		for _, node := range nodes {
+			if pointOnBoxBoundary(start, node.Box) || pointOnBoxBoundary(end, node.Box) {
+				continue
+			}
+			if segmentIntersectsBox(a, b, expandBox(node.Box, 22)) {
+				score += 100000
+			}
+		}
+	}
+	return score
+}
+
+func segmentIntersectsBox(a, b point, obstacle box) bool {
+	if a.X == b.X {
+		return a.X >= obstacle.X && a.X <= obstacle.X+obstacle.W &&
+			math.Max(a.Y, b.Y) >= obstacle.Y && math.Min(a.Y, b.Y) <= obstacle.Y+obstacle.H
+	}
+	if a.Y == b.Y {
+		return a.Y >= obstacle.Y && a.Y <= obstacle.Y+obstacle.H &&
+			math.Max(a.X, b.X) >= obstacle.X && math.Min(a.X, b.X) <= obstacle.X+obstacle.W
+	}
+	return false
+}
+
+func pointOnBoxBoundary(value point, b box) bool {
+	const tolerance = 0.2
+	onX := value.X >= b.X-tolerance && value.X <= b.X+b.W+tolerance
+	onY := value.Y >= b.Y-tolerance && value.Y <= b.Y+b.H+tolerance
+	return (onX && (math.Abs(value.Y-b.Y) < tolerance || math.Abs(value.Y-(b.Y+b.H)) < tolerance)) ||
+		(onY && (math.Abs(value.X-b.X) < tolerance || math.Abs(value.X-(b.X+b.W)) < tolerance))
+}
+
+func expandBox(value box, padding float64) box {
+	return box{X: value.X - padding, Y: value.Y - padding, W: value.W + padding*2, H: value.H + padding*2}
+}
+
+func orthogonalPath(points []point) string {
+	if len(points) == 0 {
+		return ""
+	}
+	var out strings.Builder
+	fmt.Fprintf(&out, "M %.1f %.1f", points[0].X, points[0].Y)
+	for i := 1; i < len(points); i++ {
+		if points[i].Y == points[i-1].Y {
+			fmt.Fprintf(&out, " H %.1f", points[i].X)
+		} else if points[i].X == points[i-1].X {
+			fmt.Fprintf(&out, " V %.1f", points[i].Y)
+		} else {
+			fmt.Fprintf(&out, " L %.1f %.1f", points[i].X, points[i].Y)
+		}
+	}
+	return out.String()
+}
+
+func polylineMidpoint(points []point) point {
+	if len(points) == 0 {
+		return point{}
+	}
+	total := 0.0
+	for i := 1; i < len(points); i++ {
+		total += math.Abs(points[i].X-points[i-1].X) + math.Abs(points[i].Y-points[i-1].Y)
+	}
+	target := total / 2
+	walked := 0.0
+	for i := 1; i < len(points); i++ {
+		a, b := points[i-1], points[i]
+		length := math.Abs(b.X-a.X) + math.Abs(b.Y-a.Y)
+		if walked+length >= target {
+			remaining := target - walked
+			if a.X == b.X {
+				direction := 1.0
+				if b.Y < a.Y {
+					direction = -1
+				}
+				return point{X: a.X, Y: a.Y + direction*remaining}
+			}
+			direction := 1.0
+			if b.X < a.X {
+				direction = -1
+			}
+			return point{X: a.X + direction*remaining, Y: a.Y}
+		}
+		walked += length
+	}
+	return points[len(points)-1]
+}
+
+func longestSegmentLabel(points []point) (point, bool) {
+	if len(points) < 2 {
+		return polylineMidpoint(points), true
+	}
+	bestIndex := 1
+	bestLength := -1.0
+	for i := 1; i < len(points); i++ {
+		length := math.Abs(points[i].X-points[i-1].X) + math.Abs(points[i].Y-points[i-1].Y)
+		// Endpoint stubs are deliberately deprioritized so labels stay away
+		// from interface and address cards.
+		if i == 1 || i == len(points)-1 {
+			length *= 0.25
+		}
+		if length > bestLength {
+			bestIndex, bestLength = i, length
+		}
+	}
+	a, b := points[bestIndex-1], points[bestIndex]
+	return point{X: (a.X + b.X) / 2, Y: (a.Y + b.Y) / 2}, a.Y == b.Y
+}
+
+func samePoint(a, b point) bool {
+	return a.X == b.X && a.Y == b.Y
+}

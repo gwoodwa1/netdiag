@@ -1,0 +1,21 @@
+version: 1
+diagram: {title: Data Center Interconnect, subtitle: Two data centers connected using protected DWDM wavelengths, badge: DCI}
+nodes:
+  dwdm: {label: Protected DWDM Service, role: dwdm, icon: dwdm}
+  dc1-router: {label: DC1 DCI Router, role: edge-router, icon: router}
+  dc2-router: {label: DC2 DCI Router, role: edge-router, icon: router}
+  dc1-firewall: {label: DC1 Firewall, role: firewall, icon: firewall}
+  dc2-firewall: {label: DC2 Firewall, role: firewall, icon: firewall}
+  dc1-core: {label: DC1 Core Switch, role: core-switch, icon: core-switch}
+  dc2-core: {label: DC2 Core Switch, role: core-switch, icon: core-switch}
+  dc1-storage: {label: DC1 Storage, role: server, icon: server}
+  dc2-storage: {label: DC2 Storage, role: server, icon: server}
+links:
+  - {from: dwdm:Wave101, to: dc1-router:HundredGigE0/0, label: "CID DCI-PRIMARY-101 · 100G", style: dwdm}
+  - {from: dwdm:Wave102, to: dc2-router:HundredGigE0/0, label: "CID DCI-PROTECT-102 · 100G", style: dwdm}
+  - {from: dc1-router:TenGigabitEthernet0/1, to: dc1-firewall:Ethernet0/0, label: EVPN, style: security}
+  - {from: dc2-router:TenGigabitEthernet0/1, to: dc2-firewall:Ethernet0/0, label: EVPN, style: security}
+  - {from: dc1-firewall:Ethernet0/1, to: dc1-core:Ethernet1/49, label: Inside, style: security}
+  - {from: dc2-firewall:Ethernet0/1, to: dc2-core:Ethernet1/49, label: Inside, style: security}
+  - {from: dc1-core:Ethernet1/1, to: dc1-storage:Ethernet0/0, label: Storage VLAN}
+  - {from: dc2-core:Ethernet1/1, to: dc2-storage:Ethernet0/0, label: Storage VLAN}

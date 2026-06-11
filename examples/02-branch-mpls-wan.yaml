@@ -1,0 +1,23 @@
+version: 1
+diagram: {title: Branch MPLS WAN, subtitle: Three branches connected to an MPLS provider cloud, badge: BRANCH WAN}
+nodes:
+  mpls-cloud: {label: Provider MPLS, role: wan-cloud, icon: wan-cloud}
+  hq-router: {label: HQ Router, role: edge-router, icon: router}
+  branch-a-router: {label: Branch A Router, role: edge-router, icon: router}
+  branch-b-router: {label: Branch B Router, role: edge-router, icon: router}
+  hq-firewall: {label: HQ Firewall, role: firewall, icon: firewall}
+  branch-a-switch: {label: Branch A LAN, role: access-switch, icon: access-switch}
+  branch-b-switch: {label: Branch B LAN, role: access-switch, icon: access-switch}
+  hq-core: {label: HQ Core, role: core-switch, icon: core-switch}
+  branch-a-users: {label: Branch A Users, role: endpoint, icon: users}
+  branch-b-users: {label: Branch B Users, role: endpoint, icon: users}
+links:
+  - {from: mpls-cloud:PE1, to: hq-router:GigabitEthernet0/0, label: "CID MPLS-10001 · 500M", style: wan}
+  - {from: mpls-cloud:PE2, to: branch-a-router:GigabitEthernet0/0, label: "CID MPLS-10002 · 100M", style: wan}
+  - {from: mpls-cloud:PE3, to: branch-b-router:GigabitEthernet0/0, label: "CID MPLS-10003 · 100M", style: wan}
+  - {from: hq-router:GigabitEthernet0/1, to: hq-firewall:Ethernet0/0, label: Outside, style: security}
+  - {from: hq-firewall:Ethernet0/1, to: hq-core:Ethernet1/49, label: Inside, style: security}
+  - {from: branch-a-router:GigabitEthernet0/1, to: branch-a-switch:Ethernet1/49, label: VLAN 10}
+  - {from: branch-b-router:GigabitEthernet0/1, to: branch-b-switch:Ethernet1/49, label: VLAN 10}
+  - {from: branch-a-switch:Ethernet1/1, to: branch-a-users:Ethernet0/0, label: 1G}
+  - {from: branch-b-switch:Ethernet1/1, to: branch-b-users:Ethernet0/0, label: 1G}

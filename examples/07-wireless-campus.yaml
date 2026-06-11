@@ -1,0 +1,25 @@
+version: 1
+diagram: {title: Campus Wireless LAN, subtitle: "Routed core with access switches, APs, and wireless clients", badge: WIRELESS LAN}
+nodes:
+  campus-router: {label: Campus L3 Router, role: router, icon: router}
+  core: {label: Wireless Core, role: core-switch, icon: core-switch}
+  access-01: {label: Floor 1 Access, role: access-switch, icon: access-switch}
+  access-02: {label: Floor 2 Access, role: access-switch, icon: access-switch}
+  access-03: {label: Floor 3 Access, role: access-switch, icon: access-switch}
+  ap-01: {label: Floor 1 AP, role: wireless, icon: wireless}
+  ap-02: {label: Floor 2 AP, role: wireless, icon: wireless}
+  ap-03: {label: Floor 3 AP, role: wireless, icon: wireless}
+  clients-01: {label: Floor 1 Clients, role: endpoint, icon: users}
+  clients-02: {label: Floor 2 Clients, role: endpoint, icon: users}
+  clients-03: {label: Floor 3 Clients, role: endpoint, icon: users}
+links:
+  - {from: campus-router:TenGigabitEthernet0/0, to: core:Ethernet1/49, label: OSPF}
+  - {from: core:Ethernet1/1, to: access-01:Ethernet1/49, label: 10G}
+  - {from: core:Ethernet1/2, to: access-02:Ethernet1/49, label: 10G}
+  - {from: core:Ethernet1/3, to: access-03:Ethernet1/49, label: 10G}
+  - {from: access-01:Ethernet1/1, to: ap-01:Ethernet0/0, label: PoE+}
+  - {from: access-02:Ethernet1/1, to: ap-02:Ethernet0/0, label: PoE+}
+  - {from: access-03:Ethernet1/1, to: ap-03:Ethernet0/0, label: PoE+}
+  - {from: ap-01:Radio0, to: clients-01:WiFi0, label: SSID-CORP}
+  - {from: ap-02:Radio0, to: clients-02:WiFi0, label: SSID-CORP}
+  - {from: ap-03:Radio0, to: clients-03:WiFi0, label: SSID-CORP}

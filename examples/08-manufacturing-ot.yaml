@@ -1,0 +1,19 @@
+version: 1
+diagram: {title: Manufacturing OT Network, subtitle: Segmented plant network with industrial firewall and controllers, badge: OT SECURITY}
+nodes:
+  enterprise-router: {label: Enterprise Router, role: router, icon: router}
+  ot-firewall: {label: OT Segmentation Firewall, role: firewall, icon: firewall}
+  plant-core: {label: Plant Core, role: core-switch, icon: core-switch}
+  line-a-switch: {label: Production Line A, role: access-switch, icon: access-switch}
+  line-b-switch: {label: Production Line B, role: access-switch, icon: access-switch}
+  scada-server: {label: SCADA Server, role: server, icon: server}
+  plc-a: {label: PLC Line A, role: endpoint, icon: endpoint}
+  plc-b: {label: PLC Line B, role: endpoint, icon: endpoint}
+links:
+  - {from: enterprise-router:GigabitEthernet0/0, to: ot-firewall:Ethernet0/0, label: Enterprise, style: security}
+  - {from: ot-firewall:Ethernet0/1, to: plant-core:Ethernet1/49, label: OT Zone, style: security}
+  - {from: plant-core:Ethernet1/1, to: line-a-switch:Ethernet1/49, label: VLAN 410}
+  - {from: plant-core:Ethernet1/2, to: line-b-switch:Ethernet1/49, label: VLAN 420}
+  - {from: plant-core:Ethernet1/3, to: scada-server:Ethernet0/0, label: VLAN 400}
+  - {from: line-a-switch:Ethernet1/1, to: plc-a:Ethernet0/0, label: PROFINET}
+  - {from: line-b-switch:Ethernet1/1, to: plc-b:Ethernet0/0, label: PROFINET}

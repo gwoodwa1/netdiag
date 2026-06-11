@@ -1,0 +1,20 @@
+version: 1
+diagram:
+  title: D2 Nested Groups
+  renderer: d2
+groups:
+  london:
+    label: London Site
+    groups:
+      rack-a:
+        label: Rack A
+        nodes:
+          r1: {}
+          r2: {}
+nodes:
+  r1: {role: router}
+  r2: {role: router}
+links:
+  - from: r1:Ethernet0/0
+    to: r2:Ethernet0/0
+    label: Internal

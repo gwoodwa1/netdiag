@@ -1,0 +1,5 @@
+.gocache/
+.gomodcache/
+/netdiag
+docs/planning.md
+docs/strategy.md

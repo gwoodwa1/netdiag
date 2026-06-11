@@ -1,0 +1,28 @@
+version: 1
+diagram:
+  title: Regional Campus WAN over DWDM
+  subtitle: Multiple campus LANs routed across protected optical circuits
+  badge: WAN + DWDM
+nodes:
+  metro-dwdm: {label: Metro DWDM Ring, role: dwdm, icon: dwdm}
+  hq-router: {label: HQ L3 Router, role: edge-router, icon: router}
+  east-router: {label: East L3 Router, role: edge-router, icon: router}
+  west-router: {label: West L3 Router, role: edge-router, icon: router}
+  hq-core: {label: HQ Core Switch, role: core-switch, icon: core-switch}
+  east-core: {label: East Core Switch, role: core-switch, icon: core-switch}
+  west-core: {label: West Core Switch, role: core-switch, icon: core-switch}
+  hq-access-01: {label: HQ Access 01, role: access-switch, icon: access-switch}
+  hq-access-02: {label: HQ Access 02, role: access-switch, icon: access-switch}
+  east-access: {label: East Access, role: access-switch, icon: access-switch}
+  west-access: {label: West Access, role: access-switch, icon: access-switch}
+links:
+  - {from: metro-dwdm:Wave1, to: hq-router:TenGigabitEthernet0/0, label: "CID DWDM-HQ-001 · 10G", style: dwdm}
+  - {from: metro-dwdm:Wave2, to: east-router:TenGigabitEthernet0/0, label: "CID DWDM-EAST-014 · 10G", style: dwdm}
+  - {from: metro-dwdm:Wave3, to: west-router:TenGigabitEthernet0/0, label: "CID DWDM-WEST-027 · 10G", style: dwdm}
+  - {from: hq-router:GigabitEthernet0/1, to: hq-core:Ethernet1/49, label: OSPF}
+  - {from: east-router:GigabitEthernet0/1, to: east-core:Ethernet1/49, label: OSPF}
+  - {from: west-router:GigabitEthernet0/1, to: west-core:Ethernet1/49, label: OSPF}
+  - {from: hq-core:Ethernet1/1, to: hq-access-01:Ethernet1/49, label: 10G}
+  - {from: hq-core:Ethernet1/2, to: hq-access-02:Ethernet1/49, label: 10G}
+  - {from: east-core:Ethernet1/1, to: east-access:Ethernet1/49, label: 10G}
+  - {from: west-core:Ethernet1/1, to: west-access:Ethernet1/49, label: 10G}

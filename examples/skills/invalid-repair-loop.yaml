@@ -1,0 +1,16 @@
+version: 1
+diagram:
+  title: Repair Loop Fixture
+nodes:
+  router-01:
+    role: router
+links:
+  - from:
+      node: router-01
+      port: Ethernet0/0
+      side: right
+    to:
+      node: router-02
+      port: Ethernet0/0
+      side: left
+    label: This intentionally references a missing node

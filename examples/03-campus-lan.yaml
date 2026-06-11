@@ -1,0 +1,26 @@
+version: 1
+diagram: {title: Enterprise Campus LAN, subtitle: "Core, distribution, access, wireless, and user layers", badge: CAMPUS LAN}
+nodes:
+  core-01: {label: Campus Core 01, role: core-switch, icon: core-switch}
+  core-02: {label: Campus Core 02, role: core-switch, icon: core-switch}
+  dist-a: {label: Building A Distribution, role: distribution-switch, icon: distribution-switch}
+  dist-b: {label: Building B Distribution, role: distribution-switch, icon: distribution-switch}
+  access-a1: {label: Building A Access 01, role: access-switch, icon: access-switch}
+  access-a2: {label: Building A Access 02, role: access-switch, icon: access-switch}
+  access-b1: {label: Building B Access 01, role: access-switch, icon: access-switch}
+  access-b2: {label: Building B Access 02, role: access-switch, icon: access-switch}
+  wlan-a: {label: Building A Wi-Fi, role: wireless, icon: wireless}
+  wlan-b: {label: Building B Wi-Fi, role: wireless, icon: wireless}
+  users-a: {label: Building A Users, role: endpoint, icon: users}
+  users-b: {label: Building B Users, role: endpoint, icon: users}
+links:
+  - {from: core-01:Ethernet1/1, to: dist-a:Ethernet1/49, label: 40G}
+  - {from: core-02:Ethernet1/1, to: dist-b:Ethernet1/49, label: 40G}
+  - {from: dist-a:Ethernet1/1, to: access-a1:Ethernet1/49, label: 10G}
+  - {from: dist-a:Ethernet1/2, to: access-a2:Ethernet1/49, label: 10G}
+  - {from: dist-b:Ethernet1/1, to: access-b1:Ethernet1/49, label: 10G}
+  - {from: dist-b:Ethernet1/2, to: access-b2:Ethernet1/49, label: 10G}
+  - {from: access-a1:Ethernet1/1, to: wlan-a:Ethernet0/0, label: PoE+}
+  - {from: access-b1:Ethernet1/1, to: wlan-b:Ethernet0/0, label: PoE+}
+  - {from: wlan-a:Radio0, to: users-a:WiFi0, label: Corp SSID}
+  - {from: wlan-b:Radio0, to: users-b:WiFi0, label: Corp SSID}

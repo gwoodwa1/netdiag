@@ -1,0 +1,29 @@
+{
+  "renderer": "d2",
+  "recommended_renderer": "d2",
+  "layout": "elk",
+  "output": "examples/regression/03-parallel-links.svg",
+  "features": [
+    {
+      "feature": "middle_labels",
+      "level": "strict",
+      "reason": "at least one middle link label is required"
+    },
+    {
+      "feature": "parallel_links",
+      "level": "strict",
+      "reason": "at least one node pair has 2 parallel links"
+    },
+    {
+      "feature": "source_labels",
+      "level": "strict",
+      "reason": "source interface labels are required"
+    },
+    {
+      "feature": "target_labels",
+      "level": "strict",
+      "reason": "target interface labels are required"
+    }
+  ],
+  "warnings": []
+}

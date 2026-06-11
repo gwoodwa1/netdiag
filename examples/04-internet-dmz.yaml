@@ -1,0 +1,18 @@
+version: 1
+diagram: {title: Internet Edge and DMZ, subtitle: Dual ISP edge with firewall and public services, badge: SECURITY EDGE}
+nodes:
+  internet: {label: Public Internet, role: internet, icon: internet}
+  edge-01: {label: Internet Router 01, role: edge-router, icon: router}
+  edge-02: {label: Internet Router 02, role: edge-router, icon: router}
+  firewall-01: {label: Perimeter Firewall, role: firewall, icon: firewall}
+  dmz-switch: {label: DMZ Switch, role: access-switch, icon: access-switch}
+  web-01: {label: Public Web 01, role: server, icon: server}
+  web-02: {label: Public Web 02, role: server, icon: server}
+links:
+  - {from: internet:ISP-A, to: edge-01:TenGigabitEthernet0/0, label: "CID ISP-A-77881 · 10G", style: internet}
+  - {from: internet:ISP-B, to: edge-02:TenGigabitEthernet0/0, label: "CID ISP-B-88442 · 10G", style: internet}
+  - {from: edge-01:TenGigabitEthernet0/1, to: firewall-01:Ethernet0/0, label: BGP, style: security}
+  - {from: edge-02:TenGigabitEthernet0/1, to: firewall-01:Ethernet0/1, label: BGP, style: security}
+  - {from: firewall-01:Ethernet0/2, to: dmz-switch:Ethernet1/49, label: DMZ, style: security}
+  - {from: dmz-switch:Ethernet1/1, to: web-01:Ethernet0/0, label: VLAN 200}
+  - {from: dmz-switch:Ethernet1/2, to: web-02:Ethernet0/0, label: VLAN 200}

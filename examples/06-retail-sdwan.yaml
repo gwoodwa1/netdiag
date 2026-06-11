@@ -1,0 +1,23 @@
+version: 1
+diagram: {title: Retail SD-WAN Estate, subtitle: Stores connected to cloud-managed SD-WAN, badge: RETAIL SD-WAN}
+nodes:
+  sdwan-cloud: {label: SD-WAN Orchestrator, role: wan-cloud, icon: cloud}
+  store-101-router: {label: Store 101 Edge, role: edge-router, icon: router}
+  store-202-router: {label: Store 202 Edge, role: edge-router, icon: router}
+  store-303-router: {label: Store 303 Edge, role: edge-router, icon: router}
+  store-101-switch: {label: Store 101 LAN, role: access-switch, icon: access-switch}
+  store-202-switch: {label: Store 202 LAN, role: access-switch, icon: access-switch}
+  store-303-switch: {label: Store 303 LAN, role: access-switch, icon: access-switch}
+  pos-101: {label: POS Systems 101, role: endpoint, icon: users}
+  pos-202: {label: POS Systems 202, role: endpoint, icon: users}
+  pos-303: {label: POS Systems 303, role: endpoint, icon: users}
+links:
+  - {from: sdwan-cloud:Overlay1, to: store-101-router:GigabitEthernet0/0, label: "DIA-STORE101 · 200M", style: wan}
+  - {from: sdwan-cloud:Overlay2, to: store-202-router:GigabitEthernet0/0, label: "DIA-STORE202 · 200M", style: wan}
+  - {from: sdwan-cloud:Overlay3, to: store-303-router:GigabitEthernet0/0, label: "LTE-STORE303 · 50M", style: wan}
+  - {from: store-101-router:GigabitEthernet0/1, to: store-101-switch:Ethernet1/49, label: VLAN 10}
+  - {from: store-202-router:GigabitEthernet0/1, to: store-202-switch:Ethernet1/49, label: VLAN 10}
+  - {from: store-303-router:GigabitEthernet0/1, to: store-303-switch:Ethernet1/49, label: VLAN 10}
+  - {from: store-101-switch:Ethernet1/1, to: pos-101:Ethernet0/0, label: POS}
+  - {from: store-202-switch:Ethernet1/1, to: pos-202:Ethernet0/0, label: POS}
+  - {from: store-303-switch:Ethernet1/1, to: pos-303:Ethernet0/0, label: POS}

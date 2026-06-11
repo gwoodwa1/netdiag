@@ -1,0 +1,16 @@
+version: 1
+diagram: {title: Hybrid AWS Connectivity, subtitle: On-premises network connected to AWS public cloud, badge: HYBRID CLOUD}
+nodes:
+  aws: {label: AWS Public Cloud, role: public-cloud, icon: aws}
+  direct-connect: {label: Direct Connect Router, role: edge-router, icon: router}
+  vpn-router: {label: VPN Backup Router, role: edge-router, icon: router}
+  onprem-firewall: {label: On-Prem Firewall, role: firewall, icon: firewall}
+  campus-core: {label: Campus Core, role: core-switch, icon: core-switch}
+  app-servers: {label: On-Prem Applications, role: server, icon: server}
+links:
+  - {from: aws:DXGW, to: direct-connect:TenGigabitEthernet0/0, label: "DX VIF · CID DX-450019 · 10G", style: wan}
+  - {from: aws:VGW, to: vpn-router:GigabitEthernet0/0, label: "IPsec VPN Backup", style: internet}
+  - {from: direct-connect:TenGigabitEthernet0/1, to: onprem-firewall:Ethernet0/0, label: Private VIF, style: security}
+  - {from: vpn-router:GigabitEthernet0/1, to: onprem-firewall:Ethernet0/1, label: VPN, style: security}
+  - {from: onprem-firewall:Ethernet0/2, to: campus-core:Ethernet1/49, label: Transit, style: security}
+  - {from: campus-core:Ethernet1/1, to: app-servers:Ethernet0/0, label: VLAN 310}

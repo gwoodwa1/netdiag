@@ -1,0 +1,22 @@
+version: 1
+diagram: {title: Headquarters Dual-ISP Edge, subtitle: Redundant internet circuits feeding a secured campus core, badge: INTERNET EDGE}
+nodes:
+  internet: {label: Internet, role: internet, icon: internet}
+  isp-a-router: {label: ISP-A Edge, role: edge-router, icon: router}
+  isp-b-router: {label: ISP-B Edge, role: edge-router, icon: router}
+  perimeter-fw: {label: HA Firewall Pair, role: firewall, icon: firewall}
+  hq-core: {label: Headquarters Core, role: core-switch, icon: core-switch}
+  user-access: {label: User Access, role: access-switch, icon: access-switch}
+  server-access: {label: Server Access, role: access-switch, icon: access-switch}
+  users: {label: Headquarters Users, role: endpoint, icon: users}
+  services: {label: Internal Services, role: server, icon: server}
+links:
+  - {from: internet:TransitA, to: isp-a-router:TenGigabitEthernet0/0, label: "CID INET-A-90001 · 10G", style: internet}
+  - {from: internet:TransitB, to: isp-b-router:TenGigabitEthernet0/0, label: "CID INET-B-90002 · 10G", style: internet}
+  - {from: isp-a-router:TenGigabitEthernet0/1, to: perimeter-fw:Ethernet0/0, label: eBGP, style: security}
+  - {from: isp-b-router:TenGigabitEthernet0/1, to: perimeter-fw:Ethernet0/1, label: eBGP, style: security}
+  - {from: perimeter-fw:Ethernet0/2, to: hq-core:Ethernet1/49, label: Inside, style: security}
+  - {from: hq-core:Ethernet1/1, to: user-access:Ethernet1/49, label: 40G}
+  - {from: hq-core:Ethernet1/2, to: server-access:Ethernet1/49, label: 40G}
+  - {from: user-access:Ethernet1/1, to: users:Ethernet0/0, label: VLAN 10}
+  - {from: server-access:Ethernet1/1, to: services:Ethernet0/0, label: VLAN 20}

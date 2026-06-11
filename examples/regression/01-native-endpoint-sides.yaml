@@ -1,0 +1,11 @@
+version: 1
+diagram:
+  title: Native Endpoint Sides
+  renderer: native
+nodes:
+  left: {role: router, icon: router}
+  right: {role: router, icon: router}
+links:
+  - from: {node: left, port: Ethernet0/0, side: right}
+    to: {node: right, port: Ethernet0/0, side: left}
+    label: Explicit side attachment

@@ -1,0 +1,34 @@
+{
+  "renderer": "d2",
+  "recommended_renderer": "d2",
+  "layout": "elk",
+  "output": "examples/regression/02-d2-nested-groups.svg",
+  "features": [
+    {
+      "feature": "groups",
+      "level": "strict",
+      "reason": "2 group(s) are declared"
+    },
+    {
+      "feature": "middle_labels",
+      "level": "strict",
+      "reason": "at least one middle link label is required"
+    },
+    {
+      "feature": "nested_groups",
+      "level": "strict",
+      "reason": "at least one group has a parent group"
+    },
+    {
+      "feature": "source_labels",
+      "level": "strict",
+      "reason": "source interface labels are required"
+    },
+    {
+      "feature": "target_labels",
+      "level": "strict",
+      "reason": "target interface labels are required"
+    }
+  ],
+  "warnings": []
+}

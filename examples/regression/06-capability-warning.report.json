@@ -1,0 +1,47 @@
+{
+  "renderer": "d2",
+  "recommended_renderer": "native",
+  "layout": "elk",
+  "output": "examples/regression/06-capability-warning.svg",
+  "features": [
+    {
+      "feature": "endpoint_addresses",
+      "level": "best_effort",
+      "reason": "at least one endpoint has a CIDR address"
+    },
+    {
+      "feature": "endpoint_sides",
+      "level": "best_effort",
+      "reason": "at least one endpoint has an explicit side"
+    },
+    {
+      "feature": "middle_labels",
+      "level": "strict",
+      "reason": "at least one middle link label is required"
+    },
+    {
+      "feature": "source_labels",
+      "level": "strict",
+      "reason": "source interface labels are required"
+    },
+    {
+      "feature": "target_labels",
+      "level": "strict",
+      "reason": "target interface labels are required"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "best_effort_endpoint_addresses",
+      "message": "d2 renderer handles endpoint addresses as best effort: at least one endpoint has a CIDR address"
+    },
+    {
+      "code": "best_effort_endpoint_sides",
+      "message": "d2 renderer handles endpoint sides as best effort: at least one endpoint has an explicit side"
+    },
+    {
+      "code": "renderer_not_recommended",
+      "message": "d2 is selected; native is recommended for this diagram"
+    }
+  ]
+}

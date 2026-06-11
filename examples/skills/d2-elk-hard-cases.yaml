@@ -1,0 +1,51 @@
+version: 1
+diagram:
+  title: D2 and ELK Backend Hard Cases
+  subtitle: Nested groups, endpoint labels, parallel links, and structured placement hints
+  badge: BACKEND SPIKE
+  layout: elk
+  direction: right
+  theme: light
+groups:
+  metro-west:
+    label: Metro West
+    kind: metro
+    groups:
+      site-a:
+        label: Site A
+        kind: site
+        nodes:
+          pe-west: {}
+          access-west: {}
+  mpls-core:
+    label: MPLS Core
+    kind: core
+    nodes:
+      p-01: {}
+      p-02: {}
+  metro-east:
+    label: Metro East
+    kind: metro
+    nodes:
+      pe-east: {}
+nodes:
+  access-west: {label: West Access Ring, role: access-switch}
+  pe-west: {label: West PE, role: edge-router}
+  p-01: {label: Core P01, role: router}
+  p-02: {label: Core P02, role: router}
+  pe-east: {label: East PE, role: edge-router}
+links:
+  - from:
+      node: access-west
+      port: TenGigabitEthernet0/0
+      side: right
+    to:
+      node: pe-west
+      port: TenGigabitEthernet0/1
+      side: left
+    label: Metro EVPN
+    style: ring
+  - {from: pe-west:HundredGigE0/0, to: p-01:HundredGigE0/0, label: "Primary · 100G", style: wan}
+  - {from: pe-west:HundredGigE0/1, to: p-01:HundredGigE0/1, label: "Parallel · 100G", style: wan}
+  - {from: p-01:HundredGigE0/2, to: p-02:HundredGigE0/2, label: "Core · 100G", style: wan}
+  - {from: p-02:HundredGigE0/0, to: pe-east:HundredGigE0/0, label: "East · 100G", style: wan}

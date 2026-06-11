@@ -1,0 +1,26 @@
+version: 1
+diagram:
+  title: OSPF Multi-Area Design
+  subtitle: Area 0 backbone with Area 10 and Area 20 ABRs and internal routers
+  badge: OSPF
+nodes:
+  abr-10: {label: ABR Area 10, role: ospf-backbone, icon: router, order: 10}
+  backbone-r1: {label: Backbone R1, role: ospf-backbone, icon: router, order: 20}
+  backbone-r2: {label: Backbone R2, role: ospf-backbone, icon: router, order: 30}
+  abr-20: {label: ABR Area 20, role: ospf-backbone, icon: router, order: 40}
+  area10-r1: {label: Area 10 R1, role: ospf-area-10, icon: router, order: 10}
+  area10-r2: {label: Area 10 R2, role: ospf-area-10, icon: router, order: 20}
+  area10-lan: {label: Area 10 LAN, role: ospf-area-10, icon: access-switch, order: 30}
+  area20-lan: {label: Area 20 LAN, role: ospf-area-20, icon: access-switch, order: 10}
+  area20-r2: {label: Area 20 R2, role: ospf-area-20, icon: router, order: 20}
+  area20-r1: {label: Area 20 R1, role: ospf-area-20, icon: router, order: 30}
+links:
+  - {from: backbone-r1:GigabitEthernet0/0, to: backbone-r2:GigabitEthernet0/0, label: "Area 0 · Cost 10", style: ospf}
+  - {from: backbone-r1:GigabitEthernet0/1, to: abr-10:GigabitEthernet0/0, label: "Area 0 · Cost 10", style: ospf}
+  - {from: backbone-r2:GigabitEthernet0/1, to: abr-20:GigabitEthernet0/0, label: "Area 0 · Cost 10", style: ospf}
+  - {from: abr-10:GigabitEthernet0/1, to: area10-r1:GigabitEthernet0/0, label: "Area 10 · P2P", style: ospf}
+  - {from: area10-r1:GigabitEthernet0/1, to: area10-r2:GigabitEthernet0/0, label: "Area 10 · Cost 20", style: ospf}
+  - {from: area10-r2:GigabitEthernet0/1, to: area10-lan:Ethernet1/49, label: "Area 10 · DR", style: ospf}
+  - {from: abr-20:GigabitEthernet0/1, to: area20-r1:GigabitEthernet0/0, label: "Area 20 · P2P", style: ospf}
+  - {from: area20-r1:GigabitEthernet0/1, to: area20-r2:GigabitEthernet0/0, label: "Area 20 · Cost 20", style: ospf}
+  - {from: area20-r2:GigabitEthernet0/1, to: area20-lan:Ethernet1/49, label: "Area 20 · DR", style: ospf}

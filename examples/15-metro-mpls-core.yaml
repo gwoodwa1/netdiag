@@ -1,0 +1,32 @@
+version: 1
+diagram:
+  title: Multi-Metro MPLS Core
+  subtitle: Regional metro networks connected through a provider MPLS core
+  badge: MPLS METRO WAN
+nodes:
+  mpls-core: {label: Provider MPLS Core, role: wan-cloud, icon: wan-cloud}
+  london-pe: {label: London PE Router, role: edge-router, icon: router, order: 10}
+  berlin-pe: {label: Berlin PE Router, role: edge-router, icon: router, order: 20}
+  paris-pe: {label: Paris PE Router, role: edge-router, icon: router, order: 30}
+  madrid-pe: {label: Madrid PE Router, role: edge-router, icon: router, order: 40}
+  london-metro: {label: London Metro Ring, role: access-switch, icon: core-switch, order: 10}
+  berlin-metro: {label: Berlin Metro Ring, role: access-switch, icon: core-switch, order: 20}
+  paris-metro: {label: Paris Metro Ring, role: access-switch, icon: core-switch, order: 30}
+  madrid-metro: {label: Madrid Metro Ring, role: access-switch, icon: core-switch, order: 40}
+  london-sites: {label: London Sites, role: endpoint, icon: users, order: 10}
+  berlin-sites: {label: Berlin Sites, role: endpoint, icon: users, order: 20}
+  paris-sites: {label: Paris Sites, role: endpoint, icon: users, order: 30}
+  madrid-sites: {label: Madrid Sites, role: endpoint, icon: users, order: 40}
+links:
+  - {from: mpls-core:PE1, to: london-pe:HundredGigE0/0, label: "L3VPN · RT 65000:101", style: wan}
+  - {from: mpls-core:PE2, to: berlin-pe:HundredGigE0/0, label: "L3VPN · RT 65000:102", style: wan}
+  - {from: mpls-core:PE3, to: paris-pe:HundredGigE0/0, label: "L3VPN · RT 65000:103", style: wan}
+  - {from: mpls-core:PE4, to: madrid-pe:HundredGigE0/0, label: "L3VPN · RT 65000:104", style: wan}
+  - {from: london-pe:TenGigabitEthernet0/1, to: london-metro:Ethernet1/49, label: "EVPN · Metro London", style: ring}
+  - {from: berlin-pe:TenGigabitEthernet0/1, to: berlin-metro:Ethernet1/49, label: "EVPN · Metro Berlin", style: ring}
+  - {from: paris-pe:TenGigabitEthernet0/1, to: paris-metro:Ethernet1/49, label: "EVPN · Metro Paris", style: ring}
+  - {from: madrid-pe:TenGigabitEthernet0/1, to: madrid-metro:Ethernet1/49, label: "EVPN · Metro Madrid", style: ring}
+  - {from: london-metro:Ethernet1/1, to: london-sites:Ethernet0/0, label: "Business Services · VLAN 101"}
+  - {from: berlin-metro:Ethernet1/1, to: berlin-sites:Ethernet0/0, label: "Business Services · VLAN 102"}
+  - {from: paris-metro:Ethernet1/1, to: paris-sites:Ethernet0/0, label: "Business Services · VLAN 103"}
+  - {from: madrid-metro:Ethernet1/1, to: madrid-sites:Ethernet0/0, label: "Business Services · VLAN 104"}

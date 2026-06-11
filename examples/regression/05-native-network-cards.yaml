@@ -1,0 +1,12 @@
+version: 1
+diagram:
+  title: Native Network Cards
+nodes:
+  edge: {role: edge-router, icon: router}
+  firewall: {role: firewall, icon: firewall}
+  cloud: {role: public-cloud, icon: aws}
+links:
+  - from: edge:Ethernet0/0
+    to: firewall:Ethernet0/0
+  - from: firewall:Ethernet0/1
+    to: cloud:Ethernet0/0
