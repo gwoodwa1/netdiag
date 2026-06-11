@@ -127,13 +127,34 @@ func Source(diagram *model.Diagram) string {
 		fmt.Fprintf(&out, "  target-arrowhead.label: %s\n", quote(endpointLabel(link.TargetLabel(), link.To.Address)))
 		fmt.Fprintf(&out, "  source-arrowhead.shape: none\n")
 		fmt.Fprintf(&out, "  target-arrowhead.shape: none\n")
-		fmt.Fprintf(&out, "  style.stroke: %s\n", quote(linkColor(link.Style)))
-		if dash := linkDash(link.Style); dash > 0 {
+		visual := diagram.ResolveLinkStyle(link)
+		color := linkColor(link.Style)
+		if visual.Color != "" {
+			color = visual.Color
+		}
+		fmt.Fprintf(&out, "  style.stroke: %s\n", quote(color))
+		if visual.Width > 0 {
+			fmt.Fprintf(&out, "  style.stroke-width: %s\n", strconv.FormatFloat(visual.Width, 'f', -1, 64))
+		}
+		if dash := resolvedLinkDash(link.Style, visual.Pattern); dash > 0 {
 			fmt.Fprintf(&out, "  style.stroke-dash: %d\n", dash)
 		}
 		fmt.Fprintf(&out, "}\n")
 	}
 	return out.String()
+}
+
+func resolvedLinkDash(style, pattern string) int {
+	switch pattern {
+	case "solid":
+		return 0
+	case "dashed":
+		return 6
+	case "dotted":
+		return 2
+	default:
+		return linkDash(style)
+	}
 }
 
 func endpointLabel(label, address string) string {

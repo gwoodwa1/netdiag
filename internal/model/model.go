@@ -38,6 +38,8 @@ type Link struct {
 	To           LinkEndpoint
 	Label        string
 	Style        string
+	Protocol     string
+	Status       string
 	Bundle       string
 	LACP         bool
 	MultiChassis bool
@@ -74,6 +76,36 @@ type Theme struct {
 	LinkStyle       string
 	InterfaceLabels string
 	Renderer        string
+	LinkStyles      LinkStyleRules
+}
+
+type LinkStyleRules struct {
+	Protocol map[string]VisualStyle
+	Status   map[string]VisualStyle
+}
+
+type VisualStyle struct {
+	Color   string
+	Pattern string
+	Width   float64
+}
+
+func (d *Diagram) ResolveLinkStyle(link Link) VisualStyle {
+	var result VisualStyle
+	merge := func(style VisualStyle) {
+		if style.Color != "" {
+			result.Color = style.Color
+		}
+		if style.Pattern != "" {
+			result.Pattern = style.Pattern
+		}
+		if style.Width > 0 {
+			result.Width = style.Width
+		}
+	}
+	merge(d.Theme.LinkStyles.Protocol[strings.ToLower(link.Protocol)])
+	merge(d.Theme.LinkStyles.Status[strings.ToLower(link.Status)])
+	return result
 }
 
 func (link Link) Tags() []string {
@@ -210,6 +242,8 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 			},
 			Label:        linkSpec.Label,
 			Style:        linkSpec.Style,
+			Protocol:     linkSpec.Protocol,
+			Status:       linkSpec.Status,
 			Bundle:       linkSpec.Bundle,
 			LACP:         linkSpec.LACP,
 			MultiChassis: linkSpec.MultiChassis,
@@ -229,6 +263,7 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		LinkStyle:       doc.Diagram.LinkStyle,
 		InterfaceLabels: doc.Diagram.InterfaceAt,
 		Renderer:        doc.Diagram.Renderer,
+		LinkStyles:      compileLinkStyleRules(doc.Diagram.LinkStyles),
 	}
 
 	return &Diagram{
@@ -237,6 +272,17 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		Links:  links,
 		Theme:  theme,
 	}, nil
+}
+
+func compileLinkStyleRules(rules spec.LinkStyleRules) LinkStyleRules {
+	compile := func(input map[string]spec.VisualStyle) map[string]VisualStyle {
+		output := make(map[string]VisualStyle, len(input))
+		for name, style := range input {
+			output[strings.ToLower(name)] = VisualStyle{Color: style.Color, Pattern: style.Pattern, Width: style.Width}
+		}
+		return output
+	}
+	return LinkStyleRules{Protocol: compile(rules.Protocol), Status: compile(rules.Status)}
 }
 
 func resolveGroup(id string, g *spec.Group, parentID string, groups *[]Group, nodeToGroup map[string]string) {

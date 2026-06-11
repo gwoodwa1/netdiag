@@ -1,0 +1,33 @@
+version: 1
+diagram:
+  title: Themed Link Status
+  subtitle: Protocol colors with operational-state overrides
+  theme: nord
+  link_styles:
+    protocol:
+      ospf:
+        color: "#a3be8c"
+        pattern: solid
+        width: 3
+    status:
+      inactive:
+        color: "#7b8496"
+        pattern: dashed
+nodes:
+  core-01:
+    role: core-router
+  core-02:
+    role: core-router
+  backup-01:
+    role: router
+links:
+  - from: core-01:Ethernet0/0
+    to: core-02:Ethernet0/0
+    label: Active OSPF
+    protocol: ospf
+    status: active
+  - from: core-01:Ethernet0/1
+    to: backup-01:Ethernet0/0
+    label: Inactive backup
+    protocol: ospf
+    status: inactive

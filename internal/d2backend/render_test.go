@@ -48,3 +48,20 @@ func TestELKOutputIsDeterministic(t *testing.T) {
 		t.Fatal("D2/ELK output changed across identical renders")
 	}
 }
+
+func TestSourceUsesProtocolAndStatusLinkStyles(t *testing.T) {
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "a", Role: "router"}, {ID: "b", Role: "router"}},
+		Links: []model.Link{{From: model.LinkEndpoint{Node: "a", Port: "Eth0/0"}, To: model.LinkEndpoint{Node: "b", Port: "Eth0/1"}, Protocol: "ospf", Status: "inactive"}},
+		Theme: model.Theme{LinkStyles: model.LinkStyleRules{
+			Protocol: map[string]model.VisualStyle{"ospf": {Color: "#00ff00", Pattern: "solid", Width: 3}},
+			Status:   map[string]model.VisualStyle{"inactive": {Color: "#888888", Pattern: "dashed"}},
+		}},
+	}
+	source := Source(diagram)
+	for _, want := range []string{`style.stroke: "#888888"`, `style.stroke-width: 3`, `style.stroke-dash: 6`} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("D2 source missing %q:\n%s", want, source)
+		}
+	}
+}

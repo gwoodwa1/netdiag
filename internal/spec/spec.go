@@ -20,15 +20,27 @@ type Document struct {
 }
 
 type Diagram struct {
-	Title       string `yaml:"title,omitempty"`
-	Subtitle    string `yaml:"subtitle,omitempty"`
-	Badge       string `yaml:"badge,omitempty"`
-	Layout      string `yaml:"layout,omitempty"`
-	Direction   string `yaml:"direction,omitempty"`
-	LinkStyle   string `yaml:"link_style,omitempty"`
-	InterfaceAt string `yaml:"interface_labels,omitempty"`
-	Theme       string `yaml:"theme,omitempty"`
-	Renderer    string `yaml:"renderer,omitempty"`
+	Title       string         `yaml:"title,omitempty"`
+	Subtitle    string         `yaml:"subtitle,omitempty"`
+	Badge       string         `yaml:"badge,omitempty"`
+	Layout      string         `yaml:"layout,omitempty"`
+	Direction   string         `yaml:"direction,omitempty"`
+	LinkStyle   string         `yaml:"link_style,omitempty"`
+	InterfaceAt string         `yaml:"interface_labels,omitempty"`
+	Theme       string         `yaml:"theme,omitempty"`
+	Renderer    string         `yaml:"renderer,omitempty"`
+	LinkStyles  LinkStyleRules `yaml:"link_styles,omitempty"`
+}
+
+type LinkStyleRules struct {
+	Protocol map[string]VisualStyle `yaml:"protocol,omitempty"`
+	Status   map[string]VisualStyle `yaml:"status,omitempty"`
+}
+
+type VisualStyle struct {
+	Color   string  `yaml:"color,omitempty"`
+	Pattern string  `yaml:"pattern,omitempty"`
+	Width   float64 `yaml:"width,omitempty"`
 }
 
 type Group struct {
@@ -95,6 +107,8 @@ type Link struct {
 	To           LinkEndpoint `yaml:"to"`
 	Label        string       `yaml:"label,omitempty"`
 	Style        string       `yaml:"style,omitempty"`
+	Protocol     string       `yaml:"protocol,omitempty"`
+	Status       string       `yaml:"status,omitempty"`
 	Bundle       string       `yaml:"bundle,omitempty"`
 	LACP         bool         `yaml:"lacp,omitempty"`
 	MultiChassis bool         `yaml:"multi_chassis,omitempty"`
@@ -213,9 +227,24 @@ func Validate(doc *Document) error {
 	if doc.Diagram.Renderer != "" && doc.Diagram.Renderer != "native" && doc.Diagram.Renderer != "d2" {
 		problems = append(problems, "diagram renderer must be native or d2")
 	}
-	if doc.Diagram.Theme != "" && doc.Diagram.Theme != "light" && doc.Diagram.Theme != "premium" {
-		problems = append(problems, "diagram theme must be light or premium")
+	if doc.Diagram.Theme != "" && doc.Diagram.Theme != "light" && doc.Diagram.Theme != "premium" && doc.Diagram.Theme != "nord" && doc.Diagram.Theme != "dracula" {
+		problems = append(problems, "diagram theme must be light, premium, nord, or dracula")
 	}
+	validateStyleRules := func(kind string, rules map[string]VisualStyle) {
+		for name, style := range rules {
+			if strings.TrimSpace(name) == "" {
+				problems = append(problems, fmt.Sprintf("diagram link_styles %s name cannot be empty", kind))
+			}
+			if style.Pattern != "" && style.Pattern != "solid" && style.Pattern != "dashed" && style.Pattern != "dotted" {
+				problems = append(problems, fmt.Sprintf("diagram link_styles %s %q pattern must be solid, dashed, or dotted", kind, name))
+			}
+			if style.Width < 0 {
+				problems = append(problems, fmt.Sprintf("diagram link_styles %s %q width cannot be negative", kind, name))
+			}
+		}
+	}
+	validateStyleRules("protocol", doc.Diagram.LinkStyles.Protocol)
+	validateStyleRules("status", doc.Diagram.LinkStyles.Status)
 
 	for id, node := range doc.Nodes {
 		if strings.TrimSpace(id) == "" {

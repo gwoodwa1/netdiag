@@ -94,6 +94,35 @@ func TestDefaultThemeOmitsPremiumEffects(t *testing.T) {
 	}
 }
 
+func TestNamedThemeAndLinkRulesRender(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Diagram: spec.Diagram{
+			Theme: "nord",
+			LinkStyles: spec.LinkStyleRules{
+				Protocol: map[string]spec.VisualStyle{"ospf": {Color: "#00ff00", Pattern: "solid", Width: 3}},
+				Status:   map[string]spec.VisualStyle{"inactive": {Color: "#888888", Pattern: "dashed"}},
+			},
+		},
+		Nodes: map[string]spec.Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []spec.Link{{From: spec.LinkEndpoint{Node: "a", Port: "Eth0/0"}, To: spec.LinkEndpoint{Node: "b", Port: "Eth0/0"}, Protocol: "ospf", Status: "inactive"}},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	for _, want := range []string{`class="theme-nord"`, `.theme-nord`, `stroke="#888888"`, `stroke-width="3.0"`, `stroke-dasharray="8 5"`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("render missing %q", want)
+		}
+	}
+}
+
 func TestRenderIncludesEndpointLabels(t *testing.T) {
 	doc := &spec.Document{
 		Version: 1,

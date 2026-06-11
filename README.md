@@ -108,6 +108,29 @@ Replace built-ins with a local SVG pack using `render --icons <directory>` or
 `NETDIAG_ICONS`; missing or unsafe files fall back to the built-in catalog.
 Use `diagram.theme: premium` for opt-in gradients, layered device cards,
 status LEDs, cable underlays, and a subtle technical-grid background.
+Use `diagram.theme: nord` or `diagram.theme: dracula` for a global dark color
+scheme. Protocol and operational-state link rules can be declared once and
+reused across links; status rules override protocol rules field-by-field:
+
+```yaml
+diagram:
+  theme: nord
+  link_styles:
+    protocol:
+      ospf: {color: "#a3be8c", pattern: solid, width: 3}
+    status:
+      inactive: {color: "#7b8496", pattern: dashed}
+
+links:
+  - from: core-01:Ethernet0/0
+    to: core-02:Ethernet0/0
+    protocol: ospf
+    status: active
+  - from: core-01:Ethernet0/1
+    to: backup-01:Ethernet0/0
+    protocol: ospf
+    status: inactive
+```
 
 ## Explicit includes
 

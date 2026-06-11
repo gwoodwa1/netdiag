@@ -112,3 +112,14 @@ links:
 		t.Errorf("unexpected link to: %+v", l.To)
 	}
 }
+
+func TestResolveLinkStyleStatusOverridesProtocol(t *testing.T) {
+	diagram := &Diagram{Theme: Theme{LinkStyles: LinkStyleRules{
+		Protocol: map[string]VisualStyle{"ospf": {Color: "#00ff00", Pattern: "solid", Width: 3}},
+		Status:   map[string]VisualStyle{"inactive": {Color: "#888888", Pattern: "dashed"}},
+	}}}
+	got := diagram.ResolveLinkStyle(Link{Protocol: "OSPF", Status: "INACTIVE"})
+	if got.Color != "#888888" || got.Pattern != "dashed" || got.Width != 3 {
+		t.Fatalf("unexpected resolved style: %+v", got)
+	}
+}

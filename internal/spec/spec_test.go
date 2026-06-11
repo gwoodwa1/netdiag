@@ -85,6 +85,27 @@ func TestValidateAcceptsPremiumThemeAndRejectsUnknownTheme(t *testing.T) {
 	}
 }
 
+func TestValidateAcceptsNamedThemesAndLinkStyleRules(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Diagram: Diagram{
+			Theme: "dracula",
+			LinkStyles: LinkStyleRules{
+				Protocol: map[string]VisualStyle{"ospf": {Color: "#00ff00", Pattern: "solid"}},
+				Status:   map[string]VisualStyle{"inactive": {Color: "#888888", Pattern: "dashed", Width: 1.5}},
+			},
+		},
+		Nodes: map[string]Node{"router": {Role: "router"}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("named theme and link styles should validate: %v", err)
+	}
+	doc.Diagram.LinkStyles.Status["inactive"] = VisualStyle{Pattern: "wavy"}
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected invalid link pattern validation error")
+	}
+}
+
 func TestLinkTags(t *testing.T) {
 	link := Link{
 		Bundle:       "Port-Channel10",
