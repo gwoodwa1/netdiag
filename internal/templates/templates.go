@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gwoodwa1/netdiag/internal/source"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 	"gopkg.in/yaml.v3"
 )
@@ -28,21 +29,8 @@ type TemplateParam struct {
 	Default  string `yaml:"default"`
 }
 
-type TemplateUse struct {
-	Template string            `yaml:"template"`
-	As       string            `yaml:"as"`
-	Params   map[string]string `yaml:"params"`
-}
-
-type SourceDocument struct {
-	Version int                    `yaml:"version"`
-	Diagram spec.Diagram           `yaml:"diagram"`
-	Use     []TemplateUse          `yaml:"use,omitempty"`
-	Connect []spec.Link            `yaml:"connect,omitempty"`
-	Groups  map[string]*spec.Group `yaml:"groups,omitempty"`
-	Nodes   map[string]spec.Node   `yaml:"nodes,omitempty"`
-	Links   []spec.Link            `yaml:"links,omitempty"`
-}
+type TemplateUse = source.TemplateUse
+type SourceDocument = source.Document
 
 type TemplateLoader interface {
 	Load(id string) (*Template, error)
@@ -66,15 +54,11 @@ type ExpansionResult struct {
 var placeholderPattern = regexp.MustCompile(`\{\{\s*([A-Za-z_][A-Za-z0-9_-]*)\s*\}\}`)
 
 func Load(path string, loader TemplateLoader) (*ExpansionResult, error) {
-	data, err := os.ReadFile(path)
+	document, err := source.Load(path)
 	if err != nil {
 		return nil, err
 	}
-	var source SourceDocument
-	if err := decodeStrict(data, &source); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", path, err)
-	}
-	result, err := (&TemplateExpander{Loader: loader}).Expand(&source)
+	result, err := (&TemplateExpander{Loader: loader}).Expand(document)
 	if err != nil {
 		return nil, fmt.Errorf("expand %s: %w", path, err)
 	}

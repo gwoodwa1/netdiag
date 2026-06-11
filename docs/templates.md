@@ -5,6 +5,10 @@ diagrams. They are a preprocessing feature: netdiag expands them into ordinary
 groups, nodes, and links before validation, planning, or rendering. Renderers
 never need to know that templates were used.
 
+For project-level composition, included files may contain template `use`
+entries. Includes merge first, then templates expand. See
+[includes.md](includes.md).
+
 ## Template format
 
 Templates live under `templates/` by default and have a stable dotted ID:

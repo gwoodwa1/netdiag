@@ -138,6 +138,20 @@ func TestExistingNonTemplateExampleStillLoads(t *testing.T) {
 	}
 }
 
+func TestIncludedTemplateFragmentsExpand(t *testing.T) {
+	result, err := Load(
+		filepath.Join("..", "..", "examples", "includes", "mpls-wan.yaml"),
+		&FileTemplateLoader{Root: filepath.Join("..", "..", "templates")},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Document.Nodes) != 6 || len(result.Document.Groups) != 3 || len(result.Document.Links) != 5 {
+		t.Fatalf("unexpected included expansion counts: %d nodes, %d groups, %d links",
+			len(result.Document.Nodes), len(result.Document.Groups), len(result.Document.Links))
+	}
+}
+
 func TestConnectRejectsUnknownExpandedNode(t *testing.T) {
 	_, err := (&TemplateExpander{}).Expand(&SourceDocument{
 		Version: 1,

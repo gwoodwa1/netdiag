@@ -28,6 +28,7 @@ go build -o netdiag ./cmd/netdiag
 netdiag schema > netdiag.schema.json
 netdiag validate --json examples/spine-leaf.yaml
 netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
+netdiag validate examples/includes/mpls-wan.yaml
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
@@ -77,6 +78,29 @@ netdiag expand examples/templates/mpls-wan-template.yaml -o expanded.yaml
 
 See [docs/templates.md](docs/templates.md) for the template format, naming
 rules, parameters, and Phase 1 limitations.
+
+## Explicit includes
+
+Split larger projects into normal YAML fragments with top-level `include`.
+Paths resolve relative to the containing file, and included fragments may
+instantiate templates:
+
+```yaml
+version: 1
+include:
+  - parts/sites.yaml
+  - parts/core.yaml
+
+diagram: {title: UK MPLS WAN, layout: sites}
+connect:
+  - from: london-pe1:Ethernet0/0
+    to: uk-core-p1:Ethernet0/0
+    label: 100G
+```
+
+Includes merge deterministically before template expansion. Duplicate IDs,
+cycles, absolute paths, and paths escaping the entry diagram's directory are
+rejected. See [docs/includes.md](docs/includes.md) for the full contract.
 
 ```yaml
 links:

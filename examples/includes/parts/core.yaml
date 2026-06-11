@@ -1,0 +1,7 @@
+version: 1
+
+use:
+  - template: core.mpls-two-p
+    as: uk-core
+    params:
+      core_label: UK MPLS Core

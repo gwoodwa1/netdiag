@@ -1,0 +1,25 @@
+version: 1
+
+include:
+  - parts/sites.yaml
+  - parts/core.yaml
+
+diagram:
+  title: Included Template Demo - MPLS WAN
+  layout: sites
+  link_style: orthogonal
+
+connect:
+  - from:
+      node: london-pe1
+      port: Ethernet0/0
+      address: 10.20.0.1/30
+    to:
+      node: uk-core-p1
+      port: Ethernet0/0
+      address: 10.20.0.2/30
+    label: 100G LON-P1
+    labels: {source: Eth0/0, middle: 100G LON-P1, target: Eth0/0}
+  - from: manchester-pe1:Ethernet0/0
+    to: uk-core-p2:Ethernet0/0
+    label: 100G MAN-P2

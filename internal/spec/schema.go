@@ -21,6 +21,7 @@ func JSONSchema() ([]byte, error) {
 		"anyOf": []interface{}{
 			map[string]interface{}{"required": []string{"nodes"}},
 			map[string]interface{}{"required": []string{"use"}},
+			map[string]interface{}{"required": []string{"include"}},
 		},
 		"properties": map[string]interface{}{
 			"version": map[string]interface{}{"const": 1},
@@ -42,7 +43,11 @@ func JSONSchema() ([]byte, error) {
 			"groups": map[string]interface{}{"type": "object", "additionalProperties": map[string]interface{}{"$ref": "#/$defs/group"}},
 			"nodes":  map[string]interface{}{"type": "object", "additionalProperties": map[string]interface{}{"$ref": "#/$defs/node"}, "minProperties": 1},
 			"links":  map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/$defs/link"}},
-			"use":    map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/$defs/templateUse"}},
+			"include": map[string]interface{}{
+				"type":  "array",
+				"items": map[string]interface{}{"type": "string"},
+			},
+			"use": map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/$defs/templateUse"}},
 			"connect": map[string]interface{}{
 				"type":  "array",
 				"items": map[string]interface{}{"$ref": "#/$defs/link"},

@@ -1,0 +1,11 @@
+version: 1
+
+use:
+  - template: site.dual-pe
+    as: london
+    params:
+      site_label: London
+  - template: site.dual-pe
+    as: manchester
+    params:
+      site_label: Manchester
