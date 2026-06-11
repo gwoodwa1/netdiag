@@ -11,6 +11,7 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
 	"github.com/gwoodwa1/netdiag/internal/export"
 	"github.com/gwoodwa1/netdiag/internal/icons"
+	"github.com/gwoodwa1/netdiag/internal/interactive"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/planner"
 	"github.com/gwoodwa1/netdiag/internal/source"
@@ -103,7 +104,7 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--renderer native|d2] [--icons directory] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf] [--renderer native|d2] [--icons directory] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
 	}
 	if iconDir == "" {
@@ -142,6 +143,13 @@ func render(args []string) {
 	target := output
 	if target == "" {
 		target = strings.TrimSuffix(input, filepath.Ext(input)) + ".svg"
+	}
+	if strings.EqualFold(filepath.Ext(target), ".html") {
+		if backend != "native" {
+			exitOnError(fmt.Errorf("interactive HTML export requires the native renderer"))
+		}
+		result, err = interactive.Render(diag, result)
+		exitOnError(err)
 	}
 	exitOnError(export.Write(target, result))
 	reportLayout := diag.Theme.Layout
@@ -445,7 +453,7 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg|diagram.png|diagram.pdf] [--backend native|d2] [--icons directory] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf] [--backend native|d2] [--icons directory] [--layout elk|dagre]
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>

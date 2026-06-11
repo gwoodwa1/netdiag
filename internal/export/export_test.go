@@ -18,6 +18,17 @@ func TestWriteSVG(t *testing.T) {
 	}
 }
 
+func TestWriteHTML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "diagram.html")
+	if err := Write(path, []byte("<!doctype html>")); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "<!doctype html>" {
+		t.Fatalf("unexpected HTML output: %q, %v", data, err)
+	}
+}
+
 func TestWriteRejectsUnknownFormat(t *testing.T) {
 	err := Write(filepath.Join(t.TempDir(), "diagram.bmp"), []byte("<svg/>"))
 	if err == nil || !strings.Contains(err.Error(), "unsupported output format") {

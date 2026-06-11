@@ -250,7 +250,7 @@ func renderSiteBackgrounds(out *bytes.Buffer, groups []placedGroup, premium bool
 	for _, group := range groups {
 		b := group.Box
 		if group.Depth == 0 {
-			fmt.Fprintf(out, `<g class="site site-%s">`, escapeID(group.ID))
+			fmt.Fprintf(out, `<g id="group-%s" class="site site-%s" data-netdiag-kind="group">`, escapeID(group.ID), escapeID(group.ID))
 			fill := "#eff6ff"
 			if premium {
 				fill = "url(#siteGradient)"
@@ -262,7 +262,7 @@ func renderSiteBackgrounds(out *bytes.Buffer, groups []placedGroup, premium bool
 			out.WriteString(`</g>`)
 			continue
 		}
-		fmt.Fprintf(out, `<g class="site-subgroup site-subgroup-%s">`, escapeID(group.ID))
+		fmt.Fprintf(out, `<g id="group-%s" class="site-subgroup site-subgroup-%s" data-netdiag-kind="group">`, escapeID(group.ID), escapeID(group.ID))
 		fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="14" fill="#ffffff" fill-opacity=".28" stroke="#94a3b8" stroke-dasharray="7 6"/>`, b.X, b.Y, b.W, b.H)
 		fmt.Fprintf(out, `<text x="%.1f" y="%.1f" fill="#475569" font-family="ui-monospace,SFMono-Regular,monospace" font-size="10" font-weight="750">%s</text>`, b.X+14, b.Y+18, escape(strings.ToUpper(group.Label)))
 		out.WriteString(`</g>`)
@@ -342,6 +342,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 			visual := bundleVisuals[link.Bundle]
 			path = pathDataVia(start, point{X: visual.X, Y: visual.Y}, end, doc.Theme.LinkStyle)
 		}
+		fmt.Fprintf(out, `<g id="link-%d" data-netdiag-kind="link">`, index+1)
 		if premium {
 			fmt.Fprintf(out, `<path class="link-underlay" d="%s" fill="none" stroke="#ffffff" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" opacity=".88"/>`, path, strokeWidth+3.8)
 		}
@@ -349,7 +350,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		if premium {
 			className = ` class="premium-link"`
 		}
-		fmt.Fprintf(out, `<path id="link-%d"%s d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, index+1, className, path, color, strokeWidth, dash)
+		fmt.Fprintf(out, `<path%s d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, className, path, color, strokeWidth, dash)
 		renderPortMarker(out, start, color, premium)
 		renderPortMarker(out, end, color, premium)
 		renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, color)
@@ -370,6 +371,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 				renderLinkTags(out, start, end, link.Tags(), color, index)
 			}
 		}
+		out.WriteString(`</g>`)
 	}
 	bundleIDs := make([]string, 0, len(bundleVisuals))
 	for id := range bundleVisuals {
@@ -783,7 +785,7 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons
 			filter = "deviceShadow"
 			fill = "url(#deviceCardGradient)"
 		}
-		fmt.Fprintf(out, `<g id="%s" filter="url(#%s)">`, escapeID(id), filter)
+		fmt.Fprintf(out, `<g id="%s" data-netdiag-kind="node" filter="url(#%s)">`, escapeID(id), filter)
 		fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="14" fill="%s" stroke="%s" stroke-width="2"/>`, b.X, b.Y, b.W, b.H, fill, color)
 		fmt.Fprintf(out, `<rect x="%.1f" y="%.1f" width="8" height="%.1f" rx="4" fill="%s"/>`, b.X, b.Y, b.H, color)
 		if premium {

@@ -6,12 +6,16 @@ SVG is netdiag's native deterministic output:
 netdiag render diagram.yaml -o diagram.svg
 ```
 
-Choose PNG or PDF by changing the output extension:
+Choose interactive HTML, PNG, or PDF by changing the output extension:
 
 ```sh
+netdiag render diagram.yaml -o diagram.html
 netdiag render diagram.yaml -o diagram.png
 netdiag render diagram.yaml -o diagram.pdf
 ```
+
+Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
+and group-collapse controls. See [interactive.md](interactive.md).
 
 PNG and PDF conversion uses a local external SVG converter. Netdiag discovers
 `rsvg-convert`, Inkscape, or ImageMagick in that order. Override discovery with

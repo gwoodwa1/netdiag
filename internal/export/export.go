@@ -11,12 +11,12 @@ import (
 func Write(path string, svg []byte) error {
 	format := strings.ToLower(filepath.Ext(path))
 	switch format {
-	case "", ".svg":
+	case "", ".svg", ".html":
 		return os.WriteFile(path, svg, 0o644)
 	case ".png", ".pdf":
 		return convert(path, format[1:], svg)
 	default:
-		return fmt.Errorf("unsupported output format %q; use .svg, .png, or .pdf", format)
+		return fmt.Errorf("unsupported output format %q; use .svg, .html, .png, or .pdf", format)
 	}
 }
 

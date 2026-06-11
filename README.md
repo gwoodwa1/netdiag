@@ -49,6 +49,7 @@ netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
 netdiag plan --renderer d2 examples/spine-leaf.yaml
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.svg
+netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.html
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.png
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.pdf
 ```
@@ -63,9 +64,10 @@ netdiag render examples/skills/d2-elk-hard-cases.yaml --renderer d2 --layout elk
   --report render-report.json -o examples/skills/d2-elk-hard-cases.elk.svg
 ```
 
-The output extension selects SVG, PNG, or PDF. SVG is native; PNG and PDF use
-a locally installed `rsvg-convert`, Inkscape, or ImageMagick converter. See
-[docs/export.md](docs/export.md).
+The output extension selects SVG, interactive HTML, PNG, or PDF. HTML embeds
+the native SVG with offline pan, zoom, inspection, and group-collapse controls.
+PNG and PDF use a locally installed converter. See
+[docs/export.md](docs/export.md) and [docs/interactive.md](docs/interactive.md).
 
 D2 is used as an automatic-layout experiment, not assumed to solve every
 network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)
