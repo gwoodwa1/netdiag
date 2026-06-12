@@ -27,6 +27,14 @@ type RendererCapabilities struct {
 	Capabilities []Capability `json:"capabilities"`
 }
 
+// RendererCapability is the planner-facing contract implemented by every
+// renderer. Renderers consume model.Diagram, the renderer-neutral IR, and
+// advertise how faithfully they handle each feature required by that IR.
+type RendererCapability interface {
+	Name() string
+	Support(diagram *model.Diagram, feature string) SupportLevel
+}
+
 type Assessment struct {
 	Feature string       `json:"feature"`
 	Level   SupportLevel `json:"level"`
@@ -88,37 +96,55 @@ var capabilityNotes = map[string]string{
 	FeatureOrthogonalRouting: "route links orthogonally around device cards",
 }
 
-var rendererLevels = map[string]map[string]SupportLevel{
-	"native": {
+type staticRendererCapability struct {
+	name   string
+	levels map[string]SupportLevel
+}
+
+func (renderer staticRendererCapability) Name() string {
+	return renderer.name
+}
+
+func (renderer staticRendererCapability) Support(diagram *model.Diagram, feature string) SupportLevel {
+	if renderer.name == "native" && diagram.Theme.Layout == "sites" {
+		switch feature {
+		case FeatureGroups, FeatureParallelLinks:
+			return Strict
+		}
+	}
+	return renderer.levels[feature]
+}
+
+var renderers = []RendererCapability{
+	staticRendererCapability{name: "native", levels: map[string]SupportLevel{
 		FeatureGroups: BestEffort, FeatureNestedGroups: BestEffort,
 		FeatureEndpointSides: Strict, FeatureEndpointAddresses: Strict,
 		FeatureSourceLabels: Strict, FeatureMiddleLabels: Strict, FeatureTargetLabels: Strict,
 		FeatureParallelLinks: BestEffort, FeatureNetworkCards: Strict, FeatureCustomIcons: Strict,
 		FeatureManualPlacement: Unsupported,
 		FeatureSiteAwareLayout: Strict, FeatureOrthogonalRouting: Strict,
-	},
-	"d2": {
+	}},
+	staticRendererCapability{name: "d2", levels: map[string]SupportLevel{
 		FeatureGroups: Strict, FeatureNestedGroups: Strict,
 		FeatureEndpointSides: BestEffort, FeatureEndpointAddresses: BestEffort,
 		FeatureSourceLabels: Strict, FeatureMiddleLabels: Strict, FeatureTargetLabels: Strict,
 		FeatureParallelLinks: Strict, FeatureNetworkCards: Unsupported, FeatureCustomIcons: Unsupported,
 		FeatureManualPlacement: Unsupported,
 		FeatureSiteAwareLayout: Unsupported, FeatureOrthogonalRouting: BestEffort,
-	},
+	}},
 }
 
 func Capabilities() []RendererCapabilities {
-	renderers := []string{"native", "d2"}
 	result := make([]RendererCapabilities, 0, len(renderers))
 	for _, renderer := range renderers {
-		features := make([]string, 0, len(rendererLevels[renderer]))
-		for feature := range rendererLevels[renderer] {
+		features := make([]string, 0, len(capabilityNotes))
+		for feature := range capabilityNotes {
 			features = append(features, feature)
 		}
 		sort.Strings(features)
-		caps := RendererCapabilities{Renderer: renderer}
+		caps := RendererCapabilities{Renderer: renderer.Name()}
 		for _, feature := range features {
-			caps.Capabilities = append(caps.Capabilities, Capability{Feature: feature, Level: rendererLevels[renderer][feature], Note: capabilityNotes[feature]})
+			caps.Capabilities = append(caps.Capabilities, Capability{Feature: feature, Level: renderer.Support(&model.Diagram{}, feature), Note: capabilityNotes[feature]})
 		}
 		result = append(result, caps)
 	}
@@ -135,7 +161,8 @@ func Recommend(diagram *model.Diagram) string {
 }
 
 func Build(diagram *model.Diagram, renderer string) (Plan, error) {
-	if _, ok := rendererLevels[renderer]; !ok {
+	capability, ok := rendererByName(renderer)
+	if !ok {
 		return Plan{}, fmt.Errorf("unknown renderer %q; use native or d2", renderer)
 	}
 	plan := Plan{
@@ -143,7 +170,7 @@ func Build(diagram *model.Diagram, renderer string) (Plan, error) {
 		Strict: []Assessment{}, BestEffort: []Assessment{}, Unsupported: []Assessment{}, Warnings: []Warning{},
 	}
 	for _, requirement := range requirements(diagram) {
-		assessment := Assessment{Feature: requirement.Feature, Level: supportLevel(diagram, renderer, requirement.Feature), Reason: requirement.Reason}
+		assessment := Assessment{Feature: requirement.Feature, Level: capability.Support(diagram, requirement.Feature), Reason: requirement.Reason}
 		switch assessment.Level {
 		case Strict:
 			plan.Strict = append(plan.Strict, assessment)
@@ -256,9 +283,13 @@ func requirements(diagram *model.Diagram) []requirement {
 }
 
 func score(diagram *model.Diagram, renderer string) int {
+	capability, ok := rendererByName(renderer)
+	if !ok {
+		return 0
+	}
 	score := 0
 	for _, item := range requirements(diagram) {
-		switch supportLevel(diagram, renderer, item.Feature) {
+		switch capability.Support(diagram, item.Feature) {
 		case Strict:
 			score += item.Weight * 2
 		case BestEffort:
@@ -270,12 +301,11 @@ func score(diagram *model.Diagram, renderer string) int {
 	return score
 }
 
-func supportLevel(diagram *model.Diagram, renderer, feature string) SupportLevel {
-	if renderer == "native" && diagram.Theme.Layout == "sites" {
-		switch feature {
-		case FeatureGroups, FeatureParallelLinks:
-			return Strict
+func rendererByName(name string) (RendererCapability, bool) {
+	for _, renderer := range renderers {
+		if renderer.Name() == name {
+			return renderer, true
 		}
 	}
-	return rendererLevels[renderer][feature]
+	return nil, false
 }

@@ -7,6 +7,9 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/spec"
 )
 
+// Diagram is the renderer-neutral intermediate representation compiled from an
+// expanded and validated source document. Rendering backends must consume this
+// type rather than authored YAML or spec.Document.
 type Diagram struct {
 	Nodes  []Node
 	Groups []Group
