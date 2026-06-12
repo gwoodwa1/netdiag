@@ -89,3 +89,35 @@ func TestParseOpenConfigAndConvert(t *testing.T) {
 		t.Fatalf("unexpected diagram: %+v", doc)
 	}
 }
+
+func TestParseJunosXML(t *testing.T) {
+	input := `user@router1> show isis adjacency | display xml
+<rpc-reply xmlns:junos="http://xml.juniper.net/junos/14.1R4/junos">
+  <isis-adjacency-information xmlns="http://xml.juniper.net/junos/14.1R4/junos-routing" junos:style="brief">
+    <isis-adjacency>
+      <interface-name>ge-0/0/1.0</interface-name>
+      <system-name>MX1</system-name>
+      <level>2</level>
+      <adjacency-state>Up</adjacency-state>
+      <holdtime>24</holdtime>
+    </isis-adjacency>
+    <isis-adjacency>
+      <interface-name>ge-0/0/3.10</interface-name>
+      <system-name>MX3</system-name>
+      <level>1</level>
+      <adjacency-state>Up</adjacency-state>
+      <holdtime>24</holdtime>
+    </isis-adjacency>
+  </isis-adjacency-information>
+</rpc-reply>`
+	result, err := Parse([]byte(input), "auto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.LocalNode != "router1" || len(result.Neighbors) != 2 {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+	if got := result.Neighbors[1]; got.SystemID != "MX3" || got.Interface != "ge-0/0/3.10" || got.Type != "L1" || got.State != "up" || got.Holdtime != 24 {
+		t.Fatalf("unexpected adjacency: %+v", got)
+	}
+}

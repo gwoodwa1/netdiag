@@ -2,11 +2,12 @@
 
 `netdiag discover isis` converts routing adjacency output into normal netdiag
 YAML. It supports Cisco IOS XR `show isis neighbors` and OpenConfig IS-IS
-adjacency JSON:
+adjacency JSON, plus Junos IS-IS adjacency XML:
 
 ```sh
 netdiag discover isis show-isis-neighbors.txt -o isis-topology.yaml
 netdiag discover isis openconfig-isis.json --format openconfig --local router-01 -o isis-topology.yaml
+netdiag discover isis junos-isis.xml --format juniper-xml --local router-01 -o isis-topology.yaml
 netdiag discover isis captures/ -o isis-network.yaml
 netdiag render isis-network.yaml -o isis-network.svg
 ```
@@ -31,3 +32,8 @@ OpenConfig JSON is parsed namespace-tolerantly. Interface and level context are
 inherited from the containing OpenConfig lists. Because OpenConfig adjacency
 state commonly omits a remote interface/SNPA, the generated remote endpoint is
 named `isis-adjacency`.
+
+Junos `show isis adjacency | display xml` is namespace-tolerant and extracts
+the local interface, system name, level, adjacency state, and holdtime. Raw XML
+requires `--local`; surrounding `user@router>` prompt text supplies it
+automatically.

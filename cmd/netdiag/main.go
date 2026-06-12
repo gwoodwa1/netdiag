@@ -334,7 +334,7 @@ func convertISIS(args []string) {
 		switch args[i] {
 		case "--format":
 			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --format requires auto, iosxr, or openconfig")
+				fmt.Fprintln(os.Stderr, "error: --format requires auto, iosxr, juniper-xml, or openconfig")
 				os.Exit(2)
 			}
 			i++
@@ -362,7 +362,7 @@ func convertISIS(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|openconfig] [--local hostname] [-o diagram.yaml]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [-o diagram.yaml]")
 		os.Exit(2)
 	}
 	results, err := loadISISResults(input, format, local)
@@ -441,14 +441,14 @@ func loadISISResults(input, format, local string) ([]isis.Result, error) {
 		results = append(results, result)
 	}
 	if len(results) == 0 {
-		return nil, fmt.Errorf("directory %s contains no IS-IS .txt, .log, .out, .json, or extensionless captures", input)
+		return nil, fmt.Errorf("directory %s contains no IS-IS .txt, .log, .out, .json, .xml, or extensionless captures", input)
 	}
 	return results, nil
 }
 
 func isISISCapture(name string) bool {
 	switch strings.ToLower(filepath.Ext(name)) {
-	case "", ".txt", ".log", ".out", ".json":
+	case "", ".txt", ".log", ".out", ".json", ".xml":
 		return true
 	default:
 		return false
@@ -744,7 +744,7 @@ Usage:
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [-o diagram.yaml]
-  netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|openconfig] [--local hostname] [-o diagram.yaml]
+  netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)
   netdiag validate [--json] <diagram.yaml>
   netdiag expand <diagram.yaml> [-o expanded.yaml]
