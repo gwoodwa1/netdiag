@@ -1,5 +1,9 @@
 # Network Diagram Builder
 
+[![CI](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml/badge.svg)](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml)
+[![Go version](https://img.shields.io/github/go-mod/go-version/gwoodwa1/netdiag)](go.mod)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 This repository contains an early modern, YAML-driven network diagram builder
 inspired by [cidrblock/drawthe.net](https://github.com/cidrblock/drawthe.net).
 
@@ -28,11 +32,22 @@ Try it in Docker with no local Go installation:
 docker build -t netdiag . && docker run --rm -v "$PWD:/work" -w /work netdiag render examples/templates/national-telco-template.yaml -o /work/national-telco.png
 ```
 
+## Playground
+
+Open the dependency-free [netdiag playground](docs/playground.html) to explore
+a site-aware diagram with pan, zoom, element inspection, and collapsible
+groups. It is generated entirely by netdiag and works without a server.
+
 ## Rendered gallery
 
-| Telco composition | Site-aware WAN | Metro Ethernet |
-| --- | --- | --- |
-| [![Telco MPLS topology](examples/15-metro-mpls-core.svg)](examples/15-metro-mpls-core.svg) | [![Site-aware WAN](examples/16-site-aware-wan.svg)](examples/16-site-aware-wan.svg) | [![Metro Ethernet ring](examples/14-metro-ethernet-ring.svg)](examples/14-metro-ethernet-ring.svg) |
+| Site-aware WAN | Metro Ethernet ring |
+| --- | --- |
+| [![Site-aware WAN](examples/16-site-aware-wan.svg)](examples/16-site-aware-wan.svg) | [![Metro Ethernet ring](examples/14-metro-ethernet-ring.svg)](examples/14-metro-ethernet-ring.svg) |
+| **Nord status styling** | **Premium telco composition** |
+| [![Nord themed protocol and status links](examples/17-themed-link-status.svg)](examples/17-themed-link-status.svg) | [![Premium national telco topology](examples/templates/national-telco-premium.png)](examples/templates/national-telco-premium.png) |
+
+See the [full example gallery](docs/gallery.md) for routing protocols, campus,
+cloud, security, data-center, and service-provider topologies.
 
 ## CLI workflow
 
@@ -259,7 +274,7 @@ Layer headings occupy a dedicated left gutter outside the topology placement
 area. Links and devices cannot enter that gutter, so headings never mask or
 overlap diagram geometry.
 
-See [docs/gallery.md](docs/gallery.md) for sixteen additional rendered
+See [docs/gallery.md](docs/gallery.md) for seventeen additional rendered
 examples covering WAN, DWDM, campus LAN, firewalls, wireless, SD-WAN, OT, AWS,
 OSPF, IS-IS, BGP route reflection, Metro Ethernet rings, and MPLS metro
 networks, including native site-aware containment and orthogonal routing.

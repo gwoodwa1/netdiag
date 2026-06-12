@@ -1,5 +1,8 @@
 # Example Gallery
 
+Open the [interactive playground](playground.html) for a dependency-free
+pan-and-zoom demo with inspection and group-collapse controls.
+
 Every YAML file below renders offline with:
 
 ```sh
@@ -24,12 +27,25 @@ go run ./cmd/netdiag render examples/<name>.yaml
 | `14-metro-ethernet-ring.yaml` | Eight-node protected Metro Ethernet ring using the ring layout |
 | `15-metro-mpls-core.yaml` | Four regional metro networks connected through an MPLS core cloud |
 | `16-site-aware-wan.yaml` | Native site containers, nested LAN boundaries, endpoint addresses, and obstacle-aware orthogonal routing |
+| `17-themed-link-status.yaml` | Nord global theme with protocol and operational-status link rules |
+
+## Highlights
+
+| Site-aware WAN | Metro Ethernet ring |
+| --- | --- |
+| [![Site-aware WAN](../examples/16-site-aware-wan.svg)](../examples/16-site-aware-wan.svg) | [![Metro Ethernet ring](../examples/14-metro-ethernet-ring.svg)](../examples/14-metro-ethernet-ring.svg) |
+| **Nord status styling** | **BGP route reflectors** |
+| [![Nord themed protocol and status links](../examples/17-themed-link-status.svg)](../examples/17-themed-link-status.svg) | [![BGP route reflectors](../examples/13-bgp-route-reflectors.svg)](../examples/13-bgp-route-reflectors.svg) |
+| **Internet DMZ** | **Premium national telco composition** |
+| [![Internet DMZ](../examples/04-internet-dmz.svg)](../examples/04-internet-dmz.svg) | [![Premium national telco topology](../examples/templates/national-telco-premium.png)](../examples/templates/national-telco-premium.png) |
 
 The gallery exercises router, switch, firewall, cloud, AWS/public-cloud, DWDM,
 wireless, endpoint, and server SVG icons. It also demonstrates OSPF, IS-IS,
 iBGP, and eBGP protocol link styles. Full circuit IDs remain in YAML and are
 displayed as central link labels. The site-aware WAN also exercises native
-group containment and deterministic orthogonal routing.
+group containment and deterministic orthogonal routing. The themed link-status
+example demonstrates global palettes and status rules overriding protocol
+styles.
 
 Reusable blocks derived from these examples are composed in
 `examples/templates/gallery-blocks-template.yaml`.

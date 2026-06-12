@@ -23,3 +23,7 @@ Features:
 Interactive HTML currently requires the native renderer. Group collapse hides
 content without recalculating layout; expanding restores the original
 deterministic SVG.
+
+The repository includes a ready-to-open [playground](playground.html),
+generated from `examples/16-site-aware-wan.yaml`, for trying these controls
+without first building the CLI.

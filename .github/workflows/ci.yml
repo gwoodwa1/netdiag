@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l cmd internal)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Validate examples
+        run: |
+          for source in examples/*.yaml examples/templates/*.yaml examples/includes/*.yaml; do
+            go run ./cmd/netdiag validate "$source"
+          done
+
+      - name: Smoke-test native rendering
+        run: |
+          mkdir -p /tmp/netdiag-ci
+          for source in examples/*.yaml; do
+            output="/tmp/netdiag-ci/$(basename "${source%.yaml}").svg"
+            go run ./cmd/netdiag render "$source" -o "$output"
+          done
+
+      - name: Check committed demos are current
+        run: |
+          go run ./cmd/netdiag render examples/17-themed-link-status.yaml -o examples/17-themed-link-status.svg
+          go run ./cmd/netdiag render examples/16-site-aware-wan.yaml -o docs/playground.html
+          git diff --exit-code -- examples/17-themed-link-status.svg docs/playground.html
+
+      - name: Check Markdown links
+        run: python3 .github/scripts/check_markdown_links.py
