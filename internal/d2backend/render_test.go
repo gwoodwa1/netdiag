@@ -2,11 +2,39 @@ package d2backend
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gwoodwa1/netdiag/internal/model"
+	"github.com/gwoodwa1/netdiag/internal/spec"
 )
+
+func TestRegressionGoldenParallelLinks(t *testing.T) {
+	sourcePath := filepath.Join("..", "..", "examples", "regression", "03-parallel-links.yaml")
+	goldenPath := filepath.Join("..", "..", "examples", "regression", "03-parallel-links.svg")
+
+	doc, err := spec.Load(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagram, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, err := Render(diagram, Options{Layout: "elk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(actual, golden) {
+		t.Fatalf("rendered SVG differs from golden fixture %s", goldenPath)
+	}
+}
 
 func TestSourceCoversNetworkHardCases(t *testing.T) {
 	diagram := &model.Diagram{

@@ -191,6 +191,9 @@ func (ParamValidator) Resolve(template *Template, values map[string]string) (map
 			resolved[name] = param.Default
 		}
 	}
+	if err := validateParamCycles(template, resolved); err != nil {
+		return nil, err
+	}
 	for range template.Params {
 		changed := false
 		for name, value := range resolved {
@@ -215,6 +218,47 @@ func (ParamValidator) Resolve(template *Template, values map[string]string) (map
 		}
 	}
 	return resolved, nil
+}
+
+func validateParamCycles(template *Template, values map[string]string) error {
+	const (
+		visiting = 1
+		visited  = 2
+	)
+	state := make(map[string]int)
+	var stack []string
+	var visit func(string) error
+	visit = func(name string) error {
+		if state[name] == visited {
+			return nil
+		}
+		if state[name] == visiting {
+			start := 0
+			for stack[start] != name {
+				start++
+			}
+			cycle := append(append([]string(nil), stack[start:]...), name)
+			return fmt.Errorf("template %q parameter cycle: %s", template.ID, strings.Join(cycle, " -> "))
+		}
+		state[name] = visiting
+		stack = append(stack, name)
+		for _, dependency := range unresolvedPlaceholders(values[name]) {
+			if _, ok := template.Params[dependency]; ok {
+				if err := visit(dependency); err != nil {
+					return err
+				}
+			}
+		}
+		stack = stack[:len(stack)-1]
+		state[name] = visited
+		return nil
+	}
+	for name := range template.Params {
+		if err := visit(name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (expander *TemplateExpander) Expand(source *SourceDocument) (*ExpansionResult, error) {

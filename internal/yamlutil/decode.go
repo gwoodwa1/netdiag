@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var locationPattern = regexp.MustCompile(`yaml: line ([0-9]+)(?::|, column ([0-9]+):) (.*)`)
+var locationPattern = regexp.MustCompile(`(?m)(?:yaml: )?line ([0-9]+)(?::|, column ([0-9]+):) (.*)`)
 
 // DecodeStrict decodes YAML while rejecting unknown fields and adds a compact
 // source excerpt to parser errors.

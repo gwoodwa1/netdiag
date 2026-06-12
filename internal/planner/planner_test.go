@@ -54,6 +54,14 @@ func TestCapabilitiesUseThreeSupportLevels(t *testing.T) {
 	}
 }
 
+func TestEveryRendererAdvertisesEveryKnownCapability(t *testing.T) {
+	for _, renderer := range Capabilities() {
+		if len(renderer.Capabilities) != len(capabilityNotes) {
+			t.Fatalf("%s advertises %d capabilities, want %d", renderer.Renderer, len(renderer.Capabilities), len(capabilityNotes))
+		}
+	}
+}
+
 func TestRecommendNativeForSiteAwareLayout(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme:  model.Theme{Layout: "sites", LinkStyle: "orthogonal"},

@@ -88,6 +88,15 @@ D2 is used as an automatic-layout experiment, not assumed to solve every
 network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)
 for the hard-case results and [SKILLS.md](SKILLS.md) for the LLM repair loop.
 
+## Architecture
+
+Authored YAML is resolved and expanded into `spec.Document`, then validated and
+compiled into the renderer-neutral `model.Diagram` intermediate
+representation. Native SVG, D2, planning, and recommendation code consume that
+IR rather than parsing source YAML. Renderer support is advertised through the
+planner's `RendererCapability` contract, keeping recommendation logic separate
+from backend implementation details.
+
 ## Template blocks
 
 Reusable template blocks compose larger telco-style diagrams while keeping the

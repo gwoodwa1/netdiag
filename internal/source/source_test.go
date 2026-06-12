@@ -77,6 +77,28 @@ func TestLoadRejectsIncludeCycle(t *testing.T) {
 	}
 }
 
+func TestLoadShowsContextForInvalidYAML(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "main.yaml", `
+version: 1
+diagram:
+  title: Broken
+  unknown_option: true
+nodes:
+  router: {role: router}
+`)
+
+	_, err := Load(filepath.Join(root, "main.yaml"))
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	for _, expected := range []string{"line 4:", ">    4 |   unknown_option: true", "field unknown_option not found"} {
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("diagnostic missing %q:\n%s", expected, err)
+		}
+	}
+}
+
 func TestLoadRejectsPathOutsideProjectRoot(t *testing.T) {
 	parent := t.TempDir()
 	root := filepath.Join(parent, "project")

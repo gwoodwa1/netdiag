@@ -132,6 +132,17 @@ func TestParamValidatorAppliesInterpolatedDefaults(t *testing.T) {
 	}
 }
 
+func TestParamValidatorRejectsDependencyCycle(t *testing.T) {
+	template := &Template{ID: "cycle", Params: map[string]TemplateParam{
+		"site":   {Type: "string", Default: "{{ region }}"},
+		"region": {Type: "string", Default: "{{ site }}"},
+	}}
+	_, err := (ParamValidator{}).Resolve(template, nil)
+	if err == nil || !strings.Contains(err.Error(), "parameter cycle:") || !strings.Contains(err.Error(), "site") || !strings.Contains(err.Error(), "region") {
+		t.Fatalf("expected parameter cycle error, got %v", err)
+	}
+}
+
 func TestExpandInstanceAndParamPlaceholders(t *testing.T) {
 	template := basicTemplate()
 	result, err := (&TemplateExpander{Loader: mapLoader{"site": template}}).Expand(&SourceDocument{
