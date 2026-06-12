@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/spec"
+	"github.com/gwoodwa1/netdiag/internal/yamlutil"
 	"gopkg.in/yaml.v3"
 )
 
@@ -189,7 +190,5 @@ func withinRoot(root, path string) error {
 }
 
 func decodeStrict(data []byte, value interface{}) error {
-	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
-	decoder.KnownFields(true)
-	return decoder.Decode(value)
+	return yamlutil.DecodeStrict(data, value)
 }

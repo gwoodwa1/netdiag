@@ -10,6 +10,7 @@ import (
 
 	"github.com/gwoodwa1/netdiag/internal/source"
 	"github.com/gwoodwa1/netdiag/internal/spec"
+	"github.com/gwoodwa1/netdiag/internal/yamlutil"
 	"gopkg.in/yaml.v3"
 )
 
@@ -327,9 +328,7 @@ func unresolvedPlaceholders(value string) []string {
 }
 
 func decodeStrict(data []byte, value interface{}) error {
-	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
-	decoder.KnownFields(true)
-	return decoder.Decode(value)
+	return yamlutil.DecodeStrict(data, value)
 }
 
 func cloneGroups(groups map[string]*spec.Group) map[string]*spec.Group {

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gwoodwa1/netdiag/internal/yamlutil"
 	"gopkg.in/yaml.v3"
 )
 
@@ -160,9 +161,7 @@ func Load(path string) (*Document, error) {
 	}
 
 	var doc Document
-	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&doc); err != nil {
+	if err := yamlutil.DecodeStrict(data, &doc); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	if err := Prepare(&doc); err != nil {
