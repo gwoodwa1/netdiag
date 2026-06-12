@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
 	"github.com/gwoodwa1/netdiag/internal/export"
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/interactive"
+	"github.com/gwoodwa1/netdiag/internal/lldp"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/planner"
 	"github.com/gwoodwa1/netdiag/internal/source"
@@ -47,6 +49,8 @@ func main() {
 		plan(os.Args[2:])
 	case "recommend":
 		recommend(os.Args[2:])
+	case "lldp":
+		convertLLDP(os.Args[2:])
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -247,6 +251,142 @@ func recommend(args []string) {
 		return
 	}
 	fmt.Println(renderer)
+}
+
+func convertLLDP(args []string) {
+	format, input, local, output := "auto", "", "", ""
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--format":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: --format requires auto, openconfig, juniper-xml, cisco, juniper, or arista")
+				os.Exit(2)
+			}
+			i++
+			format = args[i]
+		case "--local":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: --local requires a device name")
+				os.Exit(2)
+			}
+			i++
+			local = args[i]
+		case "-o", "--output":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
+				os.Exit(2)
+			}
+			i++
+			output = args[i]
+		default:
+			if (strings.HasPrefix(args[i], "-") && args[i] != "-") || input != "" {
+				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
+				os.Exit(2)
+			}
+			input = args[i]
+		}
+	}
+	if input == "" {
+		fmt.Fprintln(os.Stderr, "usage: netdiag lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [-o diagram.yaml]")
+		os.Exit(2)
+	}
+	results, err := loadLLDPResults(input, format, local)
+	exitOnError(err)
+	doc, err := lldp.ToDocumentSet(results)
+	exitOnError(err)
+	exitOnError(spec.Prepare(doc))
+	encoded, err := spec.Format(doc)
+	exitOnError(err)
+	if output == "" {
+		fmt.Print(string(encoded))
+		return
+	}
+	exitOnError(os.WriteFile(output, encoded, 0o644))
+	neighbors := 0
+	for _, result := range results {
+		neighbors += len(result.Neighbors)
+	}
+	fmt.Printf("converted %d LLDP observations from %d device(s) to %s\n", neighbors, len(results), output)
+}
+
+func loadLLDPResults(input, format, local string) ([]lldp.Result, error) {
+	if input == "-" {
+		data, err := os.ReadFile("/dev/stdin")
+		if err != nil {
+			return nil, err
+		}
+		result, err := lldp.Parse(data, format)
+		if err != nil {
+			return nil, err
+		}
+		result.LocalNode = firstNonEmpty(local, result.LocalNode)
+		return []lldp.Result{result}, nil
+	}
+	info, err := os.Stat(input)
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() {
+		data, err := os.ReadFile(input)
+		if err != nil {
+			return nil, err
+		}
+		result, err := lldp.Parse(data, format)
+		if err != nil {
+			return nil, err
+		}
+		result.LocalNode = firstNonEmpty(local, result.LocalNode)
+		return []lldp.Result{result}, nil
+	}
+	if local != "" {
+		return nil, fmt.Errorf("--local cannot be used with a directory; prompts or filenames identify each local device")
+	}
+	entries, err := os.ReadDir(input)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	var results []lldp.Result
+	for _, entry := range entries {
+		if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || !isLLDPCapture(entry.Name()) {
+			continue
+		}
+		path := filepath.Join(input, entry.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read LLDP capture %s: %w", path, err)
+		}
+		result, err := lldp.Parse(data, format)
+		if err != nil {
+			return nil, fmt.Errorf("parse LLDP capture %s: %w", path, err)
+		}
+		if result.LocalNode == "" {
+			result.LocalNode = strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+		}
+		results = append(results, result)
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("directory %s contains no LLDP .txt, .log, .out, .json, or .xml captures", input)
+	}
+	return results, nil
+}
+
+func isLLDPCapture(name string) bool {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case "", ".txt", ".log", ".out", ".json", ".xml":
+		return true
+	default:
+		return false
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func printAssessments(title string, assessments []planner.Assessment) {
@@ -457,6 +597,7 @@ Usage:
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
+  netdiag lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [-o diagram.yaml]
   netdiag validate [--json] <diagram.yaml>
   netdiag expand <diagram.yaml> [-o expanded.yaml]
   netdiag fmt [-w] <diagram.yaml>
