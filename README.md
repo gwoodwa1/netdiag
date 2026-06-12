@@ -62,8 +62,9 @@ netdiag render examples/custom-icon-pack.yaml --icons examples/custom-icons -o c
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
-netdiag lldp show-lldp-neighbors-detail.txt --local leaf-01 -o discovered.yaml
-netdiag lldp lldp-captures/ -o discovered-network.yaml
+netdiag discover lldp show-lldp-neighbors-detail.txt --local leaf-01 -o discovered.yaml
+netdiag discover lldp lldp-captures/ -o discovered-network.yaml
+netdiag discover isis isis-captures/ -o discovered-isis.yaml
 netdiag plan --renderer d2 examples/spine-leaf.yaml
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.svg
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.html
@@ -87,6 +88,8 @@ PNG and PDF use a locally installed converter. See
 [docs/export.md](docs/export.md) and [docs/interactive.md](docs/interactive.md).
 LLDP discovery output from OpenConfig JSON, Cisco, Juniper, and Arista can be
 converted into diagram YAML; see [docs/lldp.md](docs/lldp.md).
+Cisco IOS XR IS-IS neighbor output can be converted into routing topology
+YAML; see [docs/isis.md](docs/isis.md).
 
 D2 is used as an automatic-layout experiment, not assumed to solve every
 network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)

@@ -1,0 +1,124 @@
+package lldp
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+func parseOpenConfig(data []byte) (Result, error) {
+	var root interface{}
+	if err := json.Unmarshal(data, &root); err != nil {
+		return Result{}, fmt.Errorf("parse OpenConfig LLDP JSON: %w", err)
+	}
+	result := Result{}
+	walkOpenConfig(root, "", &result)
+	result.Neighbors = completeNeighbors(result.Neighbors)
+	if len(result.Neighbors) == 0 {
+		return Result{}, fmt.Errorf("no OpenConfig LLDP neighbors found")
+	}
+	return result, nil
+}
+
+func walkOpenConfig(value interface{}, localPort string, result *Result) {
+	switch typed := value.(type) {
+	case []interface{}:
+		for _, item := range typed {
+			walkOpenConfig(item, localPort, result)
+		}
+	case map[string]interface{}:
+		if name := stringValue(typed, "name", "id"); name != "" && hasAnyKey(typed, "neighbors", "openconfig-lldp:neighbors") {
+			localPort = name
+		}
+		if state := mapValue(typed, "state", "openconfig-lldp:state"); state != nil && looksLikeNeighbor(state) {
+			result.Neighbors = append(result.Neighbors, neighborFromMaps(localPort, typed, state))
+			return
+		}
+		for key, child := range typed {
+			nextPort := localPort
+			if stripPrefix(key) == "interface" {
+				if childMap, ok := child.(map[string]interface{}); ok {
+					nextPort = firstUseful(stringValue(childMap, "name", "id"), localPort)
+				}
+			}
+			walkOpenConfig(child, nextPort, result)
+		}
+	}
+}
+
+func neighborFromMaps(localPort string, entry, state map[string]interface{}) Neighbor {
+	return Neighbor{
+		LocalPort: localPort, ChassisID: firstUseful(stringValue(state, "chassis-id"), stringValue(entry, "chassis-id")),
+		PortID:          firstUseful(stringValue(state, "port-id"), stringValue(entry, "port-id"), stringValue(entry, "id")),
+		PortDescription: stringValue(state, "port-description"), SystemName: stringValue(state, "system-name"),
+		SystemDescription: stringValue(state, "system-description"), ManagementAddress: firstString(state["management-address"]),
+		Capabilities: firstString(state["system-capabilities"]),
+	}
+}
+
+func stripPrefix(key string) string {
+	for index, r := range key {
+		if r == ':' {
+			return key[index+1:]
+		}
+	}
+	return key
+}
+
+func mapValue(value map[string]interface{}, keys ...string) map[string]interface{} {
+	for key, child := range value {
+		for _, wanted := range keys {
+			if stripPrefix(key) == stripPrefix(wanted) {
+				if result, ok := child.(map[string]interface{}); ok {
+					return result
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func stringValue(value map[string]interface{}, keys ...string) string {
+	for key, child := range value {
+		for _, wanted := range keys {
+			if stripPrefix(key) == stripPrefix(wanted) {
+				return firstString(child)
+			}
+		}
+	}
+	return ""
+}
+
+func firstString(value interface{}) string {
+	switch typed := value.(type) {
+	case string:
+		return useful(typed)
+	case []interface{}:
+		for _, item := range typed {
+			if result := firstString(item); result != "" {
+				return result
+			}
+		}
+	case map[string]interface{}:
+		for _, item := range typed {
+			if result := firstString(item); result != "" {
+				return result
+			}
+		}
+	}
+	return ""
+}
+
+func hasAnyKey(value map[string]interface{}, keys ...string) bool {
+	for key := range value {
+		for _, wanted := range keys {
+			if stripPrefix(key) == stripPrefix(wanted) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func looksLikeNeighbor(state map[string]interface{}) bool {
+	return stringValue(state, "port-id") != "" && firstUseful(stringValue(state, "system-name"), stringValue(state, "chassis-id")) != ""
+}

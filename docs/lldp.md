@@ -1,16 +1,18 @@
 # LLDP conversion
 
-`netdiag lldp` converts LLDP discovery output into normal netdiag YAML. It
+`netdiag discover lldp` converts LLDP discovery output into normal netdiag YAML. It
 supports OpenConfig JSON and detailed show-command output from Cisco, Juniper,
 and Arista:
 
 ```sh
-netdiag lldp show-lldp-neighbors-detail.txt -o discovered.yaml
-netdiag lldp juniper-lldp.txt --format juniper --local edge-01 -o discovered.yaml
-netdiag lldp openconfig-lldp.json --format openconfig --local leaf-01 -o discovered.yaml
-netdiag lldp captures/ -o discovered-network.yaml
+netdiag discover lldp show-lldp-neighbors-detail.txt -o discovered.yaml
+netdiag discover lldp juniper-lldp.txt --format juniper --local edge-01 -o discovered.yaml
+netdiag discover lldp openconfig-lldp.json --format openconfig --local leaf-01 -o discovered.yaml
+netdiag discover lldp captures/ -o discovered-network.yaml
 netdiag render discovered.yaml -o discovered.svg
 ```
+
+`netdiag lldp` remains available as a compatibility alias.
 
 Use `-` to read from standard input. The default `--format auto` recognizes
 JSON and common vendor markers. Provide `--format` when captured output omits
@@ -38,3 +40,10 @@ The converter uses the remote system name as the node identity, falling back to
 the chassis ID or management address. It skips incomplete records lacking a
 local port, remote port, or remote identity. Chassis ID, management address,
 system description, and capabilities are preserved as node metadata.
+
+## Architecture
+
+The LLDP package separates format detection, vendor parsers, normalization,
+topology conversion, and discovery reporting. Vendor adapters emit normalized
+LLDP observations; only the converter creates netdiag documents. This keeps
+future discovery protocols and vendor variants independent from rendering.

@@ -349,4 +349,8 @@ func TestToDocumentSetMergesDevicesAndDeduplicatesReciprocalLinks(t *testing.T) 
 			t.Fatalf("node %q was not marked local: %+v", id, doc.Nodes[id])
 		}
 	}
+	report := BuildReport(results, doc)
+	if report.Devices != 2 || report.Observations != 2 || report.Nodes != 2 || report.Links != 1 || report.MergedObservations != 1 {
+		t.Fatalf("unexpected report: %+v", report)
+	}
 }
