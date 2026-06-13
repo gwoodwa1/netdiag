@@ -1,4 +1,4 @@
-# Network Diagram Builder
+# Network Diagram Builder 
 
 [![CI](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml/badge.svg)](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml)
 [![Go version](https://img.shields.io/github/go-mod/go-version/gwoodwa1/netdiag)](go.mod)
