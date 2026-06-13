@@ -22,6 +22,7 @@ const (
 	rowInset      = 32.0
 	rowBandHeight = 250.0
 	nodeHeight    = 82.0
+	rowLinkGap    = 300.0
 )
 
 type point struct {
@@ -95,7 +96,7 @@ func RenderWithOptions(doc *model.Diagram, options Options) ([]byte, error) {
 	} else if doc.Theme.Layout == "sites" {
 		renderSiteBackgrounds(&out, layout.Groups, premium)
 	} else {
-		renderRowBackgrounds(&out, roles, premium)
+		renderRowBackgrounds(&out, roles, layout.Width, premium)
 		renderRowHeadings(&out, roles, byRole)
 	}
 	if err := renderLinks(&out, doc, layout.Nodes); err != nil {
@@ -183,6 +184,10 @@ func placeNodes(doc *model.Diagram, roles []string, byRole map[string][]string) 
 	if doc.Theme.Layout == "ring" {
 		return placeRingNodes(doc, roles, byRole)
 	}
+	return placeRowNodes(doc, roles, byRole, rowLayoutWidth(doc, roles, byRole))
+}
+
+func placeRowNodes(doc *model.Diagram, roles []string, byRole map[string][]string, width float64) map[string]placedNode {
 	result := make(map[string]placedNode)
 	nodesByID := make(map[string]model.Node)
 	for _, n := range doc.Nodes {
@@ -190,7 +195,7 @@ func placeNodes(doc *model.Diagram, roles []string, byRole map[string][]string) 
 	}
 	for row, rowRole := range roles {
 		ids := byRole[rowRole]
-		spacing := (canvasWidth - diagramLeft - diagramRight) / float64(len(ids))
+		spacing := (width - diagramLeft - diagramRight) / float64(len(ids))
 		for column, id := range ids {
 			width := nodeWidth(rowRole)
 			x := diagramLeft + spacing*(float64(column)+0.5) - width/2
@@ -199,6 +204,27 @@ func placeNodes(doc *model.Diagram, roles []string, byRole map[string][]string) 
 		}
 	}
 	return result
+}
+
+func rowLayoutWidth(doc *model.Diagram, roles []string, byRole map[string][]string) float64 {
+	nodesByID := make(map[string]model.Node)
+	for _, node := range doc.Nodes {
+		nodesByID[node.ID] = node
+	}
+	width := canvasWidth
+	for _, role := range roles {
+		ids := byRole[role]
+		if len(ids) < 2 {
+			continue
+		}
+		maxNodeWidth := 0.0
+		for _, id := range ids {
+			maxNodeWidth = math.Max(maxNodeWidth, nodeWidth(nodesByID[id].Role))
+		}
+		required := diagramLeft + diagramRight + float64(len(ids))*(maxNodeWidth+rowLinkGap)
+		width = math.Max(width, required)
+	}
+	return width
 }
 
 func placeRingNodes(doc *model.Diagram, roles []string, byRole map[string][]string) map[string]placedNode {
@@ -273,14 +299,14 @@ func renderSiteBackgrounds(out *bytes.Buffer, groups []placedGroup, premium bool
 	out.WriteString(`</g>`)
 }
 
-func renderRowBackgrounds(out *bytes.Buffer, roles []string, premium bool) {
+func renderRowBackgrounds(out *bytes.Buffer, roles []string, width float64, premium bool) {
 	for row, role := range roles {
 		y := headerHeight + float64(row)*rowHeight + rowInset
 		opacity := ""
 		if premium {
 			opacity = ` fill-opacity=".88"`
 		}
-		fmt.Fprintf(out, `<rect x="42" y="%.1f" width="%.1f" height="%.1f" rx="20" fill="%s"%s stroke="#e2e8f0"/>`, y, canvasWidth-84, rowBandHeight, roleFill(role), opacity)
+		fmt.Fprintf(out, `<rect x="42" y="%.1f" width="%.1f" height="%.1f" rx="20" fill="%s"%s stroke="#e2e8f0"/>`, y, width-84, rowBandHeight, roleFill(role), opacity)
 	}
 }
 
@@ -366,8 +392,8 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		fmt.Fprintf(out, `<path%s d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, className, path, color, strokeWidth, dash)
 		renderPortMarker(out, start, color, premium)
 		renderPortMarker(out, end, color, premium)
-		renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, color)
-		renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, color)
+		renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+		renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
 		renderEndpointAddress(out, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
 		renderEndpointAddress(out, end, to.Address, endGeometry.Side, endGeometry.LabelLane, color)
 		if link.MiddleLabel() != "" && link.Bundle == "" {
@@ -594,19 +620,19 @@ func pathDataVia(start, via, end point, style string) string {
 	return fmt.Sprintf("M %.1f %.1f L %.1f %.1f L %.1f %.1f", start.X, start.Y, via.X, via.Y, end.X, end.Y)
 }
 
-func renderEndpointLabel(out *bytes.Buffer, endpoint point, label, side string, lane int, color string) {
+func renderEndpointLabel(out *bytes.Buffer, endpoint point, label, side string, lane int, style model.InterfaceLabelStyle) {
 	x := endpoint.X
 	y := endpoint.Y - 12
 	if side == "bottom" {
 		y = endpoint.Y + 25
 	} else if side == "left" {
-		x = endpoint.X - horizontalLabelOffset(lane)
-		y = endpoint.Y - 9 + horizontalLabelVerticalOffset(lane)
+		x = endpoint.X - horizontalLabelOffset
+		y = endpoint.Y - 12
 	} else if side == "right" {
-		x = endpoint.X + horizontalLabelOffset(lane)
-		y = endpoint.Y - 9 + horizontalLabelVerticalOffset(lane)
+		x = endpoint.X + horizontalLabelOffset
+		y = endpoint.Y - 12
 	}
-	renderLabel(out, x, y, label, color, "middle", 11, true)
+	renderInterfaceLabel(out, x, y, label, style)
 }
 
 func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side string, lane int, color string) {
@@ -618,21 +644,47 @@ func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side stri
 	if side == "bottom" {
 		y = endpoint.Y + 46
 	} else if side == "left" {
-		x = endpoint.X - horizontalLabelOffset(lane)
-		y = endpoint.Y + 14 + horizontalLabelVerticalOffset(lane)
+		x = endpoint.X - horizontalLabelOffset
+		y = endpoint.Y + 17
 	} else if side == "right" {
-		x = endpoint.X + horizontalLabelOffset(lane)
-		y = endpoint.Y + 14 + horizontalLabelVerticalOffset(lane)
+		x = endpoint.X + horizontalLabelOffset
+		y = endpoint.Y + 17
 	}
 	renderLabel(out, x, y, address, color, "middle", 10, false)
 }
 
-func horizontalLabelOffset(lane int) float64 {
-	return 40
-}
+const horizontalLabelOffset = 55.0
 
-func horizontalLabelVerticalOffset(lane int) float64 {
-	return float64(lane) * 20
+func renderInterfaceLabel(out *bytes.Buffer, x, y float64, label string, style model.InterfaceLabelStyle) {
+	fill := style.Fill
+	if fill == "" {
+		fill = "#ffffff"
+	}
+	color := style.Color
+	if color == "" {
+		color = "#334155"
+	}
+	border := style.Border
+	if border == "" {
+		border = "#cbd5e1"
+	}
+	radius := style.Radius
+	if radius == 0 {
+		radius = 5
+	}
+	paddingX := style.PaddingX
+	if paddingX == 0 {
+		paddingX = 9
+	}
+	paddingY := style.PaddingY
+	if paddingY == 0 {
+		paddingY = 5
+	}
+	const size = 11
+	width := math.Max(38, float64(len([]rune(label)))*size*0.61+paddingX*2)
+	height := size + paddingY*2
+	fmt.Fprintf(out, `<rect class="interface-label-badge" x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="%.1f" fill="%s" stroke="%s" stroke-width="1"/>`, x-width/2, y-size-paddingY, width, height, radius, escape(fill), escape(border))
+	fmt.Fprintf(out, `<text class="interface-label-text" x="%.1f" y="%.1f" text-anchor="middle" fill="%s" font-family="ui-monospace,SFMono-Regular,monospace" font-size="%d" font-weight="650">%s</text>`, x, y, escape(color), size, escape(label))
 }
 
 func renderPortMarker(out *bytes.Buffer, endpoint point, color string, premium bool) {

@@ -61,7 +61,7 @@ func parseCiscoIOSXRSummary(text string) []Neighbor {
 			continue
 		}
 		result = append(result, Neighbor{
-			LocalPort: fields[1], ChassisID: fields[len(fields)-1], PortID: fields[len(fields)-1],
+			LocalPort: fields[1], PortID: fields[len(fields)-1],
 			SystemName: fields[0], Capabilities: useful(strings.Join(fields[3:len(fields)-1], " ")),
 		})
 	}

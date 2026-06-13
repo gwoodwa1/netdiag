@@ -369,13 +369,62 @@ func TestOrthogonalRouteAvoidsDeviceBox(t *testing.T) {
 	}
 }
 
-func TestHorizontalEndpointLabelsUseSeparateLanes(t *testing.T) {
+func TestHorizontalEndpointLabelsFollowTheirAttachmentLanes(t *testing.T) {
 	var out bytes.Buffer
-	endpoint := point{X: 500, Y: 300}
-	renderEndpointLabel(&out, endpoint, "Hu0/0", "right", 0, "#7c3aed")
-	renderEndpointLabel(&out, endpoint, "Hu0/1", "right", 1, "#7c3aed")
-	if !strings.Contains(out.String(), `y="291.0"`) || !strings.Contains(out.String(), `y="311.0"`) {
-		t.Fatalf("horizontal endpoint labels did not use distinct lanes: %s", out.String())
+	renderEndpointLabel(&out, point{X: 500, Y: 280}, "Hu0/0", "right", 0, model.InterfaceLabelStyle{})
+	renderEndpointLabel(&out, point{X: 500, Y: 320}, "Hu0/1", "right", 1, model.InterfaceLabelStyle{})
+	if !strings.Contains(out.String(), `y="268.0"`) || !strings.Contains(out.String(), `y="308.0"`) {
+		t.Fatalf("horizontal endpoint labels did not follow attachment lanes: %s", out.String())
+	}
+	if got := strings.Count(out.String(), `x="555.0"`); got != 2 {
+		t.Fatalf("horizontal endpoint badge and text positions are not uniform: %s", out.String())
+	}
+}
+
+func TestOpposingHorizontalEndpointLabelsSitAboveLink(t *testing.T) {
+	var out bytes.Buffer
+	renderEndpointLabel(&out, point{X: 100, Y: 300}, "Te0/0/0/0", "right", 0, model.InterfaceLabelStyle{})
+	renderEndpointLabel(&out, point{X: 260, Y: 300}, "Te0/0/0/1", "left", 0, model.InterfaceLabelStyle{})
+	if got := strings.Count(out.String(), `y="288.0"`); got != 2 {
+		t.Fatalf("opposing endpoint labels did not sit above the link: %s", out.String())
+	}
+}
+
+func TestInterfaceLabelBadgeUsesCustomStyle(t *testing.T) {
+	var out bytes.Buffer
+	style := model.InterfaceLabelStyle{
+		Fill: "#fff7ed", Color: "#9a3412", Border: "#fb923c",
+		Radius: 8, PaddingX: 12, PaddingY: 6,
+	}
+	renderEndpointLabel(&out, point{X: 100, Y: 300}, "Te0/0/0/0", "right", 0, style)
+	got := out.String()
+	for _, expected := range []string{
+		`class="interface-label-badge"`,
+		`fill="#fff7ed"`,
+		`stroke="#fb923c"`,
+		`rx="8.0"`,
+		`class="interface-label-text"`,
+		`fill="#9a3412"`,
+	} {
+		if !strings.Contains(got, expected) {
+			t.Fatalf("custom interface label badge missing %s: %s", expected, got)
+		}
+	}
+}
+
+func TestRowLayoutLeavesReadableLinkSpan(t *testing.T) {
+	diagram := &model.Diagram{Theme: model.Theme{Layout: "rows"}}
+	for index := 1; index <= 4; index++ {
+		diagram.Nodes = append(diagram.Nodes, model.Node{ID: fmt.Sprintf("r%d", index), Role: "router"})
+	}
+	roles, byRole := groupNodes(diagram)
+	layout := layoutDiagram(diagram, roles, byRole)
+	for index := 1; index < 4; index++ {
+		left := layout.Nodes[fmt.Sprintf("r%d", index)].Box
+		right := layout.Nodes[fmt.Sprintf("r%d", index+1)].Box
+		if gap := right.X - (left.X + left.W); gap < rowLinkGap {
+			t.Fatalf("row link span = %.1f, want at least %.1f", gap, rowLinkGap)
+		}
 	}
 }
 

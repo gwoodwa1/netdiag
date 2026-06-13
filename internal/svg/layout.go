@@ -39,9 +39,10 @@ func layoutDiagram(doc *model.Diagram, roles []string, byRole map[string][]strin
 	}
 	height := headerHeight + float64(len(roles))*rowHeight + 100
 	if doc.Theme.Layout == "ring" {
-		height = 1250
+		return layoutResult{Nodes: placeRingNodes(doc, roles, byRole), Width: canvasWidth, Height: 1250}
 	}
-	return layoutResult{Nodes: placeNodes(doc, roles, byRole), Width: canvasWidth, Height: height}
+	width := rowLayoutWidth(doc, roles, byRole)
+	return layoutResult{Nodes: placeRowNodes(doc, roles, byRole, width), Width: width, Height: height}
 }
 
 func placeSiteLayout(doc *model.Diagram) layoutResult {

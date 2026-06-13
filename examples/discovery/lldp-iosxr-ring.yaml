@@ -1,0 +1,73 @@
+version: 1
+diagram:
+    title: LLDP discovered topology
+    badge: NETWORK DIAGRAM
+    layout: ring
+    direction: down
+    link_style: clean
+    interface_labels: ends
+    interface_label_style:
+        fill: "#ffffff"
+        color: "#334155"
+        border: "#94a3b8"
+        radius: 6
+        padding_x: 10
+        padding_y: 5
+nodes:
+    r1:
+        label: R1
+        role: router
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    r2:
+        label: R2
+        role: router
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    r3:
+        label: R3
+        role: router
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    r4:
+        label: R4
+        role: router
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+links:
+    - from:
+        node: r1
+        port: TenGigE0/0/0/0
+      to:
+        node: r2
+        port: TenGigE0/0/0/0
+      protocol: lldp
+    - from:
+        node: r1
+        port: TenGigE0/0/0/1
+      to:
+        node: r4
+        port: TenGigE0/0/0/1
+      protocol: lldp
+    - from:
+        node: r2
+        port: TenGigE0/0/0/1
+      to:
+        node: r3
+        port: TenGigE0/0/0/0
+      protocol: lldp
+    - from:
+        node: r3
+        port: TenGigE0/0/0/1
+      to:
+        node: r4
+        port: TenGigE0/0/0/0
+      protocol: lldp

@@ -105,6 +105,9 @@ Total entries displayed: 2
 	if got := result.Neighbors[1]; got.LocalPort != "HundredGigE0/0/0/0" || got.SystemName != "RemoteDevice01" || got.PortID != "0123.4567.89ab" {
 		t.Fatalf("unexpected neighbor: %+v", got)
 	}
+	if result.Neighbors[1].ChassisID != "" {
+		t.Fatalf("IOS XR summary must not treat Port ID as chassis ID: %+v", result.Neighbors[1])
+	}
 	doc, err := ToDocument(result, "")
 	if err != nil {
 		t.Fatal(err)

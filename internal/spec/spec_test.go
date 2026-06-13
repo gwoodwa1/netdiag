@@ -23,6 +23,8 @@ func TestDisplayPort(t *testing.T) {
 		"Ethernet0/0":              "Eth0/0",
 		"GigabitEthernet0/1":       "Gi0/1",
 		"TenGigabitEthernet1/1":    "Te1/1",
+		"TenGigE0/0/0/1":           "Te0/0/0/1",
+		"TenGigECtrlr0/5/0/4/1":    "Te0/5/0/4/1",
 		"TenGig 0/0":               "Te0/0",
 		"HundredGigE1/0/1":         "Hu1/0/1",
 		"Port-Channel10":           "Po10",
@@ -103,6 +105,24 @@ func TestValidateAcceptsNamedThemesAndLinkStyleRules(t *testing.T) {
 	doc.Diagram.LinkStyles.Status["inactive"] = VisualStyle{Pattern: "wavy"}
 	if err := Validate(doc); err == nil {
 		t.Fatal("expected invalid link pattern validation error")
+	}
+}
+
+func TestValidateInterfaceLabelStyle(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Diagram: Diagram{InterfaceLabelStyle: InterfaceLabelStyle{
+			Fill: "#ffffff", Color: "#334155", Border: "#94a3b8",
+			Radius: 6, PaddingX: 10, PaddingY: 5,
+		}},
+		Nodes: map[string]Node{"router": {Role: "router"}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("interface label style should validate: %v", err)
+	}
+	doc.Diagram.InterfaceLabelStyle.PaddingX = -1
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected negative interface label padding validation error")
 	}
 }
 

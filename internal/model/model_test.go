@@ -14,6 +14,13 @@ diagram:
   title: Production Data Center Fabric
   layout: auto
   theme: light
+  interface_label_style:
+    fill: "#fff7ed"
+    color: "#9a3412"
+    border: "#fb923c"
+    radius: 8
+    padding_x: 12
+    padding_y: 6
 groups:
   dc1:
     label: DC1
@@ -63,6 +70,9 @@ links:
 	}
 	if diag.Theme.Name != "light" {
 		t.Errorf("expected Theme Name %q, got %q", "light", diag.Theme.Name)
+	}
+	if got := diag.Theme.InterfaceLabelStyle; got.Fill != "#fff7ed" || got.Color != "#9a3412" || got.Border != "#fb923c" || got.Radius != 8 || got.PaddingX != 12 || got.PaddingY != 6 {
+		t.Errorf("unexpected interface label style: %+v", got)
 	}
 
 	// Verify nodes

@@ -41,6 +41,58 @@ the chassis ID or management address. It skips incomplete records lacking a
 local port, remote port, or remote identity. Chassis ID, management address,
 system description, and capabilities are preserved as node metadata.
 
+## IOS XR directory example
+
+The repository includes four fake reciprocal IOS XR captures in
+`examples/discovery/lldp-iosxr-captures/`. Build and render the merged topology
+from the repository root:
+
+```sh
+go run ./cmd/netdiag discover lldp \
+  examples/discovery/lldp-iosxr-captures \
+  -o examples/discovery/lldp-iosxr-ring.yaml
+
+# Discovery defaults to rows. For this four-device ring, set
+# diagram.layout: ring in the generated YAML before rendering.
+# Interface label badges can be customized with diagram.interface_label_style.
+
+go run ./cmd/netdiag validate examples/discovery/lldp-iosxr-ring.yaml
+
+go run ./cmd/netdiag render \
+  examples/discovery/lldp-iosxr-ring.yaml \
+  --renderer native \
+  -o examples/discovery/lldp-iosxr-ring.svg
+```
+
+Each capture contains the local router prompt and its neighbor table. The
+prompt identifies the local node, while each row supplies the remote node,
+local interface, remote port ID, and capability. Eight directional
+observations become four links because matching observations from both ends are
+merged.
+
+Interface labels render as rounded badges in the native SVG renderer. Customize
+their colors and dimensions under `diagram.interface_label_style`:
+
+```yaml
+diagram:
+  interface_labels: ends
+  interface_label_style:
+    fill: "#ffffff"
+    color: "#334155"
+    border: "#94a3b8"
+    radius: 6
+    padding_x: 10
+    padding_y: 5
+```
+
+Omitted values use the default white badge, slate text and border, `5px`
+corners, `9px` horizontal padding, and `5px` vertical padding.
+
+To repeat this with real outputs, place one capture per device in a directory.
+Keep the device prompt in each capture when possible. If a prompt is missing,
+name the file after the local device, such as `edge-router-01.txt`; directory
+discovery uses the filename stem as the fallback local node name.
+
 ## Architecture
 
 The LLDP package separates format detection, vendor parsers, normalization,

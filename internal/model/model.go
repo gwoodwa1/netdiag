@@ -70,16 +70,26 @@ type Trunk struct {
 }
 
 type Theme struct {
-	Name            string
-	Title           string
-	Subtitle        string
-	Badge           string
-	Layout          string
-	Direction       string
-	LinkStyle       string
-	InterfaceLabels string
-	Renderer        string
-	LinkStyles      LinkStyleRules
+	Name                string
+	Title               string
+	Subtitle            string
+	Badge               string
+	Layout              string
+	Direction           string
+	LinkStyle           string
+	InterfaceLabels     string
+	Renderer            string
+	LinkStyles          LinkStyleRules
+	InterfaceLabelStyle InterfaceLabelStyle
+}
+
+type InterfaceLabelStyle struct {
+	Fill     string
+	Color    string
+	Border   string
+	Radius   float64
+	PaddingX float64
+	PaddingY float64
 }
 
 type LinkStyleRules struct {
@@ -267,6 +277,14 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		InterfaceLabels: doc.Diagram.InterfaceAt,
 		Renderer:        doc.Diagram.Renderer,
 		LinkStyles:      compileLinkStyleRules(doc.Diagram.LinkStyles),
+		InterfaceLabelStyle: InterfaceLabelStyle{
+			Fill:     doc.Diagram.InterfaceLabelStyle.Fill,
+			Color:    doc.Diagram.InterfaceLabelStyle.Color,
+			Border:   doc.Diagram.InterfaceLabelStyle.Border,
+			Radius:   doc.Diagram.InterfaceLabelStyle.Radius,
+			PaddingX: doc.Diagram.InterfaceLabelStyle.PaddingX,
+			PaddingY: doc.Diagram.InterfaceLabelStyle.PaddingY,
+		},
 	}
 
 	return &Diagram{
