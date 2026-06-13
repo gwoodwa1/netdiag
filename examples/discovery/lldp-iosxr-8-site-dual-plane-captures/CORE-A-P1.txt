@@ -1,0 +1,16 @@
+RP/0/RP0/CPU0:CORE-A-P1#show lldp neighbors
+Capability codes:
+    (R) Router, (B) Bridge, (T) Telephone, (C) DOCSIS Cable Device
+    (W) WLAN Access Point, (P) Repeater, (S) Station, (O) Other
+
+Device ID      Local Intf              Hold-time Capability Port ID
+NYC-PE1        HundredGigE0/0/0/0      120       R          HundredGigE0/0/0/0
+WAS-PE1        HundredGigE0/0/0/1      120       R          HundredGigE0/0/0/0
+PHX-PE1        HundredGigE0/0/0/2      120       R          HundredGigE0/0/0/0
+LAX-PE1        HundredGigE0/0/0/3      120       R          HundredGigE0/0/0/0
+ORL-PE1        HundredGigE0/0/0/4      120       R          HundredGigE0/0/0/0
+SFO-PE1        HundredGigE0/0/0/5      120       R          HundredGigE0/0/0/0
+SAN-PE1        HundredGigE0/0/0/6      120       R          HundredGigE0/0/0/0
+DAL-PE1        HundredGigE0/0/0/7      120       R          HundredGigE0/0/0/0
+CORE-A-P2      HundredGigE0/0/1/0      120       R          HundredGigE0/0/1/0
+Total entries displayed: 9

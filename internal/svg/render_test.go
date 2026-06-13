@@ -323,6 +323,79 @@ func TestSiteLayoutLeavesLabelGutterBetweenSameRoleNodes(t *testing.T) {
 	}
 }
 
+func TestSiteLayoutExpandsHighDegreeCoreRouters(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme:  model.Theme{Layout: "sites"},
+		Groups: []model.Group{{ID: "core", Kind: "core", NodeIDs: []string{"p1", "p2"}}},
+		Nodes:  []model.Node{{ID: "p1", Role: "core-router"}, {ID: "p2", Role: "core-router"}},
+	}
+	for index := 0; index < 9; index++ {
+		peer := fmt.Sprintf("pe-%d", index)
+		diagram.Nodes = append(diagram.Nodes, model.Node{ID: peer, Role: "edge-router"})
+		diagram.Links = append(diagram.Links, model.Link{
+			From: model.LinkEndpoint{Node: "p1", Port: fmt.Sprintf("Hu0/%d", index)},
+			To:   model.LinkEndpoint{Node: peer, Port: "Hu0/0"},
+		})
+	}
+	layout := placeSiteLayout(diagram)
+	if got := layout.Nodes["p1"].Box.W; got <= nodeWidth("core-router") {
+		t.Fatalf("high-degree core router width = %.1f, want greater than base width", got)
+	}
+	if got := layout.Nodes["p1"].Box.H; got <= nodeHeight {
+		t.Fatalf("high-degree core router height = %.1f, want greater than base height", got)
+	}
+	if layout.Width <= canvasWidth {
+		t.Fatalf("high-degree topology canvas width = %.1f, want greater than %.1f", layout.Width, canvasWidth)
+	}
+}
+
+func TestHubSpokeLayoutPlacesCoreBetweenSpokes(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Groups: []model.Group{
+			{ID: "core", NodeIDs: []string{"p1", "p2"}},
+			{ID: "left", NodeIDs: []string{"left-pe1", "left-pe2"}},
+			{ID: "right", NodeIDs: []string{"right-pe1", "right-pe2"}},
+		},
+		Nodes: []model.Node{
+			{ID: "p1", Role: "core-router"}, {ID: "p2", Role: "core-router"},
+			{ID: "left-pe1", Role: "edge-router"}, {ID: "left-pe2", Role: "edge-router"},
+			{ID: "right-pe1", Role: "edge-router"}, {ID: "right-pe2", Role: "edge-router"},
+		},
+	}
+	layout := placeHubSpokeLayout(diagram)
+	core := layout.Nodes["p1"].Box
+	top := layout.Nodes["left-pe1"].Box
+	bottom := layout.Nodes["right-pe1"].Box
+	if !(top.Y < core.Y && core.Y < bottom.Y) {
+		t.Fatalf("core was not placed between spokes: top=%+v core=%+v bottom=%+v", top, core, bottom)
+	}
+}
+
+func TestPEAndPDevicesUseDistinctColors(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Nodes: map[string]spec.Node{
+			"pe": {Role: "edge-router"},
+			"p":  {Role: "core-router"},
+		},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	for _, expected := range []string{`stroke="#d97706"`, `fill="#fffbeb"`, `stroke="#7c3aed"`, `fill="#f5f3ff"`} {
+		if !strings.Contains(got, expected) {
+			t.Fatalf("render missing PE/P color %s", expected)
+		}
+	}
+}
+
 func TestSiteLayoutWrapsWideCompositionsIntoRows(t *testing.T) {
 	diagram := &model.Diagram{Theme: model.Theme{Layout: "sites"}}
 	for site := 1; site <= 4; site++ {

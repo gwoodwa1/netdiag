@@ -95,7 +95,7 @@ func RenderWithOptions(doc *model.Diagram, options Options) ([]byte, error) {
 	renderTitle(&out, doc, layout.Width)
 	if doc.Theme.Layout == "ring" {
 		renderRingBackground(&out, doc, premium)
-	} else if doc.Theme.Layout == "sites" {
+	} else if doc.Theme.Layout == "sites" || doc.Theme.Layout == "hub-spoke" {
 		renderSiteBackgrounds(&out, layout.Groups, premium)
 	} else {
 		renderRowBackgrounds(&out, roles, layout.Width, premium)
@@ -374,7 +374,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		}
 		color = escape(color)
 
-		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal"
+		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.Layout == "hub-spoke" || doc.Theme.LinkStyle == "orthogonal"
 		route := directRoute(start, end, startGeometry.Side, endGeometry.Side, doc.Theme.LinkStyle)
 		if useOrthogonalRoute {
 			route = orthogonalRoute(start, end, startGeometry.Side, endGeometry.Side, nodes, index)
@@ -494,7 +494,7 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 		fromSide := from.Side
 		toSide := to.Side
 		defaultFromSide, defaultToSide := computeDefaultSides(fromCenter, toCenter, doc.Theme.Layout)
-		if doc.Theme.Layout == "sites" && rootGroups[from.Node] != rootGroups[to.Node] {
+		if (doc.Theme.Layout == "sites" || doc.Theme.Layout == "hub-spoke") && rootGroups[from.Node] != rootGroups[to.Node] {
 			deltaX := math.Abs(toCenter.X - fromCenter.X)
 			deltaY := math.Abs(toCenter.Y - fromCenter.Y)
 			if deltaX >= deltaY {
@@ -846,7 +846,7 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons
 		}
 		color = escape(color)
 		filter := "shadow"
-		fill := "#ffffff"
+		fill := roleNodeFill(item.Node.Role)
 		if premium {
 			filter = "deviceShadow"
 			fill = "url(#deviceCardGradient)"
@@ -874,7 +874,6 @@ func renderDeviceIcon(out *bytes.Buffer, x, y float64, color, role, label, insta
 	canonical := role
 	if icon, ok := icons.Resolve(role); ok {
 		canonical = icon.ID
-		color = icon.Color
 	}
 	if custom, ok := resolveCustomIcon(iconPack, role, canonical); ok {
 		fmt.Fprintf(out, `<g class="device-icon device-icon-%s custom-device-icon" transform="translate(%.1f %.1f)">`, escapeID(role), x, y)
@@ -1014,7 +1013,11 @@ func roleColor(role string) string {
 		return "#f59e0b"
 	case "dwdm":
 		return "#7c3aed"
-	case "router", "edge-router", "core-router", "ospf-backbone", "ospf-area-10", "ospf-area-20", "isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer", "core-switch", "distribution-switch", "access-switch", "metro-switch", "wireless":
+	case "edge-router":
+		return "#d97706"
+	case "core-router":
+		return "#7c3aed"
+	case "router", "ospf-backbone", "ospf-area-10", "ospf-area-20", "isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer", "core-switch", "distribution-switch", "access-switch", "metro-switch", "wireless":
 		return "#0878b9"
 	case "endpoint", "users":
 		return "#475569"
@@ -1028,6 +1031,17 @@ func roleColor(role string) string {
 		return "#16a34a"
 	default:
 		return "#475569"
+	}
+}
+
+func roleNodeFill(role string) string {
+	switch role {
+	case "edge-router":
+		return "#fffbeb"
+	case "core-router":
+		return "#f5f3ff"
+	default:
+		return "#ffffff"
 	}
 }
 

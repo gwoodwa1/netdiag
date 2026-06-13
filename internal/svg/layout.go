@@ -14,7 +14,7 @@ const (
 	siteRoleHeight = 205.0
 	siteNodeGap    = 42.0
 	siteLinkGap    = 220.0
-	siteCanvasMax  = 4200.0
+	siteCanvasMax  = 5600.0
 )
 
 type placedGroup struct {
@@ -34,6 +34,9 @@ type layoutResult struct {
 }
 
 func layoutDiagram(doc *model.Diagram, roles []string, byRole map[string][]string) layoutResult {
+	if doc.Theme.Layout == "hub-spoke" {
+		return placeHubSpokeLayout(doc)
+	}
 	if doc.Theme.Layout == "sites" {
 		return placeSiteLayout(doc)
 	}
@@ -45,7 +48,94 @@ func layoutDiagram(doc *model.Diagram, roles []string, byRole map[string][]strin
 	return layoutResult{Nodes: placeRowNodes(doc, roles, byRole, width), Width: width, Height: height}
 }
 
+func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
+	const (
+		width       = 5200.0
+		height      = 3000.0
+		spokeWidth  = 1100.0
+		spokeHeight = 340.0
+		coreWidth   = 2700.0
+		coreHeight  = 560.0
+		sideMargin  = 70.0
+		top         = headerHeight + 55
+		rowGap      = 90.0
+	)
+	nodes := make(map[string]model.Node)
+	for _, node := range doc.Nodes {
+		nodes[node.ID] = node
+	}
+	degrees := nodeDegrees(doc)
+	var cores, spokes []model.Group
+	for _, group := range doc.Groups {
+		isCore := false
+		for _, nodeID := range group.NodeIDs {
+			if nodes[nodeID].Role == "core-router" {
+				isCore = true
+			}
+		}
+		if isCore {
+			cores = append(cores, group)
+		} else {
+			spokes = append(spokes, group)
+		}
+	}
+	sort.Slice(cores, func(i, j int) bool { return cores[i].ID < cores[j].ID })
+	sort.Slice(spokes, func(i, j int) bool { return spokes[i].ID < spokes[j].ID })
+	if len(cores) == 0 || len(spokes) == 0 {
+		return placeSiteLayout(doc)
+	}
+
+	result := layoutResult{Nodes: make(map[string]placedNode), Width: width, Height: height}
+	coreX := (width - coreWidth) / 2
+	coreTotalHeight := float64(len(cores))*coreHeight + float64(len(cores)-1)*rowGap
+	coreY := (height + headerHeight - coreTotalHeight) / 2
+	for index, group := range cores {
+		groupBox := box{X: coreX, Y: coreY + float64(index)*(coreHeight+rowGap), W: coreWidth, H: coreHeight}
+		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
+		placeHubGroupNodes(&result, group, groupBox, nodes, degrees)
+	}
+	split := (len(spokes) + 1) / 2
+	for index, group := range spokes {
+		rowGroups := split
+		rowIndex := index
+		y := top
+		if index >= split {
+			rowGroups = len(spokes) - split
+			rowIndex -= split
+			y = height - spokeHeight - 80
+		}
+		available := width - sideMargin*2
+		step := available / float64(rowGroups)
+		x := sideMargin + step*(float64(rowIndex)+0.5) - spokeWidth/2
+		groupBox := box{X: x, Y: y, W: spokeWidth, H: spokeHeight}
+		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
+		placeHubGroupNodes(&result, group, groupBox, nodes, degrees)
+	}
+	return result
+}
+
+func placeHubGroupNodes(result *layoutResult, group model.Group, groupBox box, nodes map[string]model.Node, degrees map[string]int) {
+	ids := append([]string(nil), group.NodeIDs...)
+	sort.Strings(ids)
+	totalWidth := 0.0
+	for _, id := range ids {
+		totalWidth += siteNodeWidth(nodes[id], degrees[id])
+	}
+	gap := siteRowGap(len(ids))
+	totalWidth += float64(len(ids)-1) * gap
+	x := groupBox.X + (groupBox.W-totalWidth)/2
+	for _, id := range ids {
+		node := nodes[id]
+		width := siteNodeWidth(node, degrees[id])
+		height := siteNodeHeight(degrees[id])
+		y := groupBox.Y + siteHeader + (groupBox.H-siteHeader-height)/2
+		result.Nodes[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: height}}
+		x += width + gap
+	}
+}
+
 func placeSiteLayout(doc *model.Diagram) layoutResult {
+	degrees := nodeDegrees(doc)
 	nodesByID := make(map[string]model.Node)
 	for _, node := range doc.Nodes {
 		nodesByID[node.ID] = node
@@ -91,14 +181,15 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 	}
 
 	type sitePlan struct {
-		ID      string
-		Label   string
-		Kind    string
-		NodeIDs []string
-		Roles   []string
-		ByRole  map[string][]string
-		Width   float64
-		Height  float64
+		ID         string
+		Label      string
+		Kind       string
+		NodeIDs    []string
+		Roles      []string
+		ByRole     map[string][]string
+		RowHeights []float64
+		Width      float64
+		Height     float64
 	}
 	var plans []sitePlan
 	for _, rootID := range rootIDs {
@@ -119,17 +210,29 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 		}
 		roles := orderedRoles(byRole, nodesByID)
 		maxRowWidth := 0.0
+		rowHeights := make([]float64, len(roles))
 		for _, role := range roles {
 			gap := siteRowGap(len(byRole[role]))
 			rowWidth := gap
 			for _, nodeID := range byRole[role] {
-				rowWidth += nodeWidth(nodesByID[nodeID].Role) + gap
+				rowWidth += siteNodeWidth(nodesByID[nodeID], degrees[nodeID]) + gap
 			}
 			maxRowWidth = math.Max(maxRowWidth, rowWidth)
 		}
+		for index, role := range roles {
+			rowHeight := siteRoleHeight
+			for _, nodeID := range byRole[role] {
+				rowHeight = math.Max(rowHeight, siteNodeHeight(degrees[nodeID])+123)
+			}
+			rowHeights[index] = rowHeight
+		}
+		planHeight := siteHeader + sitePadding
+		for _, rowHeight := range rowHeights {
+			planHeight += rowHeight
+		}
 		plans = append(plans, sitePlan{
-			ID: rootID, Label: label, Kind: kind, NodeIDs: nodeIDs, Roles: roles, ByRole: byRole,
-			Width: math.Max(520, maxRowWidth+sitePadding*2), Height: siteHeader + float64(len(roles))*siteRoleHeight + sitePadding,
+			ID: rootID, Label: label, Kind: kind, NodeIDs: nodeIDs, Roles: roles, ByRole: byRole, RowHeights: rowHeights,
+			Width: math.Max(520, maxRowWidth+sitePadding*2), Height: planHeight,
 		})
 	}
 
@@ -146,22 +249,25 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 		}
 		siteBox := box{X: x, Y: siteY, W: plan.Width, H: plan.Height}
 		result.Groups = append(result.Groups, placedGroup{ID: plan.ID, Label: plan.Label, Kind: plan.Kind, Box: siteBox})
+		rowY := siteBox.Y + siteHeader + 42
 		for row, role := range plan.Roles {
 			ids := plan.ByRole[role]
 			rowWidth := 0.0
 			for _, nodeID := range ids {
-				rowWidth += nodeWidth(nodesByID[nodeID].Role)
+				rowWidth += siteNodeWidth(nodesByID[nodeID], degrees[nodeID])
 			}
 			gap := siteRowGap(len(ids))
 			rowWidth += float64(len(ids)-1) * gap
 			nodeX := siteBox.X + (siteBox.W-rowWidth)/2
-			nodeY := siteBox.Y + siteHeader + float64(row)*siteRoleHeight + 42
+			nodeY := rowY
 			for _, nodeID := range ids {
 				node := nodesByID[nodeID]
-				width := nodeWidth(node.Role)
-				result.Nodes[nodeID] = placedNode{ID: nodeID, Node: node, Box: box{X: nodeX, Y: nodeY, W: width, H: nodeHeight}}
+				width := siteNodeWidth(node, degrees[nodeID])
+				height := siteNodeHeight(degrees[nodeID])
+				result.Nodes[nodeID] = placedNode{ID: nodeID, Node: node, Box: box{X: nodeX, Y: nodeY, W: width, H: height}}
 				nodeX += width + gap
 			}
+			rowY += plan.RowHeights[row]
 		}
 		x += plan.Width + siteGap
 		rowHeight = math.Max(rowHeight, plan.Height)
@@ -175,6 +281,30 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 	}
 	sort.SliceStable(result.Groups, func(i, j int) bool { return result.Groups[i].Depth < result.Groups[j].Depth })
 	return result
+}
+
+func nodeDegrees(doc *model.Diagram) map[string]int {
+	result := make(map[string]int)
+	for _, link := range doc.Links {
+		result[link.From.Node]++
+		result[link.To.Node]++
+	}
+	return result
+}
+
+func siteNodeWidth(node model.Node, degree int) float64 {
+	width := nodeWidth(node.Role)
+	if degree <= 4 {
+		return width
+	}
+	return width + float64(degree-4)*70
+}
+
+func siteNodeHeight(degree int) float64 {
+	if degree <= 4 {
+		return nodeHeight
+	}
+	return nodeHeight + float64(degree-4)*22
 }
 
 func siteRowGap(nodeCount int) float64 {

@@ -2,6 +2,7 @@ package discoverylayout
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -10,6 +11,8 @@ import (
 )
 
 const autoLayoutGroupSize = 10
+
+var hostnameRoleSuffix = regexp.MustCompile(`(?i)^(.+)[-_.](?:PE|P|RR|R|SW|LEAF|SPINE)\d+$`)
 
 type Report struct {
 	Layout                 string
@@ -52,8 +55,22 @@ func Apply(doc *spec.Document) Report {
 	}
 	doc.Groups = groups
 	report.Groups = len(groups)
+	if hubSpokeTopology(doc) {
+		doc.Diagram.Layout = "hub-spoke"
+		report.Layout = "hub-spoke"
+	}
 	report.SuppressedMiddleLabels = suppressRepeatedLabels(doc)
 	return report
+}
+
+func hubSpokeTopology(doc *spec.Document) bool {
+	coreNodes := 0
+	for _, node := range doc.Nodes {
+		if node.Role == "core-router" {
+			coreNodes++
+		}
+	}
+	return coreNodes >= 2 && len(doc.Groups) >= 5
 }
 
 func hostnameGroups(doc *spec.Document) map[string]*spec.Group {
@@ -119,6 +136,9 @@ func balancedGroups(doc *spec.Document) map[string]*spec.Group {
 
 func hostnamePrefix(value string) string {
 	value = strings.TrimSpace(value)
+	if parts := hostnameRoleSuffix.FindStringSubmatch(value); len(parts) == 2 {
+		return parts[1]
+	}
 	for _, separator := range []string{"-", "_", "."} {
 		if index := strings.LastIndex(value, separator); index > 0 && digitsOnly(value[index+1:]) {
 			return value[:index]

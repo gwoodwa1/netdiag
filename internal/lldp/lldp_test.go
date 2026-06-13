@@ -385,3 +385,24 @@ func TestToDocumentSetMergesDevicesAndDeduplicatesReciprocalLinks(t *testing.T) 
 		t.Fatalf("unexpected report: %+v", report)
 	}
 }
+
+func TestToDocumentSetInfersNamedPEAndPRoles(t *testing.T) {
+	results := []Result{
+		{LocalNode: "NYC-PE1", Neighbors: []Neighbor{{
+			LocalPort: "Hu0/0/0/0", PortID: "Hu0/0/0/0", SystemName: "CORE-A-P1", Capabilities: "R",
+		}}},
+		{LocalNode: "CORE-A-P1", Neighbors: []Neighbor{{
+			LocalPort: "Hu0/0/0/0", PortID: "Hu0/0/0/0", SystemName: "NYC-PE1", Capabilities: "R",
+		}}},
+	}
+	doc, err := ToDocumentSet(results)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := doc.Nodes["nyc-pe1"]; got.Role != "edge-router" || got.IconLabel != "PE" {
+		t.Fatalf("unexpected PE role: %+v", got)
+	}
+	if got := doc.Nodes["core-a-p1"]; got.Role != "core-router" || got.IconLabel != "P" {
+		t.Fatalf("unexpected P role: %+v", got)
+	}
+}

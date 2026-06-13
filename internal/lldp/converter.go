@@ -74,10 +74,43 @@ func ToDocumentSet(results []Result) (*spec.Document, error) {
 			doc.Diagram.Title = "LLDP topology: " + result.LocalNode
 		}
 	}
+	applyNamedRouterRoles(doc.Nodes)
 	sort.Slice(doc.Links, func(i, j int) bool {
 		return linkKey(doc.Links[i]) < linkKey(doc.Links[j])
 	})
 	return doc, nil
+}
+
+func applyNamedRouterRoles(nodes map[string]spec.Node) {
+	for id, node := range nodes {
+		name := strings.ToUpper(strings.TrimSpace(node.Label))
+		switch {
+		case hasNumberedRoleSuffix(name, "PE"):
+			node.Role = "edge-router"
+			node.IconLabel = "PE"
+		case hasNumberedRoleSuffix(name, "P"):
+			node.Role = "core-router"
+			node.IconLabel = "P"
+		}
+		nodes[id] = node
+	}
+}
+
+func hasNumberedRoleSuffix(value, role string) bool {
+	for _, separator := range []string{"-", "_", "."} {
+		index := strings.LastIndex(value, separator)
+		if index < 0 || index+1+len(role) >= len(value) {
+			continue
+		}
+		suffix := value[index+1:]
+		if strings.HasPrefix(suffix, role) {
+			digits := suffix[len(role):]
+			if digits != "" && strings.IndexFunc(digits, func(r rune) bool { return r < '0' || r > '9' }) == -1 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func mergeNode(nodes map[string]spec.Node, id string, incoming spec.Node) {

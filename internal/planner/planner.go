@@ -106,7 +106,7 @@ func (renderer staticRendererCapability) Name() string {
 }
 
 func (renderer staticRendererCapability) Support(diagram *model.Diagram, feature string) SupportLevel {
-	if renderer.name == "native" && diagram.Theme.Layout == "sites" {
+	if renderer.name == "native" && (diagram.Theme.Layout == "sites" || diagram.Theme.Layout == "hub-spoke") {
 		switch feature {
 		case FeatureGroups, FeatureParallelLinks:
 			return Strict
@@ -267,8 +267,8 @@ func requirements(diagram *model.Diagram) []requirement {
 	if diagram.Theme.Layout == "manual" {
 		add(FeatureManualPlacement, "diagram.layout is manual", 5)
 	}
-	if diagram.Theme.Layout == "sites" {
-		add(FeatureSiteAwareLayout, "diagram.layout is sites", 8)
+	if diagram.Theme.Layout == "sites" || diagram.Theme.Layout == "hub-spoke" {
+		add(FeatureSiteAwareLayout, "diagram.layout uses grouped network containers", 8)
 		add(FeatureOrthogonalRouting, "site-aware layout uses native orthogonal routing", 6)
 	}
 	if diagram.Theme.LinkStyle == "orthogonal" {

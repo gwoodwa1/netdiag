@@ -1,0 +1,9 @@
+RP/0/RP0/CPU0:DAL-PE1#show lldp neighbors
+Capability codes:
+    (R) Router, (B) Bridge, (T) Telephone, (C) DOCSIS Cable Device
+    (W) WLAN Access Point, (P) Repeater, (S) Station, (O) Other
+
+Device ID      Local Intf              Hold-time Capability Port ID
+CORE-A-P1      HundredGigE0/0/0/0      120       R          HundredGigE0/0/0/7
+CORE-A-P2      HundredGigE0/0/0/1      120       R          HundredGigE0/0/0/7
+Total entries displayed: 2

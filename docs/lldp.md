@@ -92,6 +92,42 @@ Keep the device prompt in each capture when possible. If a prompt is missing,
 name the file after the local device, such as `edge-router-01.txt`; directory
 discovery uses the filename stem as the fallback local node name.
 
+## Eight-site IOS XR dual-plane example
+
+`examples/discovery/lldp-iosxr-8-site-dual-plane-captures/` contains fake
+reciprocal IOS XR LLDP captures for eight dual-PE sites:
+
+- NYC, WAS, PHX, LAX, ORL, SFO, SAN, and DAL
+- each site's `PE1` connects to both Plane A P routers
+- each site's `PE2` connects to both Plane B P routers
+- each P plane has a P1-to-P2 core link
+
+Build the complete physical topology directly from the capture directory:
+
+```sh
+go run ./cmd/netdiag discover lldp \
+  examples/discovery/lldp-iosxr-8-site-dual-plane-captures \
+  --auto-layout \
+  -o examples/discovery/lldp-iosxr-8-site-dual-plane.yaml
+
+go run ./cmd/netdiag validate \
+  examples/discovery/lldp-iosxr-8-site-dual-plane.yaml
+
+go run ./cmd/netdiag render \
+  examples/discovery/lldp-iosxr-8-site-dual-plane.yaml \
+  -o examples/discovery/lldp-iosxr-8-site-dual-plane.svg
+```
+
+The directory contains 20 device captures. Discovery merges 68 directional
+observations into 20 nodes and 34 physical links. Auto-layout recognizes
+numbered network-role suffixes such as `NYC-PE1` and `CORE-A-P1`, producing
+eight site groups and two P-plane groups. LLDP conversion assigns distinct PE
+and P roles from those suffixes, while site layout expands high-degree P
+routers to spread their many port labels across a larger device and canvas.
+Because the topology contains a clear P-router core and several PE sites,
+auto-layout selects `hub-spoke`: the two P planes are stacked centrally and
+the eight sites are distributed above and below them.
+
 ## Architecture
 
 The LLDP package separates format detection, vendor parsers, normalization,

@@ -82,3 +82,40 @@ func TestApplyDisambiguatesNormalizedHostnameGroupIDs(t *testing.T) {
 		t.Fatalf("expected deterministic collision suffix: %+v", doc.Groups)
 	}
 }
+
+func TestApplyGroupsNumberedNetworkRolesBySiteAndPlane(t *testing.T) {
+	doc := &spec.Document{Version: 1, Nodes: make(map[string]spec.Node)}
+	for _, prefix := range []string{"NYC", "WAS", "PHX", "LAX", "ORL", "SFO", "SAN", "DAL"} {
+		doc.Nodes[prefix+"-PE1"] = spec.Node{Label: prefix + "-PE1", Role: "router"}
+		doc.Nodes[prefix+"-PE2"] = spec.Node{Label: prefix + "-PE2", Role: "router"}
+	}
+	for _, prefix := range []string{"CORE-A", "CORE-B"} {
+		doc.Nodes[prefix+"-P1"] = spec.Node{Label: prefix + "-P1", Role: "router"}
+		doc.Nodes[prefix+"-P2"] = spec.Node{Label: prefix + "-P2", Role: "router"}
+	}
+
+	report := Apply(doc)
+	if report.Grouping != "hostname-prefix" || len(doc.Groups) != 10 {
+		t.Fatalf("numbered network roles were not grouped semantically: report=%+v groups=%+v", report, doc.Groups)
+	}
+	if doc.Groups["nyc"] == nil || doc.Groups["core-a"] == nil || len(doc.Groups["nyc"].Nodes) != 2 {
+		t.Fatalf("missing expected site or plane group: %+v", doc.Groups)
+	}
+}
+
+func TestApplySelectsHubSpokeForCoreAndSites(t *testing.T) {
+	doc := &spec.Document{Version: 1, Nodes: make(map[string]spec.Node)}
+	for _, prefix := range []string{"NYC", "WAS", "PHX", "LAX", "ORL", "SFO", "SAN", "DAL"} {
+		doc.Nodes[prefix+"-PE1"] = spec.Node{Label: prefix + "-PE1", Role: "edge-router"}
+		doc.Nodes[prefix+"-PE2"] = spec.Node{Label: prefix + "-PE2", Role: "edge-router"}
+	}
+	for _, prefix := range []string{"CORE-A", "CORE-B"} {
+		doc.Nodes[prefix+"-P1"] = spec.Node{Label: prefix + "-P1", Role: "core-router"}
+		doc.Nodes[prefix+"-P2"] = spec.Node{Label: prefix + "-P2", Role: "core-router"}
+	}
+
+	report := Apply(doc)
+	if report.Layout != "hub-spoke" || doc.Diagram.Layout != "hub-spoke" {
+		t.Fatalf("core-and-site topology did not select hub-spoke: %+v", report)
+	}
+}
