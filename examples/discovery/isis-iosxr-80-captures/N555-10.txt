@@ -1,0 +1,9 @@
+RP/0/RP0/CPU0:N555-10#show isis neighbors
+IS-IS CORE neighbors:
+System Id      Interface        SNPA           State Holdtime Type IETF-NSF
+N555-09        Te0/0/0/1        Te0/0/0/0      Up    27       L2   Capable
+N555-01        Te0/0/0/0        Te0/0/0/1      Up    28       L2   Capable
+N554-10        Te0/0/0/3        Te0/0/0/2      Up    26       L2   Capable
+N556-10        Te0/0/0/2        Te0/0/0/3      Up    29       L2   Capable
+
+Total neighbor count: 4

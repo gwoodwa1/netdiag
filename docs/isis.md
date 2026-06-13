@@ -9,6 +9,7 @@ netdiag discover isis show-isis-neighbors.txt -o isis-topology.yaml
 netdiag discover isis openconfig-isis.json --format openconfig --local router-01 -o isis-topology.yaml
 netdiag discover isis junos-isis.xml --format juniper-xml --local router-01 -o isis-topology.yaml
 netdiag discover isis captures/ -o isis-network.yaml
+netdiag discover isis captures/ --auto-layout -o isis-network.yaml
 netdiag render isis-network.yaml -o isis-network.svg
 ```
 
@@ -37,3 +38,34 @@ Junos `show isis adjacency | display xml` is namespace-tolerant and extracts
 the local interface, system name, level, adjacency state, and holdtime. Raw XML
 requires `--local`; surrounding `user@router>` prompt text supplies it
 automatically.
+
+## 80-node IOS XR example
+
+The repository includes a deterministic generator for a large fake IOS XR
+network. It creates eight interconnected 10-router pods, with four L2
+adjacencies per router:
+
+```sh
+go run ./examples/discovery/generate_isis_iosxr_80.go
+
+go run ./cmd/netdiag discover isis \
+  examples/discovery/isis-iosxr-80-captures \
+  --auto-layout \
+  -o examples/discovery/isis-iosxr-80.yaml
+
+go run ./cmd/netdiag validate examples/discovery/isis-iosxr-80.yaml
+
+go run ./cmd/netdiag render \
+  examples/discovery/isis-iosxr-80.yaml \
+  --renderer native \
+  -o examples/discovery/isis-iosxr-80.svg
+```
+
+The directory import reads 320 reciprocal observations from 80 captures and
+merges them into 160 physical links. `--auto-layout` recognizes hostname
+prefixes as routing clusters, selects the wrapped site layout, enables
+orthogonal routing and interface badges, and removes repeated middle labels
+that add noise at this scale. When hostnames do not expose useful prefixes,
+large discoveries fall back to deterministic balanced clusters. This is the
+same protocol-neutral analysis used by LLDP and future discovery commands; see
+[discovery-layout.md](discovery-layout.md).

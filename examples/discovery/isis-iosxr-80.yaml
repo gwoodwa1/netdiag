@@ -1,0 +1,2290 @@
+version: 1
+diagram:
+    title: IS-IS discovered topology
+    badge: NETWORK DIAGRAM
+    layout: sites
+    direction: down
+    link_style: orthogonal
+    interface_labels: ends
+    interface_label_style:
+        fill: '#ffffff'
+        color: '#334155'
+        border: '#94a3b8'
+        radius: 6
+        padding_x: 10
+        padding_y: 5
+groups:
+    n551:
+        label: N551
+        kind: discovered-cluster
+        nodes:
+            n551-01: {}
+            n551-02: {}
+            n551-03: {}
+            n551-04: {}
+            n551-05: {}
+            n551-06: {}
+            n551-07: {}
+            n551-08: {}
+            n551-09: {}
+            n551-10: {}
+    n552:
+        label: N552
+        kind: discovered-cluster
+        nodes:
+            n552-01: {}
+            n552-02: {}
+            n552-03: {}
+            n552-04: {}
+            n552-05: {}
+            n552-06: {}
+            n552-07: {}
+            n552-08: {}
+            n552-09: {}
+            n552-10: {}
+    n553:
+        label: N553
+        kind: discovered-cluster
+        nodes:
+            n553-01: {}
+            n553-02: {}
+            n553-03: {}
+            n553-04: {}
+            n553-05: {}
+            n553-06: {}
+            n553-07: {}
+            n553-08: {}
+            n553-09: {}
+            n553-10: {}
+    n554:
+        label: N554
+        kind: discovered-cluster
+        nodes:
+            n554-01: {}
+            n554-02: {}
+            n554-03: {}
+            n554-04: {}
+            n554-05: {}
+            n554-06: {}
+            n554-07: {}
+            n554-08: {}
+            n554-09: {}
+            n554-10: {}
+    n555:
+        label: N555
+        kind: discovered-cluster
+        nodes:
+            n555-01: {}
+            n555-02: {}
+            n555-03: {}
+            n555-04: {}
+            n555-05: {}
+            n555-06: {}
+            n555-07: {}
+            n555-08: {}
+            n555-09: {}
+            n555-10: {}
+    n556:
+        label: N556
+        kind: discovered-cluster
+        nodes:
+            n556-01: {}
+            n556-02: {}
+            n556-03: {}
+            n556-04: {}
+            n556-05: {}
+            n556-06: {}
+            n556-07: {}
+            n556-08: {}
+            n556-09: {}
+            n556-10: {}
+    n557:
+        label: N557
+        kind: discovered-cluster
+        nodes:
+            n557-01: {}
+            n557-02: {}
+            n557-03: {}
+            n557-04: {}
+            n557-05: {}
+            n557-06: {}
+            n557-07: {}
+            n557-08: {}
+            n557-09: {}
+            n557-10: {}
+    n558:
+        label: N558
+        kind: discovered-cluster
+        nodes:
+            n558-01: {}
+            n558-02: {}
+            n558-03: {}
+            n558-04: {}
+            n558-05: {}
+            n558-06: {}
+            n558-07: {}
+            n558-08: {}
+            n558-09: {}
+            n558-10: {}
+nodes:
+    n551-01:
+        label: N551-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-02:
+        label: N551-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-03:
+        label: N551-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-04:
+        label: N551-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-05:
+        label: N551-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-06:
+        label: N551-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-07:
+        label: N551-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-08:
+        label: N551-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-09:
+        label: N551-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n551-10:
+        label: N551-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 29
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/3
+    n552-01:
+        label: N552-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-02:
+        label: N552-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-03:
+        label: N552-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-04:
+        label: N552-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-05:
+        label: N552-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-06:
+        label: N552-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-07:
+        label: N552-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-08:
+        label: N552-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-09:
+        label: N552-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n552-10:
+        label: N552-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-01:
+        label: N553-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-02:
+        label: N553-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-03:
+        label: N553-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-04:
+        label: N553-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-05:
+        label: N553-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-06:
+        label: N553-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-07:
+        label: N553-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-08:
+        label: N553-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-09:
+        label: N553-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n553-10:
+        label: N553-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-01:
+        label: N554-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-02:
+        label: N554-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-03:
+        label: N554-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-04:
+        label: N554-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-05:
+        label: N554-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-06:
+        label: N554-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-07:
+        label: N554-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-08:
+        label: N554-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-09:
+        label: N554-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n554-10:
+        label: N554-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-01:
+        label: N555-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-02:
+        label: N555-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-03:
+        label: N555-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-04:
+        label: N555-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-05:
+        label: N555-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-06:
+        label: N555-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-07:
+        label: N555-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-08:
+        label: N555-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-09:
+        label: N555-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n555-10:
+        label: N555-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-01:
+        label: N556-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-02:
+        label: N556-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-03:
+        label: N556-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-04:
+        label: N556-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-05:
+        label: N556-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-06:
+        label: N556-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-07:
+        label: N556-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-08:
+        label: N556-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-09:
+        label: N556-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n556-10:
+        label: N556-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-01:
+        label: N557-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-02:
+        label: N557-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-03:
+        label: N557-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-04:
+        label: N557-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-05:
+        label: N557-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-06:
+        label: N557-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-07:
+        label: N557-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-08:
+        label: N557-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-09:
+        label: N557-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n557-10:
+        label: N557-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 26
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/2
+    n558-01:
+        label: N558-01
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 28
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/1
+    n558-02:
+        label: N558-02
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-03:
+        label: N558-03
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-04:
+        label: N558-04
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-05:
+        label: N558-05
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-06:
+        label: N558-06
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-07:
+        label: N558-07
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-08:
+        label: N558-08
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-09:
+        label: N558-09
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 27
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/0
+    n558-10:
+        label: N558-10
+        role: isis-level-2
+        metadata:
+            adjacency_type: L2
+            discovery: isis
+            holdtime: 28
+            ietf_nsf: Capable
+            instance: CORE
+            local: true
+            snpa: Te0/0/0/1
+links:
+    - from:
+        node: n551-01
+        port: Te0/0/0/0
+      to:
+        node: n551-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-01
+        port: Te0/0/0/1
+      to:
+        node: n551-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n551-01
+        port: Te0/0/0/2
+      to:
+        node: n552-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-01
+        port: Te0/0/0/3
+      to:
+        node: n558-01
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-02
+        port: Te0/0/0/0
+      to:
+        node: n551-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-02
+        port: Te0/0/0/2
+      to:
+        node: n552-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-02
+        port: Te0/0/0/3
+      to:
+        node: n558-02
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-03
+        port: Te0/0/0/0
+      to:
+        node: n551-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-03
+        port: Te0/0/0/2
+      to:
+        node: n552-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-03
+        port: Te0/0/0/3
+      to:
+        node: n558-03
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-04
+        port: Te0/0/0/0
+      to:
+        node: n551-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-04
+        port: Te0/0/0/2
+      to:
+        node: n552-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-04
+        port: Te0/0/0/3
+      to:
+        node: n558-04
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-05
+        port: Te0/0/0/0
+      to:
+        node: n551-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-05
+        port: Te0/0/0/2
+      to:
+        node: n552-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-05
+        port: Te0/0/0/3
+      to:
+        node: n558-05
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-06
+        port: Te0/0/0/0
+      to:
+        node: n551-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-06
+        port: Te0/0/0/2
+      to:
+        node: n552-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-06
+        port: Te0/0/0/3
+      to:
+        node: n558-06
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-07
+        port: Te0/0/0/0
+      to:
+        node: n551-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-07
+        port: Te0/0/0/2
+      to:
+        node: n552-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-07
+        port: Te0/0/0/3
+      to:
+        node: n558-07
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-08
+        port: Te0/0/0/0
+      to:
+        node: n551-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-08
+        port: Te0/0/0/2
+      to:
+        node: n552-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-08
+        port: Te0/0/0/3
+      to:
+        node: n558-08
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-09
+        port: Te0/0/0/0
+      to:
+        node: n551-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n551-09
+        port: Te0/0/0/2
+      to:
+        node: n552-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-09
+        port: Te0/0/0/3
+      to:
+        node: n558-09
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n551-10
+        port: Te0/0/0/2
+      to:
+        node: n552-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n551-10
+        port: Te0/0/0/3
+      to:
+        node: n558-10
+        port: Te0/0/0/2
+      protocol: isis
+      status: up
+    - from:
+        node: n552-01
+        port: Te0/0/0/0
+      to:
+        node: n552-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-01
+        port: Te0/0/0/1
+      to:
+        node: n552-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n552-01
+        port: Te0/0/0/2
+      to:
+        node: n553-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-02
+        port: Te0/0/0/0
+      to:
+        node: n552-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-02
+        port: Te0/0/0/2
+      to:
+        node: n553-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-03
+        port: Te0/0/0/0
+      to:
+        node: n552-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-03
+        port: Te0/0/0/2
+      to:
+        node: n553-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-04
+        port: Te0/0/0/0
+      to:
+        node: n552-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-04
+        port: Te0/0/0/2
+      to:
+        node: n553-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-05
+        port: Te0/0/0/0
+      to:
+        node: n552-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-05
+        port: Te0/0/0/2
+      to:
+        node: n553-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-06
+        port: Te0/0/0/0
+      to:
+        node: n552-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-06
+        port: Te0/0/0/2
+      to:
+        node: n553-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-07
+        port: Te0/0/0/0
+      to:
+        node: n552-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-07
+        port: Te0/0/0/2
+      to:
+        node: n553-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-08
+        port: Te0/0/0/0
+      to:
+        node: n552-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-08
+        port: Te0/0/0/2
+      to:
+        node: n553-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-09
+        port: Te0/0/0/0
+      to:
+        node: n552-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n552-09
+        port: Te0/0/0/2
+      to:
+        node: n553-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n552-10
+        port: Te0/0/0/2
+      to:
+        node: n553-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-01
+        port: Te0/0/0/0
+      to:
+        node: n553-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-01
+        port: Te0/0/0/1
+      to:
+        node: n553-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n553-01
+        port: Te0/0/0/2
+      to:
+        node: n554-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-02
+        port: Te0/0/0/0
+      to:
+        node: n553-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-02
+        port: Te0/0/0/2
+      to:
+        node: n554-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-03
+        port: Te0/0/0/0
+      to:
+        node: n553-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-03
+        port: Te0/0/0/2
+      to:
+        node: n554-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-04
+        port: Te0/0/0/0
+      to:
+        node: n553-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-04
+        port: Te0/0/0/2
+      to:
+        node: n554-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-05
+        port: Te0/0/0/0
+      to:
+        node: n553-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-05
+        port: Te0/0/0/2
+      to:
+        node: n554-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-06
+        port: Te0/0/0/0
+      to:
+        node: n553-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-06
+        port: Te0/0/0/2
+      to:
+        node: n554-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-07
+        port: Te0/0/0/0
+      to:
+        node: n553-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-07
+        port: Te0/0/0/2
+      to:
+        node: n554-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-08
+        port: Te0/0/0/0
+      to:
+        node: n553-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-08
+        port: Te0/0/0/2
+      to:
+        node: n554-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-09
+        port: Te0/0/0/0
+      to:
+        node: n553-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n553-09
+        port: Te0/0/0/2
+      to:
+        node: n554-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n553-10
+        port: Te0/0/0/2
+      to:
+        node: n554-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-01
+        port: Te0/0/0/0
+      to:
+        node: n554-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-01
+        port: Te0/0/0/1
+      to:
+        node: n554-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n554-01
+        port: Te0/0/0/2
+      to:
+        node: n555-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-02
+        port: Te0/0/0/0
+      to:
+        node: n554-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-02
+        port: Te0/0/0/2
+      to:
+        node: n555-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-03
+        port: Te0/0/0/0
+      to:
+        node: n554-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-03
+        port: Te0/0/0/2
+      to:
+        node: n555-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-04
+        port: Te0/0/0/0
+      to:
+        node: n554-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-04
+        port: Te0/0/0/2
+      to:
+        node: n555-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-05
+        port: Te0/0/0/0
+      to:
+        node: n554-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-05
+        port: Te0/0/0/2
+      to:
+        node: n555-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-06
+        port: Te0/0/0/0
+      to:
+        node: n554-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-06
+        port: Te0/0/0/2
+      to:
+        node: n555-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-07
+        port: Te0/0/0/0
+      to:
+        node: n554-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-07
+        port: Te0/0/0/2
+      to:
+        node: n555-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-08
+        port: Te0/0/0/0
+      to:
+        node: n554-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-08
+        port: Te0/0/0/2
+      to:
+        node: n555-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-09
+        port: Te0/0/0/0
+      to:
+        node: n554-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n554-09
+        port: Te0/0/0/2
+      to:
+        node: n555-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n554-10
+        port: Te0/0/0/2
+      to:
+        node: n555-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-01
+        port: Te0/0/0/0
+      to:
+        node: n555-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-01
+        port: Te0/0/0/1
+      to:
+        node: n555-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n555-01
+        port: Te0/0/0/2
+      to:
+        node: n556-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-02
+        port: Te0/0/0/0
+      to:
+        node: n555-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-02
+        port: Te0/0/0/2
+      to:
+        node: n556-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-03
+        port: Te0/0/0/0
+      to:
+        node: n555-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-03
+        port: Te0/0/0/2
+      to:
+        node: n556-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-04
+        port: Te0/0/0/0
+      to:
+        node: n555-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-04
+        port: Te0/0/0/2
+      to:
+        node: n556-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-05
+        port: Te0/0/0/0
+      to:
+        node: n555-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-05
+        port: Te0/0/0/2
+      to:
+        node: n556-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-06
+        port: Te0/0/0/0
+      to:
+        node: n555-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-06
+        port: Te0/0/0/2
+      to:
+        node: n556-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-07
+        port: Te0/0/0/0
+      to:
+        node: n555-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-07
+        port: Te0/0/0/2
+      to:
+        node: n556-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-08
+        port: Te0/0/0/0
+      to:
+        node: n555-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-08
+        port: Te0/0/0/2
+      to:
+        node: n556-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-09
+        port: Te0/0/0/0
+      to:
+        node: n555-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n555-09
+        port: Te0/0/0/2
+      to:
+        node: n556-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n555-10
+        port: Te0/0/0/2
+      to:
+        node: n556-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-01
+        port: Te0/0/0/0
+      to:
+        node: n556-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-01
+        port: Te0/0/0/1
+      to:
+        node: n556-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n556-01
+        port: Te0/0/0/2
+      to:
+        node: n557-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-02
+        port: Te0/0/0/0
+      to:
+        node: n556-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-02
+        port: Te0/0/0/2
+      to:
+        node: n557-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-03
+        port: Te0/0/0/0
+      to:
+        node: n556-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-03
+        port: Te0/0/0/2
+      to:
+        node: n557-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-04
+        port: Te0/0/0/0
+      to:
+        node: n556-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-04
+        port: Te0/0/0/2
+      to:
+        node: n557-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-05
+        port: Te0/0/0/0
+      to:
+        node: n556-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-05
+        port: Te0/0/0/2
+      to:
+        node: n557-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-06
+        port: Te0/0/0/0
+      to:
+        node: n556-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-06
+        port: Te0/0/0/2
+      to:
+        node: n557-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-07
+        port: Te0/0/0/0
+      to:
+        node: n556-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-07
+        port: Te0/0/0/2
+      to:
+        node: n557-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-08
+        port: Te0/0/0/0
+      to:
+        node: n556-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-08
+        port: Te0/0/0/2
+      to:
+        node: n557-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-09
+        port: Te0/0/0/0
+      to:
+        node: n556-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n556-09
+        port: Te0/0/0/2
+      to:
+        node: n557-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n556-10
+        port: Te0/0/0/2
+      to:
+        node: n557-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-01
+        port: Te0/0/0/0
+      to:
+        node: n557-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-01
+        port: Te0/0/0/1
+      to:
+        node: n557-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n557-01
+        port: Te0/0/0/2
+      to:
+        node: n558-01
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-02
+        port: Te0/0/0/0
+      to:
+        node: n557-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-02
+        port: Te0/0/0/2
+      to:
+        node: n558-02
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-03
+        port: Te0/0/0/0
+      to:
+        node: n557-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-03
+        port: Te0/0/0/2
+      to:
+        node: n558-03
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-04
+        port: Te0/0/0/0
+      to:
+        node: n557-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-04
+        port: Te0/0/0/2
+      to:
+        node: n558-04
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-05
+        port: Te0/0/0/0
+      to:
+        node: n557-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-05
+        port: Te0/0/0/2
+      to:
+        node: n558-05
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-06
+        port: Te0/0/0/0
+      to:
+        node: n557-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-06
+        port: Te0/0/0/2
+      to:
+        node: n558-06
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-07
+        port: Te0/0/0/0
+      to:
+        node: n557-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-07
+        port: Te0/0/0/2
+      to:
+        node: n558-07
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-08
+        port: Te0/0/0/0
+      to:
+        node: n557-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-08
+        port: Te0/0/0/2
+      to:
+        node: n558-08
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-09
+        port: Te0/0/0/0
+      to:
+        node: n557-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n557-09
+        port: Te0/0/0/2
+      to:
+        node: n558-09
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n557-10
+        port: Te0/0/0/2
+      to:
+        node: n558-10
+        port: Te0/0/0/3
+      protocol: isis
+      status: up
+    - from:
+        node: n558-01
+        port: Te0/0/0/0
+      to:
+        node: n558-02
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-01
+        port: Te0/0/0/1
+      to:
+        node: n558-10
+        port: Te0/0/0/0
+      protocol: isis
+      status: up
+    - from:
+        node: n558-02
+        port: Te0/0/0/0
+      to:
+        node: n558-03
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-03
+        port: Te0/0/0/0
+      to:
+        node: n558-04
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-04
+        port: Te0/0/0/0
+      to:
+        node: n558-05
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-05
+        port: Te0/0/0/0
+      to:
+        node: n558-06
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-06
+        port: Te0/0/0/0
+      to:
+        node: n558-07
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-07
+        port: Te0/0/0/0
+      to:
+        node: n558-08
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-08
+        port: Te0/0/0/0
+      to:
+        node: n558-09
+        port: Te0/0/0/1
+      protocol: isis
+      status: up
+    - from:
+        node: n558-09
+        port: Te0/0/0/0
+      to:
+        node: n558-10
+        port: Te0/0/0/1
+      protocol: isis
+      status: up

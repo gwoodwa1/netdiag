@@ -9,6 +9,7 @@ netdiag discover lldp show-lldp-neighbors-detail.txt -o discovered.yaml
 netdiag discover lldp juniper-lldp.txt --format juniper --local edge-01 -o discovered.yaml
 netdiag discover lldp openconfig-lldp.json --format openconfig --local leaf-01 -o discovered.yaml
 netdiag discover lldp captures/ -o discovered-network.yaml
+netdiag discover lldp captures/ --auto-layout -o discovered-network.yaml
 netdiag render discovered.yaml -o discovered.svg
 ```
 
@@ -50,11 +51,8 @@ from the repository root:
 ```sh
 go run ./cmd/netdiag discover lldp \
   examples/discovery/lldp-iosxr-captures \
+  --auto-layout \
   -o examples/discovery/lldp-iosxr-ring.yaml
-
-# Discovery defaults to rows. For this four-device ring, set
-# diagram.layout: ring in the generated YAML before rendering.
-# Interface label badges can be customized with diagram.interface_label_style.
 
 go run ./cmd/netdiag validate examples/discovery/lldp-iosxr-ring.yaml
 
@@ -68,7 +66,7 @@ Each capture contains the local router prompt and its neighbor table. The
 prompt identifies the local node, while each row supplies the remote node,
 local interface, remote port ID, and capability. Eight directional
 observations become four links because matching observations from both ends are
-merged.
+merged. `--auto-layout` detects this small cycle and selects the ring layout.
 
 Interface labels render as rounded badges in the native SVG renderer. Customize
 their colors and dimensions under `diagram.interface_label_style`:

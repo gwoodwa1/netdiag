@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
+	"github.com/gwoodwa1/netdiag/internal/discoverylayout"
 	"github.com/gwoodwa1/netdiag/internal/export"
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/interactive"
@@ -258,6 +259,7 @@ func recommend(args []string) {
 
 func convertLLDP(args []string) {
 	format, input, local, output := "auto", "", "", ""
+	autoLayout := false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--format":
@@ -274,6 +276,8 @@ func convertLLDP(args []string) {
 			}
 			i++
 			local = args[i]
+		case "--auto-layout":
+			autoLayout = true
 		case "-o", "--output":
 			if i+1 >= len(args) {
 				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
@@ -290,13 +294,17 @@ func convertLLDP(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [-o diagram.yaml]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]")
 		os.Exit(2)
 	}
 	results, err := loadLLDPResults(input, format, local)
 	exitOnError(err)
 	doc, err := lldp.ToDocumentSet(results)
 	exitOnError(err)
+	var layoutReport discoverylayout.Report
+	if autoLayout {
+		layoutReport = discoverylayout.Apply(doc)
+	}
 	exitOnError(spec.Prepare(doc))
 	encoded, err := spec.Format(doc)
 	exitOnError(err)
@@ -310,6 +318,7 @@ func convertLLDP(args []string) {
 	if report.MergedObservations > 0 {
 		fmt.Printf("merged %d reciprocal or duplicate observation(s)\n", report.MergedObservations)
 	}
+	printAutoLayoutReport(autoLayout, layoutReport)
 }
 
 func discover(args []string) {
@@ -330,6 +339,7 @@ func discover(args []string) {
 
 func convertISIS(args []string) {
 	format, input, local, output := "auto", "", "", ""
+	autoLayout := false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--format":
@@ -346,6 +356,8 @@ func convertISIS(args []string) {
 			}
 			i++
 			local = args[i]
+		case "--auto-layout":
+			autoLayout = true
 		case "-o", "--output":
 			if i+1 >= len(args) {
 				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
@@ -362,13 +374,17 @@ func convertISIS(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [-o diagram.yaml]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]")
 		os.Exit(2)
 	}
 	results, err := loadISISResults(input, format, local)
 	exitOnError(err)
 	doc, err := isis.ToDocumentSet(results)
 	exitOnError(err)
+	var layoutReport discoverylayout.Report
+	if autoLayout {
+		layoutReport = discoverylayout.Apply(doc)
+	}
 	exitOnError(spec.Prepare(doc))
 	encoded, err := spec.Format(doc)
 	exitOnError(err)
@@ -382,6 +398,15 @@ func convertISIS(args []string) {
 	if report.MergedObservations > 0 {
 		fmt.Printf("merged %d reciprocal or duplicate observation(s)\n", report.MergedObservations)
 	}
+	printAutoLayoutReport(autoLayout, layoutReport)
+}
+
+func printAutoLayoutReport(enabled bool, report discoverylayout.Report) {
+	if !enabled {
+		return
+	}
+	fmt.Printf("auto-layout selected %s with %d group(s) using %s grouping; suppressed %d repeated middle label(s)\n",
+		report.Layout, report.Groups, report.Grouping, report.SuppressedMiddleLabels)
 }
 
 func loadISISResults(input, format, local string) ([]isis.Result, error) {
@@ -743,8 +768,8 @@ Usage:
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
-  netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [-o diagram.yaml]
-  netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [-o diagram.yaml]
+  netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
+  netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)
   netdiag validate [--json] <diagram.yaml>
   netdiag expand <diagram.yaml> [-o expanded.yaml]

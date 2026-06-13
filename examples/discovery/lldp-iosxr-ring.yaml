@@ -6,13 +6,6 @@ diagram:
     direction: down
     link_style: clean
     interface_labels: ends
-    interface_label_style:
-        fill: "#ffffff"
-        color: "#334155"
-        border: "#94a3b8"
-        radius: 6
-        padding_x: 10
-        padding_y: 5
 nodes:
     r1:
         label: R1
