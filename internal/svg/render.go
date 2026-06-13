@@ -375,8 +375,8 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		}
 		color = escape(color)
 
-		useDiagonalRoute := doc.Theme.Layout == "hub-spoke"
-		useOrthogonalRoute := !useDiagonalRoute && (doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal")
+		useDiagonalRoute := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
+		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal"
 		route := directRoute(start, end, startGeometry.Side, endGeometry.Side, doc.Theme.LinkStyle)
 		if useDiagonalRoute {
 			route = diagonalRoute(start, end)

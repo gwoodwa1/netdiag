@@ -751,3 +751,38 @@ func TestExpandedIconLibrary(t *testing.T) {
 		}
 	}
 }
+
+func TestHubSpokeLayoutWithOrthogonalLinks(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Diagram: spec.Diagram{Layout: "hub-spoke", LinkStyle: "orthogonal"},
+		Groups: map[string]*spec.Group{
+			"core":  {Label: "Core Site", Kind: "core", Nodes: map[string]interface{}{"core-a": nil}},
+			"spoke": {Label: "Spoke Site", Kind: "site", Nodes: map[string]interface{}{"spoke-a": nil}},
+		},
+		Nodes: map[string]spec.Node{
+			"core-a":  {Role: "core-router"},
+			"spoke-a": {Role: "edge-router"},
+		},
+		Links: []spec.Link{{
+			From: spec.LinkEndpoint{Node: "core-a", Port: "Hu0/0"},
+			To:   spec.LinkEndpoint{Node: "spoke-a", Port: "Hu0/0"},
+		}},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	if !strings.Contains(got, " H ") && !strings.Contains(got, " V ") {
+		t.Fatal("hub-spoke layout with link_style: orthogonal did not produce orthogonal link segments")
+	}
+	if strings.Contains(got, " L ") {
+		t.Fatal("hub-spoke layout with link_style: orthogonal unexpectedly produced diagonal link segments")
+	}
+}
+
