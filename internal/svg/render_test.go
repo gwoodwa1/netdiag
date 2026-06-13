@@ -785,4 +785,3 @@ func TestHubSpokeLayoutWithOrthogonalLinks(t *testing.T) {
 		t.Fatal("hub-spoke layout with link_style: orthogonal unexpectedly produced diagonal link segments")
 	}
 }
-
