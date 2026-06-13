@@ -412,6 +412,70 @@ func TestInterfaceLabelBadgeUsesCustomStyle(t *testing.T) {
 	}
 }
 
+func TestRenderSanitizesAttributeIdentifiers(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Nodes: map[string]spec.Node{
+			`router" onclick="alert(1)`: {Role: `router" bad="value`, Color: `#fff" onload="alert(1)`},
+		},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	if strings.Contains(got, `" onclick="`) || strings.Contains(got, `" bad="`) || strings.Contains(got, `" onload="`) {
+		t.Fatalf("unsafe identifier escaped its SVG attribute: %s", got)
+	}
+}
+
+func TestRenderCanHideInterfaceLabels(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Diagram: spec.Diagram{InterfaceAt: "none"},
+		Nodes:   map[string]spec.Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links:   []spec.Link{{From: spec.LinkEndpoint{Node: "a", Port: "Eth0/0"}, To: spec.LinkEndpoint{Node: "b", Port: "Eth0/1"}}},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(result), "interface-label-text") {
+		t.Fatal("interface labels rendered despite interface_labels: none")
+	}
+}
+
+func TestExplicitZeroInterfaceLabelStyleIsPreserved(t *testing.T) {
+	zero := 0.0
+	doc := &spec.Document{
+		Version: 1,
+		Diagram: spec.Diagram{InterfaceLabelStyle: spec.InterfaceLabelStyle{
+			Radius: &zero, PaddingX: &zero, PaddingY: &zero,
+		}},
+		Nodes: map[string]spec.Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []spec.Link{{From: spec.LinkEndpoint{Node: "a", Port: "Eth0/0"}, To: spec.LinkEndpoint{Node: "b", Port: "Eth0/1"}}},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(result), `rx="0.0"`) {
+		t.Fatal("explicit zero interface-label radius was replaced with a default")
+	}
+}
+
 func TestRowLayoutLeavesReadableLinkSpan(t *testing.T) {
 	diagram := &model.Diagram{Theme: model.Theme{Layout: "rows"}}
 	for index := 1; index <= 4; index++ {

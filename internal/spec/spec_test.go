@@ -3,6 +3,7 @@ package spec
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -113,17 +114,47 @@ func TestValidateInterfaceLabelStyle(t *testing.T) {
 		Version: 1,
 		Diagram: Diagram{InterfaceLabelStyle: InterfaceLabelStyle{
 			Fill: "#ffffff", Color: "#334155", Border: "#94a3b8",
-			Radius: 6, PaddingX: 10, PaddingY: 5,
+			Radius: floatTestPointer(6), PaddingX: floatTestPointer(10), PaddingY: floatTestPointer(5),
 		}},
 		Nodes: map[string]Node{"router": {Role: "router"}},
 	}
 	if err := Validate(doc); err != nil {
 		t.Fatalf("interface label style should validate: %v", err)
 	}
-	doc.Diagram.InterfaceLabelStyle.PaddingX = -1
+	doc.Diagram.InterfaceLabelStyle.PaddingX = floatTestPointer(-1)
 	if err := Validate(doc); err == nil {
 		t.Fatal("expected negative interface label padding validation error")
 	}
+}
+
+func TestValidateRejectsMultipleGroupMembership(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"router": {Role: "router"}},
+		Groups: map[string]*Group{
+			"one": {Nodes: map[string]interface{}{"router": map[string]interface{}{}}},
+			"two": {Nodes: map[string]interface{}{"router": map[string]interface{}{}}},
+		},
+	}
+	err := Validate(doc)
+	if err == nil || !strings.Contains(err.Error(), "belongs to multiple groups") {
+		t.Fatalf("expected duplicate group membership error, got %v", err)
+	}
+}
+
+func TestValidateInterfaceLabelModes(t *testing.T) {
+	doc := &Document{Version: 1, Diagram: Diagram{InterfaceAt: "none"}, Nodes: map[string]Node{"router": {Role: "router"}}}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("none interface-label mode should validate: %v", err)
+	}
+	doc.Diagram.InterfaceAt = "middle"
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected unknown interface-label mode validation error")
+	}
+}
+
+func floatTestPointer(value float64) *float64 {
+	return &value
 }
 
 func TestLinkTags(t *testing.T) {

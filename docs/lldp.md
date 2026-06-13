@@ -85,6 +85,7 @@ diagram:
 
 Omitted values use the default white badge, slate text and border, `5px`
 corners, `9px` horizontal padding, and `5px` vertical padding.
+Set `interface_labels: none` to hide endpoint interface labels.
 
 To repeat this with real outputs, place one capture per device in a directory.
 Keep the device prompt in each capture when possible. If a prompt is missing,

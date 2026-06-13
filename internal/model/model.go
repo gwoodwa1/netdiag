@@ -281,9 +281,9 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 			Fill:     doc.Diagram.InterfaceLabelStyle.Fill,
 			Color:    doc.Diagram.InterfaceLabelStyle.Color,
 			Border:   doc.Diagram.InterfaceLabelStyle.Border,
-			Radius:   doc.Diagram.InterfaceLabelStyle.Radius,
-			PaddingX: doc.Diagram.InterfaceLabelStyle.PaddingX,
-			PaddingY: doc.Diagram.InterfaceLabelStyle.PaddingY,
+			Radius:   floatValue(doc.Diagram.InterfaceLabelStyle.Radius, 5),
+			PaddingX: floatValue(doc.Diagram.InterfaceLabelStyle.PaddingX, 9),
+			PaddingY: floatValue(doc.Diagram.InterfaceLabelStyle.PaddingY, 5),
 		},
 	}
 
@@ -293,6 +293,13 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		Links:  links,
 		Theme:  theme,
 	}, nil
+}
+
+func floatValue(value *float64, fallback float64) float64 {
+	if value == nil {
+		return fallback
+	}
+	return *value
 }
 
 func compileLinkStyleRules(rules spec.LinkStyleRules) LinkStyleRules {

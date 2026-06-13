@@ -2,11 +2,13 @@ package svg
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/xml"
 	"fmt"
 	"math"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/model"
@@ -370,6 +372,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		if visual.Width > 0 {
 			strokeWidth = visual.Width
 		}
+		color = escape(color)
 
 		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal"
 		route := directRoute(start, end, startGeometry.Side, endGeometry.Side, doc.Theme.LinkStyle)
@@ -392,8 +395,10 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		fmt.Fprintf(out, `<path%s d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, className, path, color, strokeWidth, dash)
 		renderPortMarker(out, start, color, premium)
 		renderPortMarker(out, end, color, premium)
-		renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
-		renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+		if doc.Theme.InterfaceLabels != "none" {
+			renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+			renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+		}
 		renderEndpointAddress(out, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
 		renderEndpointAddress(out, end, to.Address, endGeometry.Side, endGeometry.LabelLane, color)
 		if link.MiddleLabel() != "" && link.Bundle == "" {
@@ -436,6 +441,7 @@ func buildBundleVisuals(doc *model.Diagram, geometry map[string]endpointGeometry
 		if custom := doc.ResolveLinkStyle(link); custom.Color != "" {
 			color = custom.Color
 		}
+		color = escape(color)
 		visual := visuals[link.Bundle]
 		if visual == nil {
 			visual = &bundleVisual{
@@ -669,17 +675,8 @@ func renderInterfaceLabel(out *bytes.Buffer, x, y float64, label string, style m
 		border = "#cbd5e1"
 	}
 	radius := style.Radius
-	if radius == 0 {
-		radius = 5
-	}
 	paddingX := style.PaddingX
-	if paddingX == 0 {
-		paddingX = 9
-	}
 	paddingY := style.PaddingY
-	if paddingY == 0 {
-		paddingY = 5
-	}
 	const size = 11
 	width := math.Max(38, float64(len([]rune(label)))*size*0.61+paddingX*2)
 	height := size + paddingY*2
@@ -847,6 +844,7 @@ func renderNodes(out *bytes.Buffer, nodes map[string]placedNode, iconPack *icons
 		if color == "" {
 			color = roleColor(item.Node.Role)
 		}
+		color = escape(color)
 		filter := "shadow"
 		fill := "#ffffff"
 		if premium {
@@ -1125,6 +1123,24 @@ func escape(value string) string {
 }
 
 func escapeID(value string) string {
-	replacer := strings.NewReplacer(" ", "-", "/", "-", ":", "-")
-	return replacer.Replace(value)
+	var out strings.Builder
+	dash := false
+	for _, char := range value {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) || char == '-' || char == '_' || char == '.' {
+			out.WriteRune(char)
+			dash = false
+		} else if !dash {
+			out.WriteByte('-')
+			dash = true
+		}
+	}
+	result := strings.Trim(out.String(), "-")
+	if result == "" {
+		result = "item"
+	}
+	if result != value {
+		sum := sha256.Sum256([]byte(value))
+		result = fmt.Sprintf("%s-%x", result, sum[:4])
+	}
+	return result
 }

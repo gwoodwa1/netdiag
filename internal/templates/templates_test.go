@@ -58,6 +58,25 @@ func TestTemplateRegistryListsTemplatesDeterministically(t *testing.T) {
 	}
 }
 
+func TestDualPEDualPTemplateExpands(t *testing.T) {
+	result, err := Load(
+		filepath.Join("..", "..", "examples", "templates", "dual-pe-dual-p-template.yaml"),
+		mustRegistry(t),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Document.Nodes) != 4 || len(result.Document.Links) != 5 || len(result.Document.Groups) != 1 {
+		t.Fatalf("unexpected dual PE/dual P expansion: %d nodes, %d links, %d groups",
+			len(result.Document.Nodes), len(result.Document.Links), len(result.Document.Groups))
+	}
+	for _, id := range []string{"regional-core-pe1", "regional-core-pe2", "regional-core-p1", "regional-core-p2"} {
+		if _, ok := result.Document.Nodes[id]; !ok {
+			t.Fatalf("expanded template missing node %q", id)
+		}
+	}
+}
+
 func TestTemplateRegistryRejectsDuplicateIDs(t *testing.T) {
 	root := t.TempDir()
 	writeTemplate(t, root, "one.yaml", "duplicate.id")
@@ -274,6 +293,24 @@ func TestConnectRejectsUnknownExpandedNode(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "unknown node") {
 		t.Fatalf("expected unknown connect node error, got %v", err)
+	}
+}
+
+func TestExpandDeepClonesGroups(t *testing.T) {
+	source := &SourceDocument{
+		Version: 1,
+		Groups: map[string]*spec.Group{
+			"site": {Nodes: map[string]interface{}{"router": map[string]interface{}{"order": 1}}},
+		},
+		Nodes: map[string]spec.Node{"router": {Role: "router"}},
+	}
+	result, err := (&TemplateExpander{}).Expand(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result.Document.Groups["site"].Nodes["router"].(map[string]interface{})["order"] = 2
+	if source.Groups["site"].Nodes["router"].(map[string]interface{})["order"] != 1 {
+		t.Fatal("expanded groups share nested state with source groups")
 	}
 }
 

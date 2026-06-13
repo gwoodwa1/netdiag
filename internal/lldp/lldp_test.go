@@ -320,6 +320,34 @@ func TestParseOpenConfigJSON(t *testing.T) {
 	}
 }
 
+func TestParseOpenConfigJSONUsesNamedManagementAddress(t *testing.T) {
+	input := `{
+	  "openconfig-lldp:lldp": {
+	    "interfaces": {"interface": [{
+	      "name": "Ethernet1",
+	      "neighbors": {"neighbor": [{
+	        "id": "peer",
+	        "state": {
+	          "chassis-id": "00:11:22:33:44:55",
+	          "port-id": "Ethernet9",
+	          "system-name": "spine-01",
+	          "management-address": {"address-type": "IPV4", "address": "192.0.2.10"},
+	          "system-capabilities": [{"enabled": true, "name": "ROUTER"}]
+	        }
+	      }]}
+	    }]}
+	  }
+	}`
+	result, err := Parse([]byte(input), "openconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := result.Neighbors[0]
+	if got.ManagementAddress != "192.0.2.10" || got.Capabilities != "ROUTER" {
+		t.Fatalf("unexpected structured OpenConfig values: %+v", got)
+	}
+}
+
 func TestToDocumentRequiresLocalNameAndIgnoresIncompleteNeighbors(t *testing.T) {
 	_, err := ToDocument(Result{Neighbors: []Neighbor{{LocalPort: "Eth1", PortID: "Eth2", SystemName: "peer"}}}, "")
 	if err == nil || !strings.Contains(err.Error(), "--local") {

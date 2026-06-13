@@ -379,10 +379,46 @@ func cloneGroups(groups map[string]*spec.Group) map[string]*spec.Group {
 	if groups == nil {
 		return nil
 	}
-	data, _ := yaml.Marshal(groups)
-	var cloned map[string]*spec.Group
-	_ = yaml.Unmarshal(data, &cloned)
+	cloned := make(map[string]*spec.Group, len(groups))
+	for id, group := range groups {
+		if group == nil {
+			cloned[id] = nil
+			continue
+		}
+		cloned[id] = &spec.Group{
+			Label:  group.Label,
+			Kind:   group.Kind,
+			Nodes:  cloneStringMap(group.Nodes),
+			Groups: cloneGroups(group.Groups),
+		}
+	}
 	return cloned
+}
+
+func cloneStringMap(values map[string]interface{}) map[string]interface{} {
+	if values == nil {
+		return nil
+	}
+	cloned := make(map[string]interface{}, len(values))
+	for key, value := range values {
+		cloned[key] = cloneValue(value)
+	}
+	return cloned
+}
+
+func cloneValue(value interface{}) interface{} {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		return cloneStringMap(typed)
+	case []interface{}:
+		cloned := make([]interface{}, len(typed))
+		for index, item := range typed {
+			cloned[index] = cloneValue(item)
+		}
+		return cloned
+	default:
+		return value
+	}
 }
 
 func cloneNodes(nodes map[string]spec.Node) map[string]spec.Node {

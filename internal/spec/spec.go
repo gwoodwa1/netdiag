@@ -35,12 +35,12 @@ type Diagram struct {
 }
 
 type InterfaceLabelStyle struct {
-	Fill     string  `yaml:"fill,omitempty"`
-	Color    string  `yaml:"color,omitempty"`
-	Border   string  `yaml:"border,omitempty"`
-	Radius   float64 `yaml:"radius,omitempty"`
-	PaddingX float64 `yaml:"padding_x,omitempty"`
-	PaddingY float64 `yaml:"padding_y,omitempty"`
+	Fill     string   `yaml:"fill,omitempty"`
+	Color    string   `yaml:"color,omitempty"`
+	Border   string   `yaml:"border,omitempty"`
+	Radius   *float64 `yaml:"radius,omitempty"`
+	PaddingX *float64 `yaml:"padding_x,omitempty"`
+	PaddingY *float64 `yaml:"padding_y,omitempty"`
 }
 
 type LinkStyleRules struct {
@@ -241,6 +241,9 @@ func Validate(doc *Document) error {
 	if doc.Diagram.Theme != "" && doc.Diagram.Theme != "light" && doc.Diagram.Theme != "premium" && doc.Diagram.Theme != "nord" && doc.Diagram.Theme != "dracula" {
 		problems = append(problems, "diagram theme must be light, premium, nord, or dracula")
 	}
+	if doc.Diagram.InterfaceAt != "" && doc.Diagram.InterfaceAt != "ends" && doc.Diagram.InterfaceAt != "none" {
+		problems = append(problems, "diagram interface_labels must be ends or none")
+	}
 	validateStyleRules := func(kind string, rules map[string]VisualStyle) {
 		for name, style := range rules {
 			if strings.TrimSpace(name) == "" {
@@ -257,13 +260,13 @@ func Validate(doc *Document) error {
 	validateStyleRules("protocol", doc.Diagram.LinkStyles.Protocol)
 	validateStyleRules("status", doc.Diagram.LinkStyles.Status)
 	interfaceLabelStyle := doc.Diagram.InterfaceLabelStyle
-	if interfaceLabelStyle.Radius < 0 {
+	if interfaceLabelStyle.Radius != nil && *interfaceLabelStyle.Radius < 0 {
 		problems = append(problems, "diagram interface_label_style radius cannot be negative")
 	}
-	if interfaceLabelStyle.PaddingX < 0 {
+	if interfaceLabelStyle.PaddingX != nil && *interfaceLabelStyle.PaddingX < 0 {
 		problems = append(problems, "diagram interface_label_style padding_x cannot be negative")
 	}
-	if interfaceLabelStyle.PaddingY < 0 {
+	if interfaceLabelStyle.PaddingY != nil && *interfaceLabelStyle.PaddingY < 0 {
 		problems = append(problems, "diagram interface_label_style padding_y cannot be negative")
 	}
 
@@ -279,6 +282,7 @@ func Validate(doc *Document) error {
 		}
 	}
 
+	nodeGroups := make(map[string]string)
 	var validateGroupNodes func(*Group, string)
 	validateGroupNodes = func(g *Group, groupID string) {
 		if g == nil {
@@ -287,6 +291,10 @@ func Validate(doc *Document) error {
 		for nodeID := range g.Nodes {
 			if _, ok := doc.Nodes[nodeID]; !ok {
 				problems = append(problems, fmt.Sprintf("group %q references unknown node %q", groupID, nodeID))
+			} else if previous, ok := nodeGroups[nodeID]; ok {
+				problems = append(problems, fmt.Sprintf("node %q belongs to multiple groups %q and %q", nodeID, previous, groupID))
+			} else {
+				nodeGroups[nodeID] = groupID
 			}
 		}
 		for subID, subG := range g.Groups {

@@ -39,7 +39,7 @@ func Apply(doc *spec.Document) Report {
 	doc.Diagram.InterfaceAt = "ends"
 	doc.Diagram.InterfaceLabelStyle = spec.InterfaceLabelStyle{
 		Fill: "#ffffff", Color: "#334155", Border: "#94a3b8",
-		Radius: 6, PaddingX: 10, PaddingY: 5,
+		Radius: floatPointer(6), PaddingX: floatPointer(10), PaddingY: floatPointer(5),
 	}
 	report.Layout = "sites"
 
@@ -65,19 +65,33 @@ func hostnameGroups(doc *spec.Document) map[string]*spec.Group {
 		}
 		byPrefix[prefix] = append(byPrefix[prefix], id)
 	}
+	prefixes := make([]string, 0, len(byPrefix))
+	for prefix := range byPrefix {
+		prefixes = append(prefixes, prefix)
+	}
+	sort.Strings(prefixes)
 	result := make(map[string]*spec.Group)
-	for prefix, ids := range byPrefix {
+	for _, prefix := range prefixes {
+		ids := byPrefix[prefix]
 		if prefix == "" || len(ids) < 2 {
 			return nil
 		}
 		sort.Strings(ids)
-		result[groupID(prefix)] = &spec.Group{
+		id := groupID(prefix)
+		for suffix := 2; result[id] != nil; suffix++ {
+			id = fmt.Sprintf("%s-%d", groupID(prefix), suffix)
+		}
+		result[id] = &spec.Group{
 			Label: prefix,
 			Kind:  "discovered-cluster",
 			Nodes: nodeSet(ids),
 		}
 	}
 	return result
+}
+
+func floatPointer(value float64) *float64 {
+	return &value
 }
 
 func balancedGroups(doc *spec.Document) map[string]*spec.Group {

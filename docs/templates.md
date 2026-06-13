@@ -52,6 +52,7 @@ netdiag templates --json
 The built-in catalog includes:
 
 - `site.dual-pe`
+- `core.dual-pe-dual-p`
 - `core.mpls-two-p`
 - `core.mpls-four-p`
 - `core.route-reflector-pair`

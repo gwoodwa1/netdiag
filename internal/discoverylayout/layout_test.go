@@ -67,3 +67,18 @@ func TestApplyUsesBalancedGroupsWithoutHostnamePrefixes(t *testing.T) {
 		t.Fatalf("unexpected balanced group sizes: %+v", doc.Groups)
 	}
 }
+
+func TestApplyDisambiguatesNormalizedHostnameGroupIDs(t *testing.T) {
+	doc := &spec.Document{Version: 1, Nodes: make(map[string]spec.Node)}
+	for index := 1; index <= 10; index++ {
+		doc.Nodes[fmt.Sprintf("space-%02d", index)] = spec.Node{Label: fmt.Sprintf("LON CORE-%02d", index), Role: "router"}
+		doc.Nodes[fmt.Sprintf("dash-%02d", index)] = spec.Node{Label: fmt.Sprintf("lon-core-%02d", index), Role: "router"}
+	}
+	report := Apply(doc)
+	if report.Grouping != "hostname-prefix" || len(doc.Groups) != 2 {
+		t.Fatalf("normalized hostname groups collided: report=%+v groups=%+v", report, doc.Groups)
+	}
+	if doc.Groups["lon-core"] == nil || doc.Groups["lon-core-2"] == nil {
+		t.Fatalf("expected deterministic collision suffix: %+v", doc.Groups)
+	}
+}

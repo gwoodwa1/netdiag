@@ -1,0 +1,75 @@
+id: core.dual-pe-dual-p
+version: 1
+description: Dual PE pair redundantly connected to a dual P-router core
+
+params:
+  core_label:
+    type: string
+    default: MPLS Edge and Core
+  pe1_label:
+    type: string
+    default: PE1
+  pe2_label:
+    type: string
+    default: PE2
+  p1_label:
+    type: string
+    default: P1
+  p2_label:
+    type: string
+    default: P2
+  access_speed:
+    type: string
+    default: 100G
+  core_speed:
+    type: string
+    default: 400G
+
+groups:
+  "{{ instance }}":
+    label: "{{ core_label }}"
+    kind: core
+    nodes:
+      "{{ instance }}-pe1": {}
+      "{{ instance }}-pe2": {}
+      "{{ instance }}-p1": {}
+      "{{ instance }}-p2": {}
+
+nodes:
+  "{{ instance }}-pe1":
+    label: "{{ pe1_label }}"
+    role: edge-router
+    icon_label: PE
+    order: 10
+  "{{ instance }}-pe2":
+    label: "{{ pe2_label }}"
+    role: edge-router
+    icon_label: PE
+    order: 20
+  "{{ instance }}-p1":
+    label: "{{ p1_label }}"
+    role: core-router
+    icon_label: P
+    order: 10
+  "{{ instance }}-p2":
+    label: "{{ p2_label }}"
+    role: core-router
+    icon_label: P
+    order: 20
+
+links:
+  - from: "{{ instance }}-pe1:Ethernet0/0"
+    to: "{{ instance }}-p1:Ethernet0/0"
+    label: "{{ access_speed }} PE1-P1"
+  - from: "{{ instance }}-pe1:Ethernet0/1"
+    to: "{{ instance }}-p2:Ethernet0/0"
+    label: "{{ access_speed }} PE1-P2"
+  - from: "{{ instance }}-pe2:Ethernet0/0"
+    to: "{{ instance }}-p1:Ethernet0/1"
+    label: "{{ access_speed }} PE2-P1"
+  - from: "{{ instance }}-pe2:Ethernet0/1"
+    to: "{{ instance }}-p2:Ethernet0/1"
+    label: "{{ access_speed }} PE2-P2"
+  - from: "{{ instance }}-p1:Ethernet0/2"
+    to: "{{ instance }}-p2:Ethernet0/2"
+    label: "{{ core_speed }} Core"

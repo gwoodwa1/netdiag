@@ -1,0 +1,18 @@
+version: 1
+
+diagram:
+  title: Dual PE into Dual P Core
+  layout: sites
+  link_style: orthogonal
+
+use:
+  - template: core.dual-pe-dual-p
+    as: regional-core
+    params:
+      core_label: Regional MPLS Edge and Core
+      pe1_label: Regional PE1
+      pe2_label: Regional PE2
+      p1_label: Core P1
+      p2_label: Core P2
+      access_speed: 100G
+      core_speed: 400G

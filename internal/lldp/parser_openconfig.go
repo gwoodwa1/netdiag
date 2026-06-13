@@ -3,6 +3,7 @@ package lldp
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 )
 
 func parseOpenConfig(data []byte) (Result, error) {
@@ -50,8 +51,9 @@ func neighborFromMaps(localPort string, entry, state map[string]interface{}) Nei
 		LocalPort: localPort, ChassisID: firstUseful(stringValue(state, "chassis-id"), stringValue(entry, "chassis-id")),
 		PortID:          firstUseful(stringValue(state, "port-id"), stringValue(entry, "port-id"), stringValue(entry, "id")),
 		PortDescription: stringValue(state, "port-description"), SystemName: stringValue(state, "system-name"),
-		SystemDescription: stringValue(state, "system-description"), ManagementAddress: firstString(state["management-address"]),
-		Capabilities: firstString(state["system-capabilities"]),
+		SystemDescription: stringValue(state, "system-description"),
+		ManagementAddress: structuredString(mapEntry(state, "management-address"), "address", "management-address"),
+		Capabilities:      structuredString(mapEntry(state, "system-capabilities"), "name", "capability"),
 	}
 }
 
@@ -88,6 +90,52 @@ func stringValue(value map[string]interface{}, keys ...string) string {
 	return ""
 }
 
+func mapEntry(value map[string]interface{}, keys ...string) interface{} {
+	for key, child := range value {
+		for _, wanted := range keys {
+			if stripPrefix(key) == stripPrefix(wanted) {
+				return child
+			}
+		}
+	}
+	return nil
+}
+
+func structuredString(value interface{}, preferredKeys ...string) string {
+	if result, ok := value.(string); ok {
+		return useful(result)
+	}
+	for _, key := range preferredKeys {
+		if result := findStringForKey(value, key); result != "" {
+			return result
+		}
+	}
+	return firstString(value)
+}
+
+func findStringForKey(value interface{}, wanted string) string {
+	switch typed := value.(type) {
+	case []interface{}:
+		for _, item := range typed {
+			if result := findStringForKey(item, wanted); result != "" {
+				return result
+			}
+		}
+	case map[string]interface{}:
+		for key, item := range typed {
+			if stripPrefix(key) == wanted {
+				return firstString(item)
+			}
+		}
+		for _, key := range sortedKeys(typed) {
+			if result := findStringForKey(typed[key], wanted); result != "" {
+				return result
+			}
+		}
+	}
+	return ""
+}
+
 func firstString(value interface{}) string {
 	switch typed := value.(type) {
 	case string:
@@ -99,13 +147,22 @@ func firstString(value interface{}) string {
 			}
 		}
 	case map[string]interface{}:
-		for _, item := range typed {
-			if result := firstString(item); result != "" {
+		for _, key := range sortedKeys(typed) {
+			if result := firstString(typed[key]); result != "" {
 				return result
 			}
 		}
 	}
 	return ""
+}
+
+func sortedKeys(value map[string]interface{}) []string {
+	keys := make([]string, 0, len(value))
+	for key := range value {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func hasAnyKey(value map[string]interface{}, keys ...string) bool {
