@@ -53,6 +53,21 @@ func directRoute(start, end point, startSide, endSide, style string) linkRoute {
 	return linkRoute{Points: []point{start, end}, Path: pathData(start, end, startSide, endSide, style), Label: point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}}
 }
 
+func diagonalRoute(start, end point) linkRoute {
+	return linkRoute{
+		Points: []point{start, end},
+		Path:   fmt.Sprintf("M %.1f %.1f L %.1f %.1f", start.X, start.Y, end.X, end.Y),
+		Label:  pointAlongLine(start, end, 0.5),
+	}
+}
+
+func pointAlongLine(start, end point, position float64) point {
+	return point{
+		X: start.X + (end.X-start.X)*position,
+		Y: start.Y + (end.Y-start.Y)*position,
+	}
+}
+
 func movePoint(value point, side string, distance float64) point {
 	switch side {
 	case "top":

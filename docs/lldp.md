@@ -126,7 +126,10 @@ and P roles from those suffixes, while site layout expands high-degree P
 routers to spread their many port labels across a larger device and canvas.
 Because the topology contains a clear P-router core and several PE sites,
 auto-layout selects `hub-spoke`: the two P planes are stacked centrally and
-the eight sites are distributed above and below them.
+the eight sites are distributed above and below them. Hub-and-spoke links use
+direct diagonal routes. Interface labels are placed proportionally along those
+routes, with labels for high-degree P routers moved farther away from the hub
+to reduce core-label overlap.
 
 ## Architecture
 

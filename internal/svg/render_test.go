@@ -372,6 +372,29 @@ func TestHubSpokeLayoutPlacesCoreBetweenSpokes(t *testing.T) {
 	}
 }
 
+func TestDiagonalRouteAndEndpointLabelsFollowLineGeometry(t *testing.T) {
+	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300})
+	if route.Path != "M 100.0 100.0 L 500.0 300.0" {
+		t.Fatalf("unexpected diagonal route: %s", route.Path)
+	}
+	var out bytes.Buffer
+	renderRouteEndpointLabel(&out, route, "Hu0/0/0/0", true, 2, 0, model.InterfaceLabelStyle{})
+	renderRouteEndpointLabel(&out, route, "Hu0/0/0/1", false, 2, 0, model.InterfaceLabelStyle{})
+	got := out.String()
+	if !strings.Contains(got, `x="152.0"`) || !strings.Contains(got, `x="448.0"`) {
+		t.Fatalf("route labels did not follow diagonal geometry: %s", got)
+	}
+}
+
+func TestHighDegreeDiagonalEndpointLabelMovesAwayFromHub(t *testing.T) {
+	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300})
+	var out bytes.Buffer
+	renderRouteEndpointLabel(&out, route, "Hu0/0/0/0", true, 9, 0, model.InterfaceLabelStyle{})
+	if !strings.Contains(out.String(), `x="212.0"`) {
+		t.Fatalf("high-degree endpoint label did not move along route: %s", out.String())
+	}
+}
+
 func TestPEAndPDevicesUseDistinctColors(t *testing.T) {
 	doc := &spec.Document{
 		Version: 1,

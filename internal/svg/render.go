@@ -351,6 +351,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 
 	out.WriteString(`<g id="links">`)
 	premium := doc.Theme.Name == "premium"
+	degrees := nodeDegrees(doc)
 	for index, link := range doc.Links {
 		from := link.From
 		to := link.To
@@ -374,9 +375,12 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		}
 		color = escape(color)
 
-		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.Layout == "hub-spoke" || doc.Theme.LinkStyle == "orthogonal"
+		useDiagonalRoute := doc.Theme.Layout == "hub-spoke"
+		useOrthogonalRoute := !useDiagonalRoute && (doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal")
 		route := directRoute(start, end, startGeometry.Side, endGeometry.Side, doc.Theme.LinkStyle)
-		if useOrthogonalRoute {
+		if useDiagonalRoute {
+			route = diagonalRoute(start, end)
+		} else if useOrthogonalRoute {
 			route = orthogonalRoute(start, end, startGeometry.Side, endGeometry.Side, nodes, index)
 		}
 		path := route.Path
@@ -396,20 +400,25 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		renderPortMarker(out, start, color, premium)
 		renderPortMarker(out, end, color, premium)
 		if doc.Theme.InterfaceLabels != "none" {
-			renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
-			renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+			if useDiagonalRoute {
+				renderRouteEndpointLabel(out, route, link.SourceLabel(), true, degrees[from.Node], startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+				renderRouteEndpointLabel(out, route, link.TargetLabel(), false, degrees[to.Node], endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+			} else {
+				renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+				renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+			}
 		}
 		renderEndpointAddress(out, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
 		renderEndpointAddress(out, end, to.Address, endGeometry.Side, endGeometry.LabelLane, color)
 		if link.MiddleLabel() != "" && link.Bundle == "" {
-			if useOrthogonalRoute {
+			if useOrthogonalRoute || useDiagonalRoute {
 				renderRouteLabel(out, route.Label, route.LabelHorizontal, link.MiddleLabel(), color, index)
 			} else {
 				renderCenterLabel(out, start, end, startGeometry.Side, endGeometry.Side, link.MiddleLabel(), color, index)
 			}
 		}
 		if link.Bundle == "" {
-			if useOrthogonalRoute {
+			if useOrthogonalRoute || useDiagonalRoute {
 				renderRouteTags(out, route.Label, link.Tags(), color, index)
 			} else {
 				renderLinkTags(out, start, end, link.Tags(), color, index)
@@ -639,6 +648,22 @@ func renderEndpointLabel(out *bytes.Buffer, endpoint point, label, side string, 
 		y = endpoint.Y - 12
 	}
 	renderInterfaceLabel(out, x, y, label, style)
+}
+
+func renderRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, source bool, degree, lane int, style model.InterfaceLabelStyle) {
+	if len(route.Points) < 2 {
+		return
+	}
+	position := 0.13 + float64(lane%3)*0.025
+	if degree > 4 {
+		position = 0.28 + float64(lane%3)*0.025
+	}
+	start, end := route.Points[0], route.Points[len(route.Points)-1]
+	if !source {
+		position = 1 - position
+	}
+	location := pointAlongLine(start, end, position)
+	renderInterfaceLabel(out, location.X, location.Y+4, label, style)
 }
 
 func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side string, lane int, color string) {
