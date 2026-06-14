@@ -149,6 +149,28 @@ func TestRenderRejectsUnknownOverrideReference(t *testing.T) {
 	}
 }
 
+func TestRenderRejectsDuplicateAutomaticLinkIDs(t *testing.T) {
+	link := model.Link{From: model.LinkEndpoint{Node: "a"}, To: model.LinkEndpoint{Node: "b"}}
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "a"}, {ID: "b"}},
+		Links: []model.Link{link, link},
+	}
+	if _, err := Render(diagram); err == nil {
+		t.Fatal("duplicate automatic link IDs were accepted")
+	}
+}
+
+func TestRenderValidatesOverrides(t *testing.T) {
+	diagram := &model.Diagram{Nodes: []model.Node{{ID: "a"}}}
+	overrides := &layoutoverride.Document{
+		Version:         1,
+		LayoutOverrides: layoutoverride.Overrides{Links: map[string]layoutoverride.Link{"link": {SourceSide: "east"}}},
+	}
+	if _, err := RenderWithOptions(diagram, Options{Overrides: overrides}); err == nil {
+		t.Fatal("invalid overrides were accepted")
+	}
+}
+
 func TestStyleForUnknownRoleUsesGenericShape(t *testing.T) {
 	style := styleForRole("unknown-role")
 	if style.Shape != "rectangle" {

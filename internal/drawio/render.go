@@ -59,6 +59,11 @@ func Render(diagram *model.Diagram) ([]byte, error) {
 }
 
 func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) {
+	if options.Overrides != nil {
+		if err := layoutoverride.Validate(options.Overrides); err != nil {
+			return nil, fmt.Errorf("invalid layout overrides: %w", err)
+		}
+	}
 	if err := validateOverrideReferences(diagram, options.Overrides); err != nil {
 		return nil, err
 	}
@@ -221,9 +226,6 @@ func appendEdgeLabel(cells []cell, id, parent, semanticID, value string, positio
 }
 
 func validateOverrideReferences(diagram *model.Diagram, overrides *layoutoverride.Document) error {
-	if overrides == nil {
-		return nil
-	}
 	nodes := make(map[string]bool)
 	groups := make(map[string]bool)
 	links := make(map[string]bool)
@@ -234,7 +236,14 @@ func validateOverrideReferences(diagram *model.Diagram, overrides *layoutoverrid
 		groups[group.ID] = true
 	}
 	for _, link := range diagram.Links {
-		links[link.StableID()] = true
+		stableID := link.StableID()
+		if links[stableID] {
+			return fmt.Errorf("links resolve to duplicate stable ID %q; assign explicit unique link IDs", stableID)
+		}
+		links[stableID] = true
+	}
+	if overrides == nil {
+		return nil
 	}
 	for id := range overrides.LayoutOverrides.Nodes {
 		if !nodes[id] {
