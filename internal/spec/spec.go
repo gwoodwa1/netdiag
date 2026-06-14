@@ -27,6 +27,8 @@ type Diagram struct {
 	Layout              string              `yaml:"layout,omitempty"`
 	Direction           string              `yaml:"direction,omitempty"`
 	LinkStyle           string              `yaml:"link_style,omitempty"`
+	RouteClearance      float64             `yaml:"route_clearance,omitempty"`
+	EndpointClearance   float64             `yaml:"endpoint_clearance,omitempty"`
 	InterfaceAt         string              `yaml:"interface_labels,omitempty"`
 	Theme               string              `yaml:"theme,omitempty"`
 	Renderer            string              `yaml:"renderer,omitempty"`
@@ -72,12 +74,14 @@ type Node struct {
 }
 
 type LinkEndpoint struct {
-	Node     string   `yaml:"node"`
-	Port     string   `yaml:"port"`
-	Side     string   `yaml:"side,omitempty"`
-	Position *float64 `yaml:"position,omitempty"`
-	Label    string   `yaml:"label,omitempty"`
-	Address  string   `yaml:"address,omitempty"`
+	Node          string   `yaml:"node"`
+	Port          string   `yaml:"port"`
+	Side          string   `yaml:"side,omitempty"`
+	Position      *float64 `yaml:"position,omitempty"`
+	Stub          float64  `yaml:"stub,omitempty"`
+	LabelRotation int      `yaml:"label_rotation,omitempty"`
+	Label         string   `yaml:"label,omitempty"`
+	Address       string   `yaml:"address,omitempty"`
 }
 
 func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
@@ -96,12 +100,14 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	type rawLinkEndpoint struct {
-		Node     string   `yaml:"node"`
-		Port     string   `yaml:"port"`
-		Side     string   `yaml:"side"`
-		Position *float64 `yaml:"position"`
-		Label    string   `yaml:"label"`
-		Address  string   `yaml:"address"`
+		Node          string   `yaml:"node"`
+		Port          string   `yaml:"port"`
+		Side          string   `yaml:"side"`
+		Position      *float64 `yaml:"position"`
+		Stub          float64  `yaml:"stub"`
+		LabelRotation int      `yaml:"label_rotation"`
+		Label         string   `yaml:"label"`
+		Address       string   `yaml:"address"`
 	}
 	var raw rawLinkEndpoint
 	if err := value.Decode(&raw); err != nil {
@@ -111,6 +117,8 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 	le.Port = raw.Port
 	le.Side = raw.Side
 	le.Position = raw.Position
+	le.Stub = raw.Stub
+	le.LabelRotation = raw.LabelRotation
 	le.Label = raw.Label
 	le.Address = raw.Address
 	return nil
@@ -272,6 +280,12 @@ func Validate(doc *Document) error {
 	if interfaceLabelStyle.PaddingY != nil && *interfaceLabelStyle.PaddingY < 0 {
 		problems = append(problems, "diagram interface_label_style padding_y cannot be negative")
 	}
+	if doc.Diagram.RouteClearance < 0 || doc.Diagram.RouteClearance > 200 {
+		problems = append(problems, "diagram route_clearance must be between 0 and 200")
+	}
+	if doc.Diagram.EndpointClearance < 0 || doc.Diagram.EndpointClearance > 200 {
+		problems = append(problems, "diagram endpoint_clearance must be between 0 and 200")
+	}
 
 	for id, node := range doc.Nodes {
 		if strings.TrimSpace(id) == "" {
@@ -332,6 +346,14 @@ func Validate(doc *Document) error {
 				if *endpoint.Position < 0 || *endpoint.Position > 1 {
 					problems = append(problems, fmt.Sprintf("link %d %s position must be between 0 and 1", i+1, endpointName))
 				}
+			}
+			if endpoint.Stub < 0 {
+				problems = append(problems, fmt.Sprintf("link %d %s stub must be zero or greater", i+1, endpointName))
+			} else if endpoint.Stub > 0 && endpoint.Side == "" {
+				problems = append(problems, fmt.Sprintf("link %d %s stub requires side", i+1, endpointName))
+			}
+			if endpoint.LabelRotation != 0 && endpoint.LabelRotation != 90 && endpoint.LabelRotation != 180 && endpoint.LabelRotation != 270 {
+				problems = append(problems, fmt.Sprintf("link %d %s label_rotation must be 0, 90, 180, or 270", i+1, endpointName))
 			}
 			if endpoint.Address != "" {
 				if _, _, err := net.ParseCIDR(endpoint.Address); err != nil {

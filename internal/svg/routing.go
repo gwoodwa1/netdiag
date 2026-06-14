@@ -14,21 +14,25 @@ type linkRoute struct {
 }
 
 func planDiagonalRoutes(links []routedLink) map[int]linkRoute {
+	return planDiagonalRoutesWithClearance(links, 24)
+}
+
+func planDiagonalRoutesWithClearance(links []routedLink, clearance float64) map[int]linkRoute {
 	const (
 		candidateCount = 13
 		passes         = 4
 	)
 	routes := make(map[int]linkRoute, len(links))
 	for _, link := range links {
-		routes[link.Index] = diagonalRoute(link.Start, link.End, 0)
+		routes[link.Index] = routedDiagonalRoute(link, 0)
 	}
 	for pass := 0; pass < passes; pass++ {
 		for _, link := range links {
 			best := routes[link.Index]
-			bestScore := diagonalRouteScore(link, best, links, routes)
+			bestScore := diagonalRouteScore(link, best, links, routes, clearance)
 			for lane := 1; lane < candidateCount; lane++ {
-				candidate := diagonalRoute(link.Start, link.End, lane)
-				score := diagonalRouteScore(link, candidate, links, routes)
+				candidate := routedDiagonalRoute(link, lane)
+				score := diagonalRouteScore(link, candidate, links, routes, clearance)
 				if score < bestScore {
 					best, bestScore = candidate, score
 				}
@@ -40,22 +44,87 @@ func planDiagonalRoutes(links []routedLink) map[int]linkRoute {
 }
 
 type routedLink struct {
-	Index    int
-	FromNode string
-	ToNode   string
-	Start    point
-	End      point
+	Index     int
+	FromNode  string
+	ToNode    string
+	Start     point
+	End       point
+	StartSide string
+	EndSide   string
+	StartStub float64
+	EndStub   float64
 }
 
-func diagonalRouteScore(link routedLink, candidate linkRoute, links []routedLink, routes map[int]linkRoute) float64 {
-	score := math.Abs(diagonalRouteOffset(candidate)) * 0.25
+func routedDiagonalRoute(link routedLink, lane int) linkRoute {
+	if link.StartStub <= 0 && link.EndStub <= 0 {
+		return diagonalRoute(link.Start, link.End, lane)
+	}
+	startStub := movePoint(link.Start, link.StartSide, link.StartStub)
+	endStub := movePoint(link.End, link.EndSide, link.EndStub)
+	curve := diagonalRoute(startStub, endStub, lane)
+	points := []point{link.Start, startStub, curve.Points[1], endStub, link.End}
+	return linkRoute{
+		Points: points,
+		Path: fmt.Sprintf(
+			"M %.1f %.1f L %.1f %.1f Q %.1f %.1f %.1f %.1f L %.1f %.1f",
+			link.Start.X, link.Start.Y, startStub.X, startStub.Y,
+			curve.Points[1].X, curve.Points[1].Y, endStub.X, endStub.Y,
+			link.End.X, link.End.Y,
+		),
+		Label: curve.Label,
+	}
+}
+
+func diagonalRouteScore(link routedLink, candidate linkRoute, links []routedLink, routes map[int]linkRoute, clearance float64) float64 {
+	score := math.Abs(diagonalRouteOffset(candidate)) * 1.5
 	for _, other := range links {
 		if other.Index == link.Index || linksMeetAtSamePoint(link, other) {
 			continue
 		}
-		score += float64(routeIntersectionCount(candidate, routes[other.Index])) * 100000
+		otherRoute := routes[other.Index]
+		score += float64(routeIntersectionCount(candidate, otherRoute)) * 100000
+		score += routeProximityPenalty(candidate, otherRoute, clearance)
 	}
 	return score
+}
+
+func routeProximityPenalty(a, b linkRoute, clearance float64) float64 {
+	aPoints := sampleRoute(a, 16)
+	bPoints := sampleRoute(b, 16)
+	minimum := math.Inf(1)
+	for i := 1; i < len(aPoints); i++ {
+		for j := 1; j < len(bPoints); j++ {
+			distance := segmentDistance(aPoints[i-1], aPoints[i], bPoints[j-1], bPoints[j])
+			minimum = math.Min(minimum, distance)
+		}
+	}
+	if minimum >= clearance {
+		return 0
+	}
+	gap := clearance - minimum
+	return gap * gap * 0.75
+}
+
+func segmentDistance(a, b, c, d point) float64 {
+	if segmentsCross(a, b, c, d) {
+		return 0
+	}
+	return math.Min(
+		math.Min(pointSegmentDistance(a, c, d), pointSegmentDistance(b, c, d)),
+		math.Min(pointSegmentDistance(c, a, b), pointSegmentDistance(d, a, b)),
+	)
+}
+
+func pointSegmentDistance(value, start, end point) float64 {
+	dx, dy := end.X-start.X, end.Y-start.Y
+	lengthSquared := dx*dx + dy*dy
+	if lengthSquared == 0 {
+		return math.Hypot(value.X-start.X, value.Y-start.Y)
+	}
+	position := ((value.X-start.X)*dx + (value.Y-start.Y)*dy) / lengthSquared
+	position = math.Max(0, math.Min(1, position))
+	closest := point{X: start.X + position*dx, Y: start.Y + position*dy}
+	return math.Hypot(value.X-closest.X, value.Y-closest.Y)
 }
 
 func linksMeetAtSamePoint(a, b routedLink) bool {
@@ -66,6 +135,10 @@ func linksMeetAtSamePoint(a, b routedLink) bool {
 }
 
 func diagonalRouteOffset(route linkRoute) float64 {
+	if len(route.Points) == 5 {
+		middle := pointAlongLine(route.Points[1], route.Points[3], 0.5)
+		return math.Hypot(route.Points[2].X-middle.X, route.Points[2].Y-middle.Y)
+	}
 	if len(route.Points) != 3 {
 		return 0
 	}
@@ -89,6 +162,13 @@ func routeIntersectionCount(a, b linkRoute) int {
 }
 
 func sampleRoute(route linkRoute, segments int) []point {
+	if len(route.Points) == 5 && strings.Contains(route.Path, " Q ") {
+		result := []point{route.Points[0], route.Points[1]}
+		for index := 1; index < segments; index++ {
+			result = append(result, quadraticPoint(route.Points[1], route.Points[2], route.Points[3], float64(index)/float64(segments)))
+		}
+		return append(result, route.Points[3], route.Points[4])
+	}
 	if len(route.Points) != 3 || !strings.Contains(route.Path, " Q ") {
 		return route.Points
 	}
@@ -209,10 +289,34 @@ func quadraticPoint(start, control, end point, position float64) point {
 }
 
 func pointAlongRoute(route linkRoute, position float64) point {
+	if len(route.Points) == 5 && strings.Contains(route.Path, " Q ") {
+		return pointAlongSampledRoute(sampleRoute(route, 32), position)
+	}
 	if len(route.Points) == 3 && strings.Contains(route.Path, " Q ") {
 		return quadraticPoint(route.Points[0], route.Points[1], route.Points[2], position)
 	}
 	return pointAlongLine(route.Points[0], route.Points[len(route.Points)-1], position)
+}
+
+func pointAlongSampledRoute(points []point, position float64) point {
+	if len(points) == 0 {
+		return point{}
+	}
+	total := 0.0
+	for index := 1; index < len(points); index++ {
+		total += math.Hypot(points[index].X-points[index-1].X, points[index].Y-points[index-1].Y)
+	}
+	target := total * position
+	walked := 0.0
+	for index := 1; index < len(points); index++ {
+		start, end := points[index-1], points[index]
+		length := math.Hypot(end.X-start.X, end.Y-start.Y)
+		if walked+length >= target {
+			return pointAlongLine(start, end, (target-walked)/length)
+		}
+		walked += length
+	}
+	return points[len(points)-1]
 }
 
 func movePoint(value point, side string, distance float64) point {

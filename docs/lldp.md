@@ -154,6 +154,57 @@ to:
 `position` ranges from `0.0` to `1.0` and requires `side`. This keeps manual
 adjustments stable when the canvas or device box changes size.
 
+Use `stub` when a link should leave an endpoint in a straight line before
+turning diagonal:
+
+```yaml
+to:
+  node: orl-pe1
+  port: HundredGigE0/0/0/0
+  side: bottom
+  position: 0.25
+  stub: 180
+```
+
+`stub` is measured in SVG units and requires `side`. The global router still
+optimizes the diagonal section after the requested straight departure.
+The same controls work at either end of a link. For high-degree P routers,
+assign upper-site links to ordered positions on `side: top` and lower-site
+links to ordered positions on `side: bottom`, then add a shared stub distance.
+This creates a clear routing channel around the P layer before links fan out
+diagonally.
+
+Port-label cards can also be rotated independently at either endpoint:
+
+```yaml
+from:
+  node: core-a-p1
+  port: HundredGigE0/0/0/0
+  side: top
+  position: 0.64
+  stub: 140
+  label_rotation: 90
+```
+
+Supported rotations are `0`, `90`, `180`, and `270` degrees. Rotation applies
+to the complete label card.
+
+The global crossing corrector also protects a configurable clearance around
+routes, including near-misses that do not technically intersect:
+
+```yaml
+diagram:
+  route_clearance: 30
+  endpoint_clearance: 56
+```
+
+The native renderer defaults to `24` SVG units. Larger values make the route
+planner move diagonal sections farther away from nearby lines and label
+channels. `endpoint_clearance` defaults to `44` SVG units and enforces minimum
+spacing between terminations sharing one device side. The renderer keeps the
+declared side, then adjusts overly crowded positions just enough to satisfy
+the available clearance.
+
 ## Architecture
 
 The LLDP package separates format detection, vendor parsers, normalization,

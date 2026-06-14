@@ -445,6 +445,49 @@ func TestDiagonalRouteLanesSeparateCurves(t *testing.T) {
 	}
 }
 
+func TestRoutedDiagonalRouteUsesRequestedStraightStub(t *testing.T) {
+	route := routedDiagonalRoute(routedLink{
+		Start:     point{X: 100, Y: 100},
+		End:       point{X: 500, Y: 500},
+		StartSide: "bottom",
+		StartStub: 120,
+	}, 0)
+	if got := route.Points[1]; got != (point{X: 100, Y: 220}) {
+		t.Fatalf("stub endpoint = %+v, want {100 220}", got)
+	}
+	if !strings.Contains(route.Path, "M 100.0 100.0 L 100.0 220.0 Q") {
+		t.Fatalf("route does not leave straight before diagonal: %s", route.Path)
+	}
+}
+
+func TestStubbedRouteEndpointLabelUsesStraightSection(t *testing.T) {
+	route := routedDiagonalRoute(routedLink{
+		Start:     point{X: 100, Y: 100},
+		End:       point{X: 500, Y: 500},
+		StartSide: "bottom",
+		StartStub: 120,
+	}, 0)
+	location, ok := routeStubLabelPoint(route, true)
+	if !ok || location != (point{X: 100, Y: 166}) {
+		t.Fatalf("source stub label point = %+v, %t; want {100 166}, true", location, ok)
+	}
+	if _, ok := routeStubLabelPoint(route, false); ok {
+		t.Fatal("non-stubbed target unexpectedly received a stub label point")
+	}
+}
+
+func TestRotatedEndpointLabelRotatesCompleteBadge(t *testing.T) {
+	var out bytes.Buffer
+	renderRotatedInterfaceLabel(&out, 100, 200, "Hu0/0/0/0", 90, model.InterfaceLabelStyle{})
+	got := out.String()
+	if !strings.Contains(got, `class="interface-label-rotation" transform="rotate(90 100.0 194.5)"`) {
+		t.Fatalf("rotated label missing expected group transform: %s", got)
+	}
+	if !strings.Contains(got, `interface-label-badge`) || !strings.Contains(got, `interface-label-text`) {
+		t.Fatalf("rotation did not include complete badge: %s", got)
+	}
+}
+
 func TestPlanDiagonalRoutesReducesGlobalCrossings(t *testing.T) {
 	links := []routedLink{
 		{Index: 0, FromNode: "a", ToNode: "d", Start: point{X: 0, Y: 0}, End: point{X: 400, Y: 400}},
@@ -455,6 +498,18 @@ func TestPlanDiagonalRoutesReducesGlobalCrossings(t *testing.T) {
 	planned := routeIntersectionCount(routes[0], routes[1])
 	if initial == 0 || planned >= initial {
 		t.Fatalf("global planner did not reduce crossings: initial=%d planned=%d routes=%+v", initial, planned, routes)
+	}
+}
+
+func TestRouteProximityPenaltyProtectsClearanceWithoutCrossing(t *testing.T) {
+	first := directRoute(point{X: 0, Y: 0}, point{X: 400, Y: 0}, "right", "left", "clean")
+	near := directRoute(point{X: 0, Y: 12}, point{X: 400, Y: 12}, "right", "left", "clean")
+	far := directRoute(point{X: 0, Y: 80}, point{X: 400, Y: 80}, "right", "left", "clean")
+	if routeIntersectionCount(first, near) != 0 {
+		t.Fatal("near parallel routes unexpectedly intersect")
+	}
+	if routeProximityPenalty(first, near, 34) <= routeProximityPenalty(first, far, 34) {
+		t.Fatal("near route did not receive a larger clearance penalty")
 	}
 }
 
@@ -535,6 +590,32 @@ func TestEndpointPositionPinsTerminationAlongSide(t *testing.T) {
 	got := geometry[endpointKey(0, true)]
 	if got.Side != "top" || got.Point != (point{X: 170, Y: 100}) {
 		t.Fatalf("positioned endpoint = %+v, want top at {170 100}", got)
+	}
+}
+
+func TestEndpointClearanceSeparatesCrowdedTerminations(t *testing.T) {
+	firstPosition, secondPosition := 0.48, 0.52
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke", EndpointClearance: 60},
+		Nodes: []model.Node{{ID: "pe", Role: "edge-router"}, {ID: "p1"}, {ID: "p2"}},
+		Links: []model.Link{
+			{From: model.LinkEndpoint{Node: "pe", Side: "bottom", Position: &firstPosition}, To: model.LinkEndpoint{Node: "p1"}},
+			{From: model.LinkEndpoint{Node: "pe", Side: "bottom", Position: &secondPosition}, To: model.LinkEndpoint{Node: "p2"}},
+		},
+	}
+	nodes := map[string]placedNode{
+		"pe": {ID: "pe", Node: diagram.Nodes[0], Box: box{X: 100, Y: 100, W: 280, H: 82}},
+		"p1": {ID: "p1", Node: diagram.Nodes[1], Box: box{X: 500, Y: 500, W: 280, H: 82}},
+		"p2": {ID: "p2", Node: diagram.Nodes[2], Box: box{X: 900, Y: 500, W: 280, H: 82}},
+	}
+	geometry, err := endpointAttachments(diagram, nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := geometry[endpointKey(0, true)].Point
+	second := geometry[endpointKey(1, true)].Point
+	if second.X-first.X < 59.99 {
+		t.Fatalf("crowded endpoint clearance = %.1f, want at least 60", second.X-first.X)
 	}
 }
 

@@ -51,12 +51,14 @@ type Link struct {
 }
 
 type LinkEndpoint struct {
-	Node     string
-	Port     string
-	Side     string
-	Position *float64
-	Label    string
-	Address  string
+	Node          string
+	Port          string
+	Side          string
+	Position      *float64
+	Stub          float64
+	LabelRotation int
+	Label         string
+	Address       string
 }
 
 type LinkLabels struct {
@@ -78,6 +80,8 @@ type Theme struct {
 	Layout              string
 	Direction           string
 	LinkStyle           string
+	RouteClearance      float64
+	EndpointClearance   float64
 	InterfaceLabels     string
 	Renderer            string
 	LinkStyles          LinkStyleRules
@@ -241,20 +245,24 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		}
 		links = append(links, Link{
 			From: LinkEndpoint{
-				Node:     linkSpec.From.Node,
-				Port:     linkSpec.From.Port,
-				Side:     linkSpec.From.Side,
-				Position: linkSpec.From.Position,
-				Label:    linkSpec.From.Label,
-				Address:  linkSpec.From.Address,
+				Node:          linkSpec.From.Node,
+				Port:          linkSpec.From.Port,
+				Side:          linkSpec.From.Side,
+				Position:      linkSpec.From.Position,
+				Stub:          linkSpec.From.Stub,
+				LabelRotation: linkSpec.From.LabelRotation,
+				Label:         linkSpec.From.Label,
+				Address:       linkSpec.From.Address,
 			},
 			To: LinkEndpoint{
-				Node:     linkSpec.To.Node,
-				Port:     linkSpec.To.Port,
-				Side:     linkSpec.To.Side,
-				Position: linkSpec.To.Position,
-				Label:    linkSpec.To.Label,
-				Address:  linkSpec.To.Address,
+				Node:          linkSpec.To.Node,
+				Port:          linkSpec.To.Port,
+				Side:          linkSpec.To.Side,
+				Position:      linkSpec.To.Position,
+				Stub:          linkSpec.To.Stub,
+				LabelRotation: linkSpec.To.LabelRotation,
+				Label:         linkSpec.To.Label,
+				Address:       linkSpec.To.Address,
 			},
 			Label:        linkSpec.Label,
 			Style:        linkSpec.Style,
@@ -270,16 +278,18 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 
 	// 5. Construct Theme
 	theme := Theme{
-		Name:            doc.Diagram.Theme,
-		Title:           doc.Diagram.Title,
-		Subtitle:        doc.Diagram.Subtitle,
-		Badge:           doc.Diagram.Badge,
-		Layout:          doc.Diagram.Layout,
-		Direction:       doc.Diagram.Direction,
-		LinkStyle:       doc.Diagram.LinkStyle,
-		InterfaceLabels: doc.Diagram.InterfaceAt,
-		Renderer:        doc.Diagram.Renderer,
-		LinkStyles:      compileLinkStyleRules(doc.Diagram.LinkStyles),
+		Name:              doc.Diagram.Theme,
+		Title:             doc.Diagram.Title,
+		Subtitle:          doc.Diagram.Subtitle,
+		Badge:             doc.Diagram.Badge,
+		Layout:            doc.Diagram.Layout,
+		Direction:         doc.Diagram.Direction,
+		LinkStyle:         doc.Diagram.LinkStyle,
+		RouteClearance:    doc.Diagram.RouteClearance,
+		EndpointClearance: doc.Diagram.EndpointClearance,
+		InterfaceLabels:   doc.Diagram.InterfaceAt,
+		Renderer:          doc.Diagram.Renderer,
+		LinkStyles:        compileLinkStyleRules(doc.Diagram.LinkStyles),
 		InterfaceLabelStyle: InterfaceLabelStyle{
 			Fill:     doc.Diagram.InterfaceLabelStyle.Fill,
 			Color:    doc.Diagram.InterfaceLabelStyle.Color,

@@ -352,14 +352,22 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		links := make([]routedLink, 0, len(doc.Links))
 		for index, link := range doc.Links {
 			links = append(links, routedLink{
-				Index:    index,
-				FromNode: link.From.Node,
-				ToNode:   link.To.Node,
-				Start:    geometry[endpointKey(index, true)].Point,
-				End:      geometry[endpointKey(index, false)].Point,
+				Index:     index,
+				FromNode:  link.From.Node,
+				ToNode:    link.To.Node,
+				Start:     geometry[endpointKey(index, true)].Point,
+				End:       geometry[endpointKey(index, false)].Point,
+				StartSide: geometry[endpointKey(index, true)].Side,
+				EndSide:   geometry[endpointKey(index, false)].Side,
+				StartStub: link.From.Stub,
+				EndStub:   link.To.Stub,
 			})
 		}
-		diagonalRoutes = planDiagonalRoutes(links)
+		clearance := doc.Theme.RouteClearance
+		if clearance == 0 {
+			clearance = 24
+		}
+		diagonalRoutes = planDiagonalRoutesWithClearance(links, clearance)
 	}
 	bundleVisuals, err := buildBundleVisuals(doc, geometry)
 	if err != nil {
@@ -424,11 +432,11 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		renderPortMarker(out, end, color, premium)
 		if doc.Theme.InterfaceLabels != "none" {
 			if useDiagonalRoute {
-				renderRouteEndpointLabel(out, route, link.SourceLabel(), true, degrees[from.Node], startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
-				renderRouteEndpointLabel(out, route, link.TargetLabel(), false, degrees[to.Node], endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+				renderRotatedRouteEndpointLabel(out, route, link.SourceLabel(), true, degrees[from.Node], startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
+				renderRotatedRouteEndpointLabel(out, route, link.TargetLabel(), false, degrees[to.Node], endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
 			} else {
-				renderEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
-				renderEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, doc.Theme.InterfaceLabelStyle)
+				renderRotatedEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
+				renderRotatedEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
 			}
 		}
 		renderEndpointAddress(out, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
@@ -617,7 +625,71 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 			}
 		}
 	}
+	clearance := doc.Theme.EndpointClearance
+	if clearance == 0 {
+		clearance = 44
+	}
+	enforceEndpointClearance(result, attachments, nodes, clearance)
 	return result, nil
+}
+
+func enforceEndpointClearance(result map[string]endpointGeometry, attachments map[string][]attachment, nodes map[string]placedNode, clearance float64) {
+	if clearance <= 0 {
+		return
+	}
+	for nodeID, items := range attachments {
+		bySide := make(map[string][]attachment)
+		for _, item := range items {
+			bySide[item.Side] = append(bySide[item.Side], item)
+		}
+		for side, sideItems := range bySide {
+			if len(sideItems) < 2 {
+				continue
+			}
+			sort.SliceStable(sideItems, func(i, j int) bool {
+				a := result[endpointKey(sideItems[i].LinkIndex, sideItems[i].Source)].Point
+				b := result[endpointKey(sideItems[j].LinkIndex, sideItems[j].Source)].Point
+				if side == "top" || side == "bottom" {
+					return a.X < b.X
+				}
+				return a.Y < b.Y
+			})
+			node := nodes[nodeID]
+			minimum, maximum := node.Box.X+16, node.Box.X+node.Box.W-16
+			if side == "left" || side == "right" {
+				minimum, maximum = node.Box.Y+14, node.Box.Y+node.Box.H-14
+			}
+			effective := math.Min(clearance, (maximum-minimum)/float64(len(sideItems)-1))
+			offsets := make([]float64, len(sideItems))
+			for index, item := range sideItems {
+				geometry := result[endpointKey(item.LinkIndex, item.Source)]
+				offsets[index] = geometry.Point.X
+				if side == "left" || side == "right" {
+					offsets[index] = geometry.Point.Y
+				}
+				offsets[index] = math.Max(minimum, math.Min(maximum, offsets[index]))
+				if index > 0 {
+					offsets[index] = math.Max(offsets[index], offsets[index-1]+effective)
+				}
+			}
+			if offsets[len(offsets)-1] > maximum {
+				offsets[len(offsets)-1] = maximum
+				for index := len(offsets) - 2; index >= 0; index-- {
+					offsets[index] = math.Min(offsets[index], offsets[index+1]-effective)
+				}
+			}
+			for index, item := range sideItems {
+				key := endpointKey(item.LinkIndex, item.Source)
+				geometry := result[key]
+				if side == "top" || side == "bottom" {
+					geometry.Point.X = offsets[index]
+				} else {
+					geometry.Point.Y = offsets[index]
+				}
+				result[key] = geometry
+			}
+		}
+	}
 }
 
 func spreadAttachmentSides(node placedNode, items []attachment) []attachment {
@@ -739,6 +811,10 @@ func pathDataVia(start, via, end point, style string) string {
 }
 
 func renderEndpointLabel(out *bytes.Buffer, endpoint point, label, side string, lane int, style model.InterfaceLabelStyle) {
+	renderRotatedEndpointLabel(out, endpoint, label, side, lane, 0, style)
+}
+
+func renderRotatedEndpointLabel(out *bytes.Buffer, endpoint point, label, side string, lane, rotation int, style model.InterfaceLabelStyle) {
 	x := endpoint.X
 	y := endpoint.Y - 12
 	if side == "bottom" {
@@ -750,11 +826,19 @@ func renderEndpointLabel(out *bytes.Buffer, endpoint point, label, side string, 
 		x = endpoint.X + horizontalLabelOffset
 		y = endpoint.Y - 12
 	}
-	renderInterfaceLabel(out, x, y, label, style)
+	renderRotatedInterfaceLabel(out, x, y, label, rotation, style)
 }
 
 func renderRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, source bool, degree, lane int, style model.InterfaceLabelStyle) {
+	renderRotatedRouteEndpointLabel(out, route, label, source, degree, lane, 0, style)
+}
+
+func renderRotatedRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, source bool, degree, lane, rotation int, style model.InterfaceLabelStyle) {
 	if len(route.Points) < 2 {
+		return
+	}
+	if location, ok := routeStubLabelPoint(route, source); ok {
+		renderRotatedInterfaceLabel(out, location.X, location.Y+4, label, rotation, style)
 		return
 	}
 	position := 0.13 + float64(lane%3)*0.025
@@ -765,7 +849,21 @@ func renderRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, 
 		position = 1 - position
 	}
 	location := pointAlongRoute(route, position)
-	renderInterfaceLabel(out, location.X, location.Y+4, label, style)
+	renderRotatedInterfaceLabel(out, location.X, location.Y+4, label, rotation, style)
+}
+
+func routeStubLabelPoint(route linkRoute, source bool) (point, bool) {
+	if len(route.Points) != 5 {
+		return point{}, false
+	}
+	start, end := route.Points[0], route.Points[1]
+	if !source {
+		start, end = route.Points[4], route.Points[3]
+	}
+	if samePoint(start, end) {
+		return point{}, false
+	}
+	return pointAlongLine(start, end, 0.55), true
 }
 
 func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side string, lane int, color string) {
@@ -789,6 +887,10 @@ func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side stri
 const horizontalLabelOffset = 55.0
 
 func renderInterfaceLabel(out *bytes.Buffer, x, y float64, label string, style model.InterfaceLabelStyle) {
+	renderRotatedInterfaceLabel(out, x, y, label, 0, style)
+}
+
+func renderRotatedInterfaceLabel(out *bytes.Buffer, x, y float64, label string, rotation int, style model.InterfaceLabelStyle) {
 	fill := style.Fill
 	if fill == "" {
 		fill = "#ffffff"
@@ -807,8 +909,14 @@ func renderInterfaceLabel(out *bytes.Buffer, x, y float64, label string, style m
 	const size = 11
 	width := math.Max(38, float64(len([]rune(label)))*size*0.61+paddingX*2)
 	height := size + paddingY*2
+	if rotation != 0 {
+		fmt.Fprintf(out, `<g class="interface-label-rotation" transform="rotate(%d %.1f %.1f)">`, rotation, x, y-height/2)
+	}
 	fmt.Fprintf(out, `<rect class="interface-label-badge" x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="%.1f" fill="%s" stroke="%s" stroke-width="1"/>`, x-width/2, y-size-paddingY, width, height, radius, escape(fill), escape(border))
 	fmt.Fprintf(out, `<text class="interface-label-text" x="%.1f" y="%.1f" text-anchor="middle" fill="%s" font-family="ui-monospace,SFMono-Regular,monospace" font-size="%d" font-weight="650">%s</text>`, x, y, escape(color), size, escape(label))
+	if rotation != 0 {
+		out.WriteString(`</g>`)
+	}
 }
 
 func renderPortMarker(out *bytes.Buffer, endpoint point, color string, premium bool) {

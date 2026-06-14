@@ -307,6 +307,77 @@ func TestValidateLinkEndpointPosition(t *testing.T) {
 	}
 }
 
+func TestValidateLinkEndpointStub(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []Link{{
+			From: LinkEndpoint{Node: "a", Port: "Eth0/0", Side: "bottom", Stub: 120},
+			To:   LinkEndpoint{Node: "b", Port: "Eth0/0"},
+		}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("valid endpoint stub rejected: %v", err)
+	}
+	doc.Links[0].From.Side = ""
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected endpoint stub without side validation error")
+	}
+	doc.Links[0].From.Side = "bottom"
+	doc.Links[0].From.Stub = -1
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected negative endpoint stub validation error")
+	}
+}
+
+func TestValidateLinkEndpointLabelRotation(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []Link{{
+			From: LinkEndpoint{Node: "a", Port: "Eth0/0", LabelRotation: 90},
+			To:   LinkEndpoint{Node: "b", Port: "Eth0/0", LabelRotation: 180},
+		}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("valid endpoint label rotations rejected: %v", err)
+	}
+	doc.Links[0].From.LabelRotation = 45
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected unsupported endpoint label rotation validation error")
+	}
+}
+
+func TestValidateRouteClearance(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Diagram: Diagram{RouteClearance: 30},
+		Nodes:   map[string]Node{"a": {Role: "router"}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("valid route clearance rejected: %v", err)
+	}
+	doc.Diagram.RouteClearance = 201
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected excessive route clearance validation error")
+	}
+}
+
+func TestValidateEndpointClearance(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Diagram: Diagram{EndpointClearance: 56},
+		Nodes:   map[string]Node{"a": {Role: "router"}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("valid endpoint clearance rejected: %v", err)
+	}
+	doc.Diagram.EndpointClearance = 201
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected excessive endpoint clearance validation error")
+	}
+}
+
 func TestValidateRejectsLongIconLabel(t *testing.T) {
 	doc := &Document{
 		Version: 1,
