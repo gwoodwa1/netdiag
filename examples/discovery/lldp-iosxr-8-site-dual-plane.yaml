@@ -253,12 +253,15 @@ links:
         node: core-a-p1
         port: HundredGigE0/0/0/1
         side: bottom
-        position: 0.88
-        stub: 140
+        position: 0.75
+        stub: 180
         label_rotation: 90
       to:
         node: was-pe1
         port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
       protocol: lldp
     - from:
         node: core-a-p1

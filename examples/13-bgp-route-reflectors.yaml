@@ -6,10 +6,10 @@ diagram:
 nodes:
   rr-01: {label: Route Reflector 01, role: route-reflector, icon: router}
   rr-02: {label: Route Reflector 02, role: route-reflector, icon: router}
-  client-west-01: {label: West PE 01, role: rr-client, icon: router}
-  client-west-02: {label: West PE 02, role: rr-client, icon: router}
-  client-east-01: {label: East PE 01, role: rr-client, icon: router}
-  client-east-02: {label: East PE 02, role: rr-client, icon: router}
+  client-west-01: {label: West PE 01, role: rr-client, icon: router, order: 3}
+  client-west-02: {label: West PE 02, role: rr-client, icon: router, order: 2}
+  client-east-01: {label: East PE 01, role: rr-client, icon: router, order: 1}
+  client-east-02: {label: East PE 02, role: rr-client, icon: router, order: 4}
   transit-a: {label: Transit AS64501, role: external-peer, icon: wan-cloud}
   transit-b: {label: Transit AS64502, role: external-peer, icon: wan-cloud}
 links:

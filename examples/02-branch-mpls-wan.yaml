@@ -1,5 +1,5 @@
 version: 1
-diagram: {title: Branch MPLS WAN, subtitle: Three branches connected to an MPLS provider cloud, badge: BRANCH WAN}
+diagram: {title: Branch MPLS WAN, subtitle: Three branches connected to an MPLS provider cloud, badge: BRANCH WAN, link_style: orthogonal}
 nodes:
   mpls-cloud: {label: Provider MPLS, role: wan-cloud, icon: wan-cloud}
   hq-router: {label: HQ Router, role: edge-router, icon: router}

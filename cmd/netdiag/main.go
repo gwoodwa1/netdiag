@@ -400,9 +400,10 @@ func improveLayout(args []string) {
 	}
 	fmt.Printf("inspection score: %d -> %d", report.Before.Quality, report.After.Quality)
 	if len(report.Changes) > 0 && report.Before.Quality == report.After.Quality {
-		fmt.Print(" (error-first objective improved)")
+		fmt.Print(" (weighted penalty improved)")
 	}
 	fmt.Println()
+	fmt.Printf("weighted penalty: %d -> %d\n", report.Before.Penalty, report.After.Penalty)
 	fmt.Printf("errors: %d -> %d, warnings: %d -> %d\n", report.Before.Errors, report.After.Errors, report.Before.Warnings, report.After.Warnings)
 	fmt.Printf("evaluated %d candidate(s), accepted %d change(s)\n", report.CandidatesEvaluated, len(report.Changes))
 	for _, change := range report.Changes {

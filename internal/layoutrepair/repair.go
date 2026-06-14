@@ -26,6 +26,7 @@ type Change struct {
 
 type Score struct {
 	Quality  int `json:"quality"`
+	Penalty  int `json:"penalty"`
 	Errors   int `json:"errors"`
 	Warnings int `json:"warnings"`
 	Findings int `json:"findings"`
@@ -162,11 +163,15 @@ func inspect(doc *spec.Document) (svg.InspectionReport, error) {
 
 func score(report svg.InspectionReport) Score {
 	return Score{
-		Quality: report.Score, Errors: report.Summary.Errors, Warnings: report.Summary.Warnings, Findings: len(report.Findings),
+		Quality: report.Score, Penalty: report.Summary.Errors*20 + report.Summary.Warnings*5 + report.Summary.Info,
+		Errors: report.Summary.Errors, Warnings: report.Summary.Warnings, Findings: len(report.Findings),
 	}
 }
 
 func better(left, right Score) bool {
+	if left.Penalty != right.Penalty {
+		return left.Penalty < right.Penalty
+	}
 	if left.Errors != right.Errors {
 		return left.Errors < right.Errors
 	}
@@ -211,7 +216,97 @@ func globalCandidates(doc *spec.Document) []candidate {
 			apply:       func(trial *spec.Document) { trial.Diagram.EndpointClearance = value },
 		})
 	}
+	result = append(result, peerOrderCandidates(doc)...)
 	return result
+}
+
+func peerOrderCandidates(doc *spec.Document) []candidate {
+	byRole := make(map[string][]string)
+	for id, node := range doc.Nodes {
+		byRole[node.Role] = append(byRole[node.Role], id)
+	}
+	neighbors := make(map[string][]string)
+	for _, link := range doc.Links {
+		neighbors[link.From.Node] = append(neighbors[link.From.Node], link.To.Node)
+		neighbors[link.To.Node] = append(neighbors[link.To.Node], link.From.Node)
+	}
+	var roles []string
+	for role, ids := range byRole {
+		if len(ids) > 1 {
+			roles = append(roles, role)
+		}
+	}
+	sort.Strings(roles)
+	var result []candidate
+	for _, role := range roles {
+		ids := append([]string(nil), byRole[role]...)
+		sort.Strings(ids)
+		rank := make(map[string]int, len(doc.Nodes))
+		allIDs := make([]string, 0, len(doc.Nodes))
+		for id := range doc.Nodes {
+			allIDs = append(allIDs, id)
+		}
+		sort.Strings(allIDs)
+		for index, id := range allIDs {
+			rank[id] = index
+		}
+		sort.SliceStable(ids, func(i, j int) bool {
+			left, right := averagePeerRank(neighbors[ids[i]], rank), averagePeerRank(neighbors[ids[j]], rank)
+			if left == right {
+				return ids[i] < ids[j]
+			}
+			return left < right
+		})
+		if roleOrderMatches(doc, ids) {
+			continue
+		}
+		ordered := append([]string(nil), ids...)
+		result = append(result, candidate{
+			description: fmt.Sprintf("order %s nodes by connected peers", role),
+			apply: func(trial *spec.Document) {
+				for index, id := range ordered {
+					node := trial.Nodes[id]
+					node.Order = index + 1
+					trial.Nodes[id] = node
+				}
+			},
+		})
+	}
+	return result
+}
+
+func averagePeerRank(peers []string, rank map[string]int) float64 {
+	if len(peers) == 0 {
+		return float64(len(rank))
+	}
+	total := 0
+	for _, peer := range peers {
+		total += rank[peer]
+	}
+	return float64(total) / float64(len(peers))
+}
+
+func roleOrderMatches(doc *spec.Document, ordered []string) bool {
+	current := append([]string(nil), ordered...)
+	sort.SliceStable(current, func(i, j int) bool {
+		left, right := doc.Nodes[current[i]].Order, doc.Nodes[current[j]].Order
+		if left == 0 {
+			left = int(^uint(0) >> 1)
+		}
+		if right == 0 {
+			right = int(^uint(0) >> 1)
+		}
+		if left == right {
+			return current[i] < current[j]
+		}
+		return left < right
+	})
+	for index := range ordered {
+		if ordered[index] != current[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func targetedCandidates(doc *spec.Document, report svg.InspectionReport) []candidate {

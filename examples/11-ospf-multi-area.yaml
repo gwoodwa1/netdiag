@@ -3,6 +3,7 @@ diagram:
   title: OSPF Multi-Area Design
   subtitle: Area 0 backbone with Area 10 and Area 20 ABRs and internal routers
   badge: OSPF
+  link_style: orthogonal
 nodes:
   abr-10: {label: ABR Area 10, role: ospf-backbone, icon: router, order: 10}
   backbone-r1: {label: Backbone R1, role: ospf-backbone, icon: router, order: 20}

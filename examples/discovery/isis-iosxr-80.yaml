@@ -1579,9 +1579,13 @@ links:
     - from:
         node: n554-01
         port: Te0/0/0/1
+        side: top
+        stub: 140
       to:
         node: n554-10
         port: Te0/0/0/0
+        side: bottom
+        stub: 140
       protocol: isis
       status: up
     - from:

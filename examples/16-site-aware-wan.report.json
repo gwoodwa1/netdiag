@@ -15,6 +15,11 @@
       "reason": "at least one endpoint has a CIDR address"
     },
     {
+      "feature": "endpoint_sides",
+      "level": "strict",
+      "reason": "at least one endpoint has an explicit side"
+    },
+    {
       "feature": "groups",
       "level": "strict",
       "reason": "5 group(s) are declared"
@@ -42,7 +47,7 @@
     {
       "feature": "site_aware_layout",
       "level": "strict",
-      "reason": "diagram.layout is sites"
+      "reason": "diagram.layout uses grouped network containers"
     },
     {
       "feature": "source_labels",

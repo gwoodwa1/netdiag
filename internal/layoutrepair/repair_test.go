@@ -65,11 +65,41 @@ func TestImproveLeavesCleanDiagramUnchanged(t *testing.T) {
 	}
 }
 
-func TestBetterPrioritizesErrorsThenWarnings(t *testing.T) {
-	if !better(Score{Errors: 1, Warnings: 100}, Score{Errors: 2}) {
-		t.Fatal("fewer errors should win despite additional warnings")
+func TestImproveOrdersNodesByConnectedPeers(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Diagram: spec.Diagram{Layout: "rows", LinkStyle: "clean"},
+		Nodes: map[string]spec.Node{
+			"rr-a": {Role: "route-reflector"},
+			"rr-b": {Role: "route-reflector"},
+			"c-a":  {Role: "rr-client"},
+			"c-b":  {Role: "rr-client"},
+		},
+		Links: []spec.Link{
+			{From: spec.LinkEndpoint{Node: "rr-a", Port: "Ethernet0/0"}, To: spec.LinkEndpoint{Node: "c-b", Port: "Ethernet0/0"}},
+			{From: spec.LinkEndpoint{Node: "rr-b", Port: "Ethernet0/0"}, To: spec.LinkEndpoint{Node: "c-a", Port: "Ethernet0/0"}},
+		},
 	}
-	if better(Score{Errors: 1, Warnings: 5}, Score{Errors: 1, Warnings: 4}) {
-		t.Fatal("more warnings should not win when errors are equal")
+	if err := spec.Prepare(doc); err != nil {
+		t.Fatal(err)
+	}
+	improved, report, err := Improve(doc, Options{MaxRounds: 2, MaxCandidates: 30})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.After.Penalty >= report.Before.Penalty {
+		t.Fatalf("peer ordering did not improve the layout: %+v", report)
+	}
+	if improved.Nodes["rr-b"].Order >= improved.Nodes["rr-a"].Order {
+		t.Fatalf("reflectors were not reordered by connected peers: %+v", improved.Nodes)
+	}
+}
+
+func TestBetterPrioritizesWeightedPenaltyThenErrors(t *testing.T) {
+	if better(Score{Penalty: 520, Errors: 1, Warnings: 100}, Score{Penalty: 40, Errors: 2}) {
+		t.Fatal("a large warning increase should not win solely because it removes errors")
+	}
+	if !better(Score{Penalty: 40, Errors: 1, Warnings: 4}, Score{Penalty: 40, Errors: 2}) {
+		t.Fatal("fewer errors should win when weighted penalties are equal")
 	}
 }
