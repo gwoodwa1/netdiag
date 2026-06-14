@@ -212,8 +212,8 @@ func appendEdgeLabel(cells []cell, id, parent, semanticID, value string, positio
 	}
 	return append(cells, cell{
 		ID: id, Value: value,
-		Style:       "edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;",
-		Parent:      parent, NetdiagID: semanticID, NetdiagKind: "label",
+		Style:  "edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#ffffff;",
+		Parent: parent, NetdiagID: semanticID, NetdiagKind: "label",
 		Vertex:      "1",
 		Connectable: "0",
 		Geometry:    &geometry{X: position, Relative: "1", As: "geometry", Offset: &point{As: "offset"}},
@@ -297,8 +297,8 @@ func applyLinkOverride(style string, override layoutoverride.Link) string {
 
 func sideStyle(prefix, side string) string {
 	values := map[string]string{
-		"top": "0.5;"+prefix+"Y=0;", "right": "1;"+prefix+"Y=0.5;",
-		"bottom": "0.5;"+prefix+"Y=1;", "left": "0;"+prefix+"Y=0.5;",
+		"top": "0.5;" + prefix + "Y=0;", "right": "1;" + prefix + "Y=0.5;",
+		"bottom": "0.5;" + prefix + "Y=1;", "left": "0;" + prefix + "Y=0.5;",
 	}
 	if value := values[side]; value != "" {
 		return prefix + "X=" + value + prefix + "Perimeter=0;"
