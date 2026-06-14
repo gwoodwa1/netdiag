@@ -115,7 +115,7 @@ func TestApplySelectsHubSpokeForCoreAndSites(t *testing.T) {
 	}
 
 	report := Apply(doc)
-	if report.Layout != "hub-spoke" || doc.Diagram.Layout != "hub-spoke" {
+	if report.Layout != "hub-spoke" || doc.Diagram.Layout != "hub-spoke" || doc.Diagram.LinkStyle != "clean" {
 		t.Fatalf("core-and-site topology did not select hub-spoke: %+v", report)
 	}
 }

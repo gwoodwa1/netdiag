@@ -13,6 +13,118 @@ type linkRoute struct {
 	LabelHorizontal bool
 }
 
+func planDiagonalRoutes(links []routedLink) map[int]linkRoute {
+	const (
+		candidateCount = 13
+		passes         = 4
+	)
+	routes := make(map[int]linkRoute, len(links))
+	for _, link := range links {
+		routes[link.Index] = diagonalRoute(link.Start, link.End, 0)
+	}
+	for pass := 0; pass < passes; pass++ {
+		for _, link := range links {
+			best := routes[link.Index]
+			bestScore := diagonalRouteScore(link, best, links, routes)
+			for lane := 1; lane < candidateCount; lane++ {
+				candidate := diagonalRoute(link.Start, link.End, lane)
+				score := diagonalRouteScore(link, candidate, links, routes)
+				if score < bestScore {
+					best, bestScore = candidate, score
+				}
+			}
+			routes[link.Index] = best
+		}
+	}
+	return routes
+}
+
+type routedLink struct {
+	Index    int
+	FromNode string
+	ToNode   string
+	Start    point
+	End      point
+}
+
+func diagonalRouteScore(link routedLink, candidate linkRoute, links []routedLink, routes map[int]linkRoute) float64 {
+	score := math.Abs(diagonalRouteOffset(candidate)) * 0.25
+	for _, other := range links {
+		if other.Index == link.Index || linksMeetAtSamePoint(link, other) {
+			continue
+		}
+		score += float64(routeIntersectionCount(candidate, routes[other.Index])) * 100000
+	}
+	return score
+}
+
+func linksMeetAtSamePoint(a, b routedLink) bool {
+	return a.FromNode == b.FromNode && samePoint(a.Start, b.Start) ||
+		a.FromNode == b.ToNode && samePoint(a.Start, b.End) ||
+		a.ToNode == b.FromNode && samePoint(a.End, b.Start) ||
+		a.ToNode == b.ToNode && samePoint(a.End, b.End)
+}
+
+func diagonalRouteOffset(route linkRoute) float64 {
+	if len(route.Points) != 3 {
+		return 0
+	}
+	start, control, end := route.Points[0], route.Points[1], route.Points[2]
+	middle := pointAlongLine(start, end, 0.5)
+	return math.Hypot(control.X-middle.X, control.Y-middle.Y)
+}
+
+func routeIntersectionCount(a, b linkRoute) int {
+	aPoints := sampleRoute(a, 16)
+	bPoints := sampleRoute(b, 16)
+	count := 0
+	for i := 1; i < len(aPoints); i++ {
+		for j := 1; j < len(bPoints); j++ {
+			if segmentsCross(aPoints[i-1], aPoints[i], bPoints[j-1], bPoints[j]) {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func sampleRoute(route linkRoute, segments int) []point {
+	if len(route.Points) != 3 || !strings.Contains(route.Path, " Q ") {
+		return route.Points
+	}
+	result := make([]point, 0, segments+1)
+	for index := 0; index <= segments; index++ {
+		result = append(result, quadraticPoint(route.Points[0], route.Points[1], route.Points[2], float64(index)/float64(segments)))
+	}
+	return result
+}
+
+func segmentsCross(a, b, c, d point) bool {
+	const epsilon = 0.001
+	abC := crossProduct(a, b, c)
+	abD := crossProduct(a, b, d)
+	cdA := crossProduct(c, d, a)
+	cdB := crossProduct(c, d, b)
+	if ((abC > epsilon && abD < -epsilon) || (abC < -epsilon && abD > epsilon)) &&
+		((cdA > epsilon && cdB < -epsilon) || (cdA < -epsilon && cdB > epsilon)) {
+		return true
+	}
+	return math.Abs(abC) <= epsilon && pointOnSegment(c, a, b) ||
+		math.Abs(abD) <= epsilon && pointOnSegment(d, a, b) ||
+		math.Abs(cdA) <= epsilon && pointOnSegment(a, c, d) ||
+		math.Abs(cdB) <= epsilon && pointOnSegment(b, c, d)
+}
+
+func crossProduct(a, b, c point) float64 {
+	return (b.X-a.X)*(c.Y-a.Y) - (b.Y-a.Y)*(c.X-a.X)
+}
+
+func pointOnSegment(value, start, end point) bool {
+	const epsilon = 0.001
+	return value.X >= math.Min(start.X, end.X)-epsilon && value.X <= math.Max(start.X, end.X)+epsilon &&
+		value.Y >= math.Min(start.Y, end.Y)-epsilon && value.Y <= math.Max(start.Y, end.Y)+epsilon
+}
+
 func orthogonalRoute(start, end point, startSide, endSide string, nodes map[string]placedNode, lane int) linkRoute {
 	stub := 42.0 + float64(lane%4)*12
 	startStub := movePoint(start, startSide, stub)
@@ -53,12 +165,32 @@ func directRoute(start, end point, startSide, endSide, style string) linkRoute {
 	return linkRoute{Points: []point{start, end}, Path: pathData(start, end, startSide, endSide, style), Label: point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}}
 }
 
-func diagonalRoute(start, end point) linkRoute {
-	return linkRoute{
-		Points: []point{start, end},
-		Path:   fmt.Sprintf("M %.1f %.1f L %.1f %.1f", start.X, start.Y, end.X, end.Y),
-		Label:  pointAlongLine(start, end, 0.5),
+func diagonalRoute(start, end point, lane int) linkRoute {
+	middle := pointAlongLine(start, end, 0.5)
+	dx, dy := end.X-start.X, end.Y-start.Y
+	length := math.Hypot(dx, dy)
+	offset := diagonalLaneOffset(lane)
+	if length > 0 {
+		middle.X += -dy / length * offset
+		middle.Y += dx / length * offset
 	}
+	return linkRoute{
+		Points: []point{start, middle, end},
+		Path:   fmt.Sprintf("M %.1f %.1f Q %.1f %.1f %.1f %.1f", start.X, start.Y, middle.X, middle.Y, end.X, end.Y),
+		Label:  quadraticPoint(start, middle, end, 0.5),
+	}
+}
+
+func diagonalLaneOffset(lane int) float64 {
+	const spacing = 52.0
+	if lane == 0 {
+		return 0
+	}
+	step := float64((lane + 1) / 2)
+	if lane%2 == 0 {
+		step = -step
+	}
+	return step * spacing
 }
 
 func pointAlongLine(start, end point, position float64) point {
@@ -66,6 +198,21 @@ func pointAlongLine(start, end point, position float64) point {
 		X: start.X + (end.X-start.X)*position,
 		Y: start.Y + (end.Y-start.Y)*position,
 	}
+}
+
+func quadraticPoint(start, control, end point, position float64) point {
+	inverse := 1 - position
+	return point{
+		X: inverse*inverse*start.X + 2*inverse*position*control.X + position*position*end.X,
+		Y: inverse*inverse*start.Y + 2*inverse*position*control.Y + position*position*end.Y,
+	}
+}
+
+func pointAlongRoute(route linkRoute, position float64) point {
+	if len(route.Points) == 3 && strings.Contains(route.Path, " Q ") {
+		return quadraticPoint(route.Points[0], route.Points[1], route.Points[2], position)
+	}
+	return pointAlongLine(route.Points[0], route.Points[len(route.Points)-1], position)
 }
 
 func movePoint(value point, side string, distance float64) point {

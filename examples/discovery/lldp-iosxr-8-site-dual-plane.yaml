@@ -4,7 +4,7 @@ diagram:
     badge: NETWORK DIAGRAM
     layout: hub-spoke
     direction: down
-    link_style: orthogonal
+    link_style: clean
     interface_labels: ends
     interface_label_style:
         fill: '#ffffff'

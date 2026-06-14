@@ -372,9 +372,50 @@ func TestHubSpokeLayoutPlacesCoreBetweenSpokes(t *testing.T) {
 	}
 }
 
+func TestHubSpokeLayoutReservesRoutingSpaceBetweenEveryDualPEPair(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Groups: []model.Group{
+			{ID: "core", NodeIDs: []string{"p1", "p2"}},
+		},
+		Nodes: []model.Node{
+			{ID: "p1", Role: "core-router"},
+			{ID: "p2", Role: "core-router"},
+		},
+	}
+	for site := 1; site <= 8; site++ {
+		groupID := fmt.Sprintf("site-%d", site)
+		pe1 := groupID + "-pe1"
+		pe2 := groupID + "-pe2"
+		diagram.Groups = append(diagram.Groups, model.Group{ID: groupID, NodeIDs: []string{pe1, pe2}})
+		diagram.Nodes = append(diagram.Nodes,
+			model.Node{ID: pe1, Role: "edge-router"},
+			model.Node{ID: pe2, Role: "edge-router"},
+		)
+		if site < 8 {
+			diagram.Links = append(diagram.Links,
+				model.Link{From: model.LinkEndpoint{Node: pe1}, To: model.LinkEndpoint{Node: "p1"}},
+				model.Link{From: model.LinkEndpoint{Node: pe1}, To: model.LinkEndpoint{Node: "p2"}},
+				model.Link{From: model.LinkEndpoint{Node: pe2}, To: model.LinkEndpoint{Node: "p1"}},
+				model.Link{From: model.LinkEndpoint{Node: pe2}, To: model.LinkEndpoint{Node: "p2"}},
+			)
+		}
+	}
+
+	layout := placeHubSpokeLayout(diagram)
+	for site := 1; site <= 8; site++ {
+		pe1 := layout.Nodes[fmt.Sprintf("site-%d-pe1", site)].Box
+		pe2 := layout.Nodes[fmt.Sprintf("site-%d-pe2", site)].Box
+		gap := pe2.X - (pe1.X + pe1.W)
+		if gap < hubSpokePEGap {
+			t.Fatalf("site %d PE routing gap = %.1f, want at least %.1f", site, gap, hubSpokePEGap)
+		}
+	}
+}
+
 func TestDiagonalRouteAndEndpointLabelsFollowLineGeometry(t *testing.T) {
-	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300})
-	if route.Path != "M 100.0 100.0 L 500.0 300.0" {
+	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300}, 0)
+	if route.Path != "M 100.0 100.0 Q 300.0 200.0 500.0 300.0" {
 		t.Fatalf("unexpected diagonal route: %s", route.Path)
 	}
 	var out bytes.Buffer
@@ -387,11 +428,101 @@ func TestDiagonalRouteAndEndpointLabelsFollowLineGeometry(t *testing.T) {
 }
 
 func TestHighDegreeDiagonalEndpointLabelMovesAwayFromHub(t *testing.T) {
-	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300})
+	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300}, 0)
 	var out bytes.Buffer
 	renderRouteEndpointLabel(&out, route, "Hu0/0/0/0", true, 9, 0, model.InterfaceLabelStyle{})
 	if !strings.Contains(out.String(), `x="212.0"`) {
 		t.Fatalf("high-degree endpoint label did not move along route: %s", out.String())
+	}
+}
+
+func TestDiagonalRouteLanesSeparateCurves(t *testing.T) {
+	start, end := point{X: 100, Y: 100}, point{X: 500, Y: 300}
+	first := diagonalRoute(start, end, 1)
+	second := diagonalRoute(start, end, 2)
+	if first.Points[1] == second.Points[1] || first.Points[1] == pointAlongLine(start, end, 0.5) {
+		t.Fatalf("diagonal lanes were not separated: first=%+v second=%+v", first.Points, second.Points)
+	}
+}
+
+func TestPlanDiagonalRoutesReducesGlobalCrossings(t *testing.T) {
+	links := []routedLink{
+		{Index: 0, FromNode: "a", ToNode: "d", Start: point{X: 0, Y: 0}, End: point{X: 400, Y: 400}},
+		{Index: 1, FromNode: "b", ToNode: "c", Start: point{X: 0, Y: 400}, End: point{X: 400, Y: 0}},
+	}
+	initial := routeIntersectionCount(diagonalRoute(links[0].Start, links[0].End, 0), diagonalRoute(links[1].Start, links[1].End, 0))
+	routes := planDiagonalRoutes(links)
+	planned := routeIntersectionCount(routes[0], routes[1])
+	if initial == 0 || planned >= initial {
+		t.Fatalf("global planner did not reduce crossings: initial=%d planned=%d routes=%+v", initial, planned, routes)
+	}
+}
+
+func TestGlobalCrossingPlannerIgnoresLinksConvergingAtSameNode(t *testing.T) {
+	links := []routedLink{
+		{Index: 0, FromNode: "pe", ToNode: "p1", Start: point{X: 0, Y: 0}, End: point{X: 400, Y: 400}},
+		{Index: 1, FromNode: "pe", ToNode: "p2", Start: point{X: 0, Y: 0}, End: point{X: 400, Y: 0}},
+	}
+	routes := planDiagonalRoutes(links)
+	if offset := diagonalRouteOffset(routes[0]); offset != 0 {
+		t.Fatalf("shared-node route was unnecessarily bent by %.1f", offset)
+	}
+}
+
+func TestGlobalCrossingPlannerSeparatesSharedNodeLinksWithDistinctAttachments(t *testing.T) {
+	links := []routedLink{
+		{Index: 0, FromNode: "pe", ToNode: "p1", Start: point{X: 0, Y: 0}, End: point{X: 400, Y: 400}},
+		{Index: 1, FromNode: "pe", ToNode: "p2", Start: point{X: 0, Y: 30}, End: point{X: 400, Y: 0}},
+	}
+	initial := routeIntersectionCount(diagonalRoute(links[0].Start, links[0].End, 0), diagonalRoute(links[1].Start, links[1].End, 0))
+	routes := planDiagonalRoutes(links)
+	planned := routeIntersectionCount(routes[0], routes[1])
+	if initial == 0 || planned >= initial {
+		t.Fatalf("shared-node routes with distinct attachments were not separated: initial=%d planned=%d", initial, planned)
+	}
+}
+
+func TestHubSpokeMultiHomedPEUsesDistinctAttachmentSides(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Nodes: []model.Node{
+			{ID: "pe", Role: "edge-router"},
+			{ID: "p1", Role: "core-router"},
+			{ID: "p2", Role: "core-router"},
+		},
+		Links: []model.Link{
+			{From: model.LinkEndpoint{Node: "pe", Port: "Hu0/0"}, To: model.LinkEndpoint{Node: "p1", Port: "Hu0/0"}},
+			{From: model.LinkEndpoint{Node: "pe", Port: "Hu0/1"}, To: model.LinkEndpoint{Node: "p2", Port: "Hu0/0"}},
+		},
+	}
+	nodes := map[string]placedNode{
+		"pe": {ID: "pe", Node: diagram.Nodes[0], Box: box{X: 100, Y: 100, W: 280, H: 82}},
+		"p1": {ID: "p1", Node: diagram.Nodes[1], Box: box{X: 500, Y: 500, W: 280, H: 82}},
+		"p2": {ID: "p2", Node: diagram.Nodes[2], Box: box{X: 900, Y: 500, W: 280, H: 82}},
+	}
+	geometry, err := endpointAttachments(diagram, nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := geometry[endpointKey(0, true)]
+	second := geometry[endpointKey(1, true)]
+	if first.Side == second.Side {
+		t.Fatalf("multi-homed PE links share attachment side %q", first.Side)
+	}
+	if first.Point == second.Point {
+		t.Fatalf("multi-homed PE links share attachment point %+v", first.Point)
+	}
+}
+
+func TestHubSpokeFanOutPreservesExplicitAttachmentSide(t *testing.T) {
+	node := placedNode{Node: model.Node{Role: "edge-router"}, Box: box{X: 100, Y: 100, W: 280, H: 82}}
+	items := []attachment{
+		{PeerX: 500, PeerY: 500, Side: "left", Pinned: true},
+		{PeerX: 900, PeerY: 500, Side: "bottom"},
+	}
+	got := spreadAttachmentSides(node, items)
+	if got[0].Side != "left" {
+		t.Fatalf("explicit attachment side changed to %q", got[0].Side)
 	}
 }
 

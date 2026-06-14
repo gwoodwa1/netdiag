@@ -52,6 +52,7 @@ type attachment struct {
 	PeerX     float64
 	PeerY     float64
 	Side      string
+	Pinned    bool
 }
 
 type endpointGeometry struct {
@@ -344,6 +345,21 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 	if err != nil {
 		return err
 	}
+	useDiagonalRoutes := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
+	diagonalRoutes := make(map[int]linkRoute)
+	if useDiagonalRoutes {
+		links := make([]routedLink, 0, len(doc.Links))
+		for index, link := range doc.Links {
+			links = append(links, routedLink{
+				Index:    index,
+				FromNode: link.From.Node,
+				ToNode:   link.To.Node,
+				Start:    geometry[endpointKey(index, true)].Point,
+				End:      geometry[endpointKey(index, false)].Point,
+			})
+		}
+		diagonalRoutes = planDiagonalRoutes(links)
+	}
 	bundleVisuals, err := buildBundleVisuals(doc, geometry)
 	if err != nil {
 		return err
@@ -375,11 +391,11 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		}
 		color = escape(color)
 
-		useDiagonalRoute := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
+		useDiagonalRoute := useDiagonalRoutes
 		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal"
 		route := directRoute(start, end, startGeometry.Side, endGeometry.Side, doc.Theme.LinkStyle)
 		if useDiagonalRoute {
-			route = diagonalRoute(start, end)
+			route = diagonalRoutes[index]
 		} else if useOrthogonalRoute {
 			route = orthogonalRoute(start, end, startGeometry.Side, endGeometry.Side, nodes, index)
 		}
@@ -389,8 +405,14 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 			path = pathDataVia(start, point{X: visual.X, Y: visual.Y}, end, doc.Theme.LinkStyle)
 		}
 		fmt.Fprintf(out, `<g id="link-%d" data-netdiag-kind="link">`, index+1)
-		if premium {
-			fmt.Fprintf(out, `<path class="link-underlay" d="%s" fill="none" stroke="#ffffff" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" opacity=".88"/>`, path, strokeWidth+3.8)
+		if premium || useDiagonalRoute {
+			underlayWidth := strokeWidth + 3.8
+			underlayOpacity := .88
+			if useDiagonalRoute {
+				underlayWidth = strokeWidth + 7.5
+				underlayOpacity = .96
+			}
+			fmt.Fprintf(out, `<path class="link-underlay" d="%s" fill="none" stroke="#ffffff" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" opacity="%.2f"/>`, path, underlayWidth, underlayOpacity)
 		}
 		className := ""
 		if premium {
@@ -519,13 +541,16 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 		if toSide == "" {
 			toSide = defaultToSide
 		}
-		attachments[from.Node] = append(attachments[from.Node], attachment{index, true, from.Port, toCenter.X, toCenter.Y, fromSide})
-		attachments[to.Node] = append(attachments[to.Node], attachment{index, false, to.Port, fromCenter.X, fromCenter.Y, toSide})
+		attachments[from.Node] = append(attachments[from.Node], attachment{index, true, from.Port, toCenter.X, toCenter.Y, fromSide, from.Side != ""})
+		attachments[to.Node] = append(attachments[to.Node], attachment{index, false, to.Port, fromCenter.X, fromCenter.Y, toSide, to.Side != ""})
 	}
 
 	result := make(map[string]endpointGeometry)
 	for nodeID, items := range attachments {
 		node := nodes[nodeID]
+		if doc.Theme.Layout == "hub-spoke" && node.Node.Role == "edge-router" {
+			items = spreadAttachmentSides(node, items)
+		}
 		bySide := make(map[string][]attachment)
 		for _, item := range items {
 			bySide[item.Side] = append(bySide[item.Side], item)
@@ -576,6 +601,67 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 		}
 	}
 	return result, nil
+}
+
+func spreadAttachmentSides(node placedNode, items []attachment) []attachment {
+	if len(items) < 2 || len(items) > 4 {
+		return items
+	}
+	center := point{X: node.Box.X + node.Box.W/2, Y: node.Box.Y + node.Box.H/2}
+	sides := []string{"top", "right", "bottom", "left"}
+	used := make(map[string]bool)
+	result := append([]attachment(nil), items...)
+	for _, item := range result {
+		if item.Pinned {
+			used[item.Side] = true
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].Pinned != result[j].Pinned {
+			return result[i].Pinned
+		}
+		return math.Atan2(result[i].PeerY-center.Y, result[i].PeerX-center.X) <
+			math.Atan2(result[j].PeerY-center.Y, result[j].PeerX-center.X)
+	})
+	for index := range result {
+		if result[index].Pinned {
+			continue
+		}
+		bestSide := result[index].Side
+		bestScore := math.Inf(-1)
+		for _, side := range sides {
+			if used[side] {
+				continue
+			}
+			score := sideAlignment(center, point{X: result[index].PeerX, Y: result[index].PeerY}, side)
+			if score > bestScore {
+				bestSide, bestScore = side, score
+			}
+		}
+		result[index].Side = bestSide
+		used[bestSide] = true
+	}
+	return result
+}
+
+func sideAlignment(origin, peer point, side string) float64 {
+	dx, dy := peer.X-origin.X, peer.Y-origin.Y
+	length := math.Hypot(dx, dy)
+	if length == 0 {
+		return 0
+	}
+	switch side {
+	case "top":
+		return -dy / length
+	case "right":
+		return dx / length
+	case "bottom":
+		return dy / length
+	case "left":
+		return -dx / length
+	default:
+		return math.Inf(-1)
+	}
 }
 
 func endpointKey(index int, source bool) string {
@@ -658,11 +744,10 @@ func renderRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, 
 	if degree > 4 {
 		position = 0.28 + float64(lane%3)*0.025
 	}
-	start, end := route.Points[0], route.Points[len(route.Points)-1]
 	if !source {
 		position = 1 - position
 	}
-	location := pointAlongLine(start, end, position)
+	location := pointAlongRoute(route, position)
 	renderInterfaceLabel(out, location.X, location.Y+4, label, style)
 }
 

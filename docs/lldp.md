@@ -127,9 +127,18 @@ routers to spread their many port labels across a larger device and canvas.
 Because the topology contains a clear P-router core and several PE sites,
 auto-layout selects `hub-spoke`: the two P planes are stacked centrally and
 the eight sites are distributed above and below them. Hub-and-spoke links use
-direct diagonal routes. Interface labels are placed proportionally along those
-routes, with labels for high-degree P routers moved farther away from the hub
-to reduce core-label overlap.
+separated curved lanes with white crossing gaps. Interface labels are placed
+proportionally along those routes, with labels for high-degree P routers moved
+farther away from the hub to reduce core-label overlap. Lane geometry is
+derived from endpoints and deterministic link order rather than device names
+or topology-specific coordinates. Multi-homed PE links also fan out across
+distinct rectangle sides when possible, preventing links from crossing
+immediately after leaving the device. Explicit endpoint-side choices in YAML
+remain authoritative. Before rendering, the SVG backend evaluates alternate
+curved lanes for every hub-and-spoke link and selects a deterministic
+combination that minimizes crossings across the complete diagram. Crossings
+between links leaving the same device are also penalized when they use
+different attachment points.
 
 ## Architecture
 

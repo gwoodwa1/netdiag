@@ -57,6 +57,7 @@ func Apply(doc *spec.Document) Report {
 	report.Groups = len(groups)
 	if hubSpokeTopology(doc) {
 		doc.Diagram.Layout = "hub-spoke"
+		doc.Diagram.LinkStyle = "clean"
 		report.Layout = "hub-spoke"
 	}
 	report.SuppressedMiddleLabels = suppressRepeatedLabels(doc)

@@ -14,6 +14,7 @@ const (
 	siteRoleHeight = 205.0
 	siteNodeGap    = 42.0
 	siteLinkGap    = 220.0
+	hubSpokePEGap  = 500.0
 	siteCanvasMax  = 5600.0
 )
 
@@ -50,9 +51,9 @@ func layoutDiagram(doc *model.Diagram, roles []string, byRole map[string][]strin
 
 func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 	const (
-		width       = 5200.0
+		width       = 6400.0
 		height      = 3000.0
-		spokeWidth  = 1100.0
+		spokeWidth  = 1400.0
 		spokeHeight = 340.0
 		coreWidth   = 2700.0
 		coreHeight  = 560.0
@@ -121,7 +122,7 @@ func placeHubGroupNodes(result *layoutResult, group model.Group, groupBox box, n
 	for _, id := range ids {
 		totalWidth += siteNodeWidth(nodes[id], degrees[id])
 	}
-	gap := siteRowGap(len(ids))
+	gap := hubGroupGap(ids, nodes)
 	totalWidth += float64(len(ids)-1) * gap
 	x := groupBox.X + (groupBox.W-totalWidth)/2
 	for _, id := range ids {
@@ -132,6 +133,19 @@ func placeHubGroupNodes(result *layoutResult, group model.Group, groupBox box, n
 		result.Nodes[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: height}}
 		x += width + gap
 	}
+}
+
+func hubGroupGap(ids []string, nodes map[string]model.Node) float64 {
+	gap := siteRowGap(len(ids))
+	if len(ids) < 2 {
+		return gap
+	}
+	for _, id := range ids {
+		if nodes[id].Role != "edge-router" {
+			return gap
+		}
+	}
+	return hubSpokePEGap
 }
 
 func placeSiteLayout(doc *model.Diagram) layoutResult {
