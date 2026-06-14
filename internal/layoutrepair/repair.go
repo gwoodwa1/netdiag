@@ -340,9 +340,26 @@ func targetedCandidates(doc *spec.Document, report svg.InspectionReport) []candi
 			ids := append([]int(nil), obstructedLinks...)
 			fromSide, toSide := pair[0], pair[1]
 			result = append(result, candidate{
-				description: fmt.Sprintf("reroute %d links around node %s from %s to %s", len(ids), nodeID, fromSide, toSide),
+				description: fmt.Sprintf("reroute %d links obstructed by node %s from %s to %s", len(ids), nodeID, fromSide, toSide),
 				apply: func(trial *spec.Document) {
 					for _, linkID := range ids {
+						setEndpointRoute(&trial.Links[linkID-1].From, fromSide, nil, 180)
+						setEndpointRoute(&trial.Links[linkID-1].To, toSide, nil, 180)
+					}
+				},
+			})
+		}
+		for _, firstPair := range [][2]string{{"left", "right"}, {"right", "left"}} {
+			ids := append([]int(nil), obstructedLinks...)
+			firstFrom, firstTo := firstPair[0], firstPair[1]
+			result = append(result, candidate{
+				description: fmt.Sprintf("split %d links around opposite sides of node %s", len(ids), nodeID),
+				apply: func(trial *spec.Document) {
+					for index, linkID := range ids {
+						fromSide, toSide := firstFrom, firstTo
+						if index%2 == 1 {
+							fromSide, toSide = firstTo, firstFrom
+						}
 						setEndpointRoute(&trial.Links[linkID-1].From, fromSide, nil, 180)
 						setEndpointRoute(&trial.Links[linkID-1].To, toSide, nil, 180)
 					}

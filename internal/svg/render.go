@@ -103,11 +103,15 @@ func RenderWithOptions(doc *model.Diagram, options Options) ([]byte, error) {
 		renderRowBackgrounds(&out, roles, layout.Width, premium)
 		renderRowHeadings(&out, roles, byRole)
 	}
-	if err := renderLinks(&out, doc, layout.Nodes); err != nil {
+	var linkAnnotations bytes.Buffer
+	if err := renderLinks(&out, &linkAnnotations, doc, layout.Nodes); err != nil {
 		return nil, err
 	}
-	renderBundleLegend(&out, doc)
 	renderNodes(&out, layout.Nodes, iconPack, premium)
+	out.WriteString(`<g id="link-annotations" pointer-events="none">`)
+	out.Write(linkAnnotations.Bytes())
+	out.WriteString(`</g>`)
+	renderBundleLegend(&out, doc)
 	out.WriteString(`</svg>`)
 	return out.Bytes(), nil
 }
@@ -341,7 +345,7 @@ func renderRingBackground(out *bytes.Buffer, doc *model.Diagram, premium bool) {
 	out.WriteString(`</g>`)
 }
 
-func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedNode) error {
+func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[string]placedNode) error {
 	geometry, err := endpointAttachments(doc, nodes)
 	if err != nil {
 		return err
@@ -430,31 +434,33 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 		fmt.Fprintf(out, `<path%s d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="round" stroke-linejoin="round" %s opacity=".86"/>`, className, path, color, strokeWidth, dash)
 		renderPortMarker(out, start, color, premium)
 		renderPortMarker(out, end, color, premium)
+		fmt.Fprintf(annotations, `<g id="link-annotation-%d" class="link-annotation">`, index+1)
 		if doc.Theme.InterfaceLabels != "none" {
 			if useDiagonalRoute {
-				renderRotatedRouteEndpointLabel(out, route, link.SourceLabel(), true, degrees[from.Node], startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
-				renderRotatedRouteEndpointLabel(out, route, link.TargetLabel(), false, degrees[to.Node], endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
+				renderRotatedRouteEndpointLabel(annotations, route, link.SourceLabel(), true, degrees[from.Node], startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
+				renderRotatedRouteEndpointLabel(annotations, route, link.TargetLabel(), false, degrees[to.Node], endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
 			} else {
-				renderRotatedEndpointLabel(out, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
-				renderRotatedEndpointLabel(out, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
+				renderRotatedEndpointLabel(annotations, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
+				renderRotatedEndpointLabel(annotations, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
 			}
 		}
-		renderEndpointAddress(out, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
-		renderEndpointAddress(out, end, to.Address, endGeometry.Side, endGeometry.LabelLane, color)
+		renderEndpointAddress(annotations, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)
+		renderEndpointAddress(annotations, end, to.Address, endGeometry.Side, endGeometry.LabelLane, color)
 		if link.MiddleLabel() != "" && link.Bundle == "" {
 			if useOrthogonalRoute || useDiagonalRoute {
-				renderRouteLabel(out, route.Label, route.LabelHorizontal, link.MiddleLabel(), color, index)
+				renderRouteLabel(annotations, route.Label, route.LabelHorizontal, link.MiddleLabel(), color, index)
 			} else {
-				renderCenterLabel(out, start, end, startGeometry.Side, endGeometry.Side, link.MiddleLabel(), color, index)
+				renderCenterLabel(annotations, start, end, startGeometry.Side, endGeometry.Side, link.MiddleLabel(), color, index)
 			}
 		}
 		if link.Bundle == "" {
 			if useOrthogonalRoute || useDiagonalRoute {
-				renderRouteTags(out, route.Label, link.Tags(), color, index)
+				renderRouteTags(annotations, route.Label, link.Tags(), color, index)
 			} else {
-				renderLinkTags(out, start, end, link.Tags(), color, index)
+				renderLinkTags(annotations, start, end, link.Tags(), color, index)
 			}
 		}
+		annotations.WriteString(`</g>`)
 		out.WriteString(`</g>`)
 	}
 	bundleIDs := make([]string, 0, len(bundleVisuals))
@@ -463,7 +469,7 @@ func renderLinks(out *bytes.Buffer, doc *model.Diagram, nodes map[string]placedN
 	}
 	sort.Strings(bundleIDs)
 	for _, id := range bundleIDs {
-		renderBundleMarker(out, bundleVisuals[id].X, bundleVisuals[id].Y, bundleVisuals[id])
+		renderBundleMarker(annotations, bundleVisuals[id].X, bundleVisuals[id].Y, bundleVisuals[id])
 	}
 	out.WriteString(`</g>`)
 	return nil

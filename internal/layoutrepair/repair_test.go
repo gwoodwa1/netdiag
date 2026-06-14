@@ -142,9 +142,9 @@ func TestTargetedCandidatesGroupLinksPassingBehindSameNode(t *testing.T) {
 		{Code: "link_through_node", Severity: svg.InspectionError, Nodes: []string{"core"}, Links: []int{3}},
 	}}
 	candidates := targetedCandidates(doc, report)
-	found := false
+	found, foundSplit := false, false
 	for _, candidate := range candidates {
-		if candidate.description == "reroute 2 links around node core from top to bottom" {
+		if candidate.description == "reroute 2 links obstructed by node core from top to bottom" {
 			found = true
 			trial := &spec.Document{Links: []spec.Link{{}, {}, {}}}
 			candidate.apply(trial)
@@ -153,8 +153,17 @@ func TestTargetedCandidatesGroupLinksPassingBehindSameNode(t *testing.T) {
 				t.Fatalf("grouped obstruction repair did not reroute every link: %+v", trial.Links)
 			}
 		}
+		if candidate.description == "split 2 links around opposite sides of node core" && !foundSplit {
+			foundSplit = true
+			trial := &spec.Document{Links: []spec.Link{{}, {}, {}}}
+			candidate.apply(trial)
+			if trial.Links[0].From.Side == trial.Links[2].From.Side ||
+				trial.Links[0].To.Side == trial.Links[2].To.Side {
+				t.Fatalf("split obstruction repair did not use opposite sides: %+v", trial.Links)
+			}
+		}
 	}
-	if !found {
-		t.Fatal("no grouped obstruction repair candidate generated")
+	if !found || !foundSplit {
+		t.Fatalf("missing obstruction repair candidate: grouped=%t split=%t", found, foundSplit)
 	}
 }

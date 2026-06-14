@@ -2,6 +2,7 @@ package svg
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gwoodwa1/netdiag/internal/model"
@@ -186,6 +187,26 @@ func TestInspectFindsLinkThroughInterfaceLabel(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("link through interface label was not reported: %+v", findings)
+	}
+}
+
+func TestInspectExplainsApparentUnlabeledEndpoint(t *testing.T) {
+	diagram := &model.Diagram{Links: []model.Link{{
+		From: model.LinkEndpoint{Node: "a"},
+		To:   model.LinkEndpoint{Node: "b"},
+	}}}
+	routes := map[int]linkRoute{0: {
+		Points: []point{{X: 0, Y: 50}, {X: 200, Y: 50}},
+	}}
+	nodes := map[string]placedNode{
+		"a":    {Box: box{X: -20, Y: 30, W: 20, H: 40}},
+		"b":    {Box: box{X: 200, Y: 30, W: 20, H: 40}},
+		"core": {Box: box{X: 80, Y: 20, W: 40, H: 60}},
+	}
+	findings := inspectRoutesThroughNodes(diagram, routes, nodes)
+	if len(findings) != 1 || findings[0].Code != "link_through_node" ||
+		!strings.Contains(findings[0].Message, "apparent unlabeled endpoint") {
+		t.Fatalf("unexpected through-node finding: %+v", findings)
 	}
 }
 
