@@ -242,7 +242,26 @@ func orthogonalRoute(start, end point, startSide, endSide string, nodes map[stri
 }
 
 func directRoute(start, end point, startSide, endSide, style string) linkRoute {
-	return linkRoute{Points: []point{start, end}, Path: pathData(start, end, startSide, endSide, style), Label: point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}}
+	points := []point{start, end}
+	horizontal := (startSide == "left" || startSide == "right") && (endSide == "left" || endSide == "right")
+	if style == "clean" {
+		if horizontal {
+			direction := 1.0
+			if end.X < start.X {
+				direction = -1
+			}
+			stub := math.Min(54, math.Abs(end.X-start.X)*0.22)
+			points = []point{start, {X: start.X + direction*stub, Y: start.Y}, {X: end.X - direction*stub, Y: end.Y}, end}
+		} else {
+			direction := 1.0
+			if end.Y < start.Y {
+				direction = -1
+			}
+			stub := math.Min(54, math.Abs(end.Y-start.Y)*0.22)
+			points = []point{start, {X: start.X, Y: start.Y + direction*stub}, {X: end.X, Y: end.Y - direction*stub}, end}
+		}
+	}
+	return linkRoute{Points: points, Path: pathData(start, end, startSide, endSide, style), Label: point{X: (start.X + end.X) / 2, Y: (start.Y + end.Y) / 2}}
 }
 
 func diagonalRoute(start, end point, lane int) linkRoute {

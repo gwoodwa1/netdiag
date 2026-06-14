@@ -52,6 +52,8 @@ func main() {
 		plan(os.Args[2:])
 	case "recommend":
 		recommend(os.Args[2:])
+	case "inspect":
+		inspect(os.Args[2:])
 	case "lldp":
 		convertLLDP(os.Args[2:])
 	case "discover":
@@ -273,6 +275,49 @@ func recommend(args []string) {
 		return
 	}
 	fmt.Println(renderer)
+}
+
+func inspect(args []string) {
+	flags := flag.NewFlagSet("inspect", flag.ExitOnError)
+	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
+	failOn := flags.String("fail-on", "", "exit non-zero when findings reach warning or error")
+	flags.Parse(args)
+	if flags.NArg() != 1 {
+		fmt.Fprintln(os.Stderr, "usage: netdiag inspect [--json] [--fail-on warning|error] <diagram.yaml>")
+		os.Exit(2)
+	}
+	var threshold svg.InspectionSeverity
+	switch strings.ToLower(*failOn) {
+	case "":
+	case "warning":
+		threshold = svg.InspectionWarning
+	case "error":
+		threshold = svg.InspectionError
+	default:
+		fmt.Fprintln(os.Stderr, "error: --fail-on requires warning or error")
+		os.Exit(2)
+	}
+	doc, err := loadDocument(flags.Arg(0))
+	exitOnError(err)
+	diagram, err := model.Compile(doc)
+	exitOnError(err)
+	report, err := svg.Inspect(diagram)
+	exitOnError(err)
+	if *jsonOutput {
+		writeJSON(report)
+	} else {
+		fmt.Printf("layout: %s\ncanvas: %.0fx%.0f\nscore: %d/100\n", report.Layout, report.Width, report.Height, report.Score)
+		fmt.Printf("findings: %d error(s), %d warning(s), %d info\n", report.Summary.Errors, report.Summary.Warnings, report.Summary.Info)
+		for _, finding := range report.Findings {
+			fmt.Printf("%s [%s]: %s\n", finding.Severity, finding.Code, finding.Message)
+			if finding.Suggestion != "" {
+				fmt.Printf("  suggestion: %s\n", finding.Suggestion)
+			}
+		}
+	}
+	if threshold != "" && report.HasAtLeast(threshold) {
+		os.Exit(1)
+	}
 }
 
 func convertLLDP(args []string) {
@@ -786,6 +831,7 @@ Usage:
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
+  netdiag inspect [--json] [--fail-on warning|error] <diagram.yaml>
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)

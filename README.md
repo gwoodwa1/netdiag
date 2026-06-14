@@ -62,6 +62,7 @@ netdiag render examples/custom-icon-pack.yaml --icons examples/custom-icons -o c
 netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
+netdiag inspect examples/spine-leaf.yaml
 netdiag discover lldp show-lldp-neighbors-detail.txt --local leaf-01 -o discovered.yaml
 netdiag discover lldp lldp-captures/ -o discovered-network.yaml
 netdiag discover isis isis-captures/ -o discovered-isis.yaml
@@ -82,6 +83,16 @@ Use `--report` to persist the capability assessment and warnings:
 netdiag render examples/skills/d2-elk-hard-cases.yaml --renderer d2 --layout elk \
   --report render-report.json -o examples/skills/d2-elk-hard-cases.elk.svg
 ```
+
+Inspect the native renderer's deterministic geometry for crossings, routes
+through nodes, crowded endpoints, and interface-label collisions:
+
+```sh
+netdiag inspect examples/discovery/lldp-iosxr-8-site-dual-plane.yaml
+netdiag inspect --json --fail-on error diagram.yaml
+```
+
+See [docs/inspection.md](docs/inspection.md) for finding codes and CI usage.
 
 The output extension selects SVG, interactive HTML, PNG, PDF, or editable
 draw.io XML. The draw.io backend maps network roles to editable draw.io shapes
