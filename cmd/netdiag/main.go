@@ -127,7 +127,7 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--icons directory] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--icons directory] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
 	}
 	if iconDir == "" {

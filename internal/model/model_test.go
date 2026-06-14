@@ -133,3 +133,18 @@ func TestResolveLinkStyleStatusOverridesProtocol(t *testing.T) {
 		t.Fatalf("unexpected resolved style: %+v", got)
 	}
 }
+
+func TestLinkStableID(t *testing.T) {
+	link := Link{
+		From: LinkEndpoint{Node: "core-a", Port: "Hu0/0/0/1"},
+		To:   LinkEndpoint{Node: "core-b", Port: "Hu0/0/0/2"},
+	}
+	reversed := Link{From: link.To, To: link.From}
+	if link.StableID() != reversed.StableID() {
+		t.Fatal("automatic stable ID must not depend on link direction")
+	}
+	link.ID = "core-interconnect"
+	if got := link.StableID(); got != "core-interconnect" {
+		t.Fatalf("StableID() = %q, want explicit ID", got)
+	}
+}

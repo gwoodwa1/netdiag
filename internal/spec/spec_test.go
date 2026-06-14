@@ -389,6 +389,20 @@ func TestValidateEndpointClearance(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsDuplicateLinkIDs(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []Link{
+			{ID: "core-link", From: LinkEndpoint{Node: "a"}, To: LinkEndpoint{Node: "b"}},
+			{ID: "core-link", From: LinkEndpoint{Node: "a"}, To: LinkEndpoint{Node: "b"}},
+		},
+	}
+	if err := Validate(doc); err == nil {
+		t.Fatal("duplicate link IDs were accepted")
+	}
+}
+
 func TestValidateRejectsLongIconLabel(t *testing.T) {
 	doc := &Document{
 		Version: 1,

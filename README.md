@@ -73,6 +73,7 @@ netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.html
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.png
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.pdf
 netdiag render examples/spine-leaf.yaml --renderer drawio -o examples/spine-leaf.drawio
+netdiag render examples/spine-leaf.yaml --renderer drawio --layout-overrides spine-leaf.layout.yaml -o examples/spine-leaf.drawio
 ```
 
 When no renderer is selected, `netdiag render` recommends and selects one from

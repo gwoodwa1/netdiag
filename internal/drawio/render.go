@@ -40,8 +40,8 @@ type geometry struct {
 }
 
 type point struct {
-	X  float64 `xml:"x,attr,omitempty"`
-	Y  float64 `xml:"y,attr,omitempty"`
+	X  float64 `xml:"x,attr"`
+	Y  float64 `xml:"y,attr"`
 	As string  `xml:"as,attr,omitempty"`
 }
 
