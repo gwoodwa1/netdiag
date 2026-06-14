@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
@@ -16,6 +17,7 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/interactive"
 	"github.com/gwoodwa1/netdiag/internal/isis"
+	"github.com/gwoodwa1/netdiag/internal/layoutrepair"
 	"github.com/gwoodwa1/netdiag/internal/lldp"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/planner"
@@ -54,6 +56,8 @@ func main() {
 		recommend(os.Args[2:])
 	case "inspect":
 		inspect(os.Args[2:])
+	case "improve-layout":
+		improveLayout(os.Args[2:])
 	case "lldp":
 		convertLLDP(os.Args[2:])
 	case "discover":
@@ -330,6 +334,77 @@ func inspect(args []string) {
 	if threshold != "" && report.HasAtLeast(threshold) {
 		os.Exit(1)
 	}
+}
+
+func improveLayout(args []string) {
+	input, output := "", ""
+	rounds, maxCandidates := 3, 80
+	jsonOutput := false
+	for index := 0; index < len(args); index++ {
+		switch args[index] {
+		case "-o", "--output":
+			if index+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
+				os.Exit(2)
+			}
+			index++
+			output = args[index]
+		case "--rounds", "--max-candidates":
+			if index+1 >= len(args) {
+				fmt.Fprintf(os.Stderr, "error: %s requires a count\n", args[index])
+				os.Exit(2)
+			}
+			name := args[index]
+			index++
+			value, err := strconv.Atoi(args[index])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %s requires an integer\n", name)
+				os.Exit(2)
+			}
+			if name == "--rounds" {
+				rounds = value
+			} else {
+				maxCandidates = value
+			}
+		case "--json":
+			jsonOutput = true
+		default:
+			if strings.HasPrefix(args[index], "-") || input != "" {
+				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[index])
+				os.Exit(2)
+			}
+			input = args[index]
+		}
+	}
+	if input == "" {
+		fmt.Fprintln(os.Stderr, "usage: netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]")
+		os.Exit(2)
+	}
+	if rounds < 1 || maxCandidates < 1 {
+		fmt.Fprintln(os.Stderr, "error: --rounds and --max-candidates must be greater than zero")
+		os.Exit(2)
+	}
+	if output == "" {
+		output = strings.TrimSuffix(input, filepath.Ext(input)) + ".improved.yaml"
+	}
+	doc, err := loadDocument(input)
+	exitOnError(err)
+	improved, report, err := layoutrepair.Improve(doc, layoutrepair.Options{MaxRounds: rounds, MaxCandidates: maxCandidates})
+	exitOnError(err)
+	result, err := spec.Format(improved)
+	exitOnError(err)
+	exitOnError(os.WriteFile(output, result, 0o644))
+	if jsonOutput {
+		writeJSON(report)
+		return
+	}
+	fmt.Printf("layout score: %d -> %d\n", report.Before.Quality, report.After.Quality)
+	fmt.Printf("errors: %d -> %d, warnings: %d -> %d\n", report.Before.Errors, report.After.Errors, report.Before.Warnings, report.After.Warnings)
+	fmt.Printf("evaluated %d candidate(s), accepted %d change(s)\n", report.CandidatesEvaluated, len(report.Changes))
+	for _, change := range report.Changes {
+		fmt.Printf("round %d: %s\n", change.Round, change.Description)
+	}
+	fmt.Printf("wrote %s\n", output)
 }
 
 func convertLLDP(args []string) {
@@ -844,6 +919,7 @@ Usage:
   netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
   netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>
+  netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)
