@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/yamlutil"
+	"gopkg.in/yaml.v3"
 )
 
 type Document struct {
@@ -55,6 +56,13 @@ func Load(path string) (*Document, error) {
 		return nil, fmt.Errorf("validate layout overrides %s: %w", path, err)
 	}
 	return &doc, nil
+}
+
+func Format(doc *Document) ([]byte, error) {
+	if err := Validate(doc); err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(doc)
 }
 
 func Validate(doc *Document) error {
