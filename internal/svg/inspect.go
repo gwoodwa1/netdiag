@@ -298,6 +298,19 @@ func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[st
 				})
 			}
 		}
+		for routeIndex := range doc.Links {
+			if routeIndex+1 == label.Link {
+				continue
+			}
+			if polylineIntersectsBox(sampleRoute(routes[routeIndex], 24), label.Box) {
+				findings = append(findings, InspectionFinding{
+					Code: "label_link_overlap", Severity: InspectionWarning,
+					Message: fmt.Sprintf("link %d (%s) passes through an interface label for link %d", routeIndex+1, describeLink(doc.Links[routeIndex]), label.Link),
+					Nodes:   []string{label.Node}, Links: []int{routeIndex + 1, label.Link},
+					Suggestion: "add an endpoint stub, rotate the label, or move one link to a different route lane",
+				})
+			}
+		}
 	}
 	for left := 0; left < len(labels); left++ {
 		for right := left + 1; right < len(labels); right++ {

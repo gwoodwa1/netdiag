@@ -113,6 +113,34 @@ func TestInspectFindsOverlappingInterfaceLabels(t *testing.T) {
 	}
 }
 
+func TestInspectFindsLinkThroughInterfaceLabel(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "rows"},
+		Links: []model.Link{
+			{From: model.LinkEndpoint{Node: "a", Port: "Ethernet0/0"}, To: model.LinkEndpoint{Node: "b"}},
+			{From: model.LinkEndpoint{Node: "c"}, To: model.LinkEndpoint{Node: "d"}},
+		},
+	}
+	geometry := map[string]endpointGeometry{
+		endpointKey(0, true):  {Point: point{X: 100, Y: 100}, Side: "top"},
+		endpointKey(0, false): {Point: point{X: 500, Y: 100}, Side: "top"},
+		endpointKey(1, true):  {Point: point{X: 50, Y: 88}, Side: "right"},
+		endpointKey(1, false): {Point: point{X: 150, Y: 88}, Side: "left"},
+	}
+	routes := map[int]linkRoute{
+		0: directRoute(point{X: 100, Y: 100}, point{X: 500, Y: 100}, "top", "top", ""),
+		1: directRoute(point{X: 50, Y: 88}, point{X: 150, Y: 88}, "right", "left", ""),
+	}
+	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
+	found := false
+	for _, finding := range findings {
+		found = found || finding.Code == "label_link_overlap"
+	}
+	if !found {
+		t.Fatalf("link through interface label was not reported: %+v", findings)
+	}
+}
+
 func containsInspectionFinding(report InspectionReport, code string) bool {
 	for _, finding := range report.Findings {
 		if finding.Code == code {

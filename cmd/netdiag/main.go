@@ -281,9 +281,14 @@ func inspect(args []string) {
 	flags := flag.NewFlagSet("inspect", flag.ExitOnError)
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
 	failOn := flags.String("fail-on", "", "exit non-zero when findings reach warning or error")
+	limit := flags.Int("limit", 50, "maximum findings to print in text output; 0 prints all")
 	flags.Parse(args)
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag inspect [--json] [--fail-on warning|error] <diagram.yaml>")
+		fmt.Fprintln(os.Stderr, "usage: netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>")
+		os.Exit(2)
+	}
+	if *limit < 0 {
+		fmt.Fprintln(os.Stderr, "error: --limit cannot be negative")
 		os.Exit(2)
 	}
 	var threshold svg.InspectionSeverity
@@ -308,11 +313,18 @@ func inspect(args []string) {
 	} else {
 		fmt.Printf("layout: %s\ncanvas: %.0fx%.0f\nscore: %d/100\n", report.Layout, report.Width, report.Height, report.Score)
 		fmt.Printf("findings: %d error(s), %d warning(s), %d info\n", report.Summary.Errors, report.Summary.Warnings, report.Summary.Info)
-		for _, finding := range report.Findings {
+		printed := len(report.Findings)
+		if *limit > 0 && printed > *limit {
+			printed = *limit
+		}
+		for _, finding := range report.Findings[:printed] {
 			fmt.Printf("%s [%s]: %s\n", finding.Severity, finding.Code, finding.Message)
 			if finding.Suggestion != "" {
 				fmt.Printf("  suggestion: %s\n", finding.Suggestion)
 			}
+		}
+		if printed < len(report.Findings) {
+			fmt.Printf("... %d more finding(s); use --limit 0 or --json to show all\n", len(report.Findings)-printed)
 		}
 	}
 	if threshold != "" && report.HasAtLeast(threshold) {
@@ -831,7 +843,7 @@ Usage:
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
-  netdiag inspect [--json] [--fail-on warning|error] <diagram.yaml>
+  netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)

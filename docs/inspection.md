@@ -10,6 +10,8 @@ netdiag inspect --json diagram.yaml
 
 The report includes a deterministic quality score, canvas dimensions, summary
 counts, affected node and link IDs, and targeted suggestions.
+Text output shows at most 50 findings by default. Use `--limit 0` or `--json`
+to return every finding.
 
 Current finding codes:
 
@@ -18,6 +20,7 @@ Current finding codes:
 - `link_through_node`: a route passes through an unrelated device.
 - `crowded_endpoints`: link terminations on one device side are too close.
 - `label_overlap`: interface-label boxes overlap.
+- `label_link_overlap`: an unrelated link passes through an interface label.
 - `label_node_overlap`: an interface label overlaps an unrelated device.
 - `label_outside_canvas`: an interface label extends beyond the canvas.
 
