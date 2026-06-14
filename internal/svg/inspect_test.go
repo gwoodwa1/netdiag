@@ -113,6 +113,54 @@ func TestInspectFindsOverlappingInterfaceLabels(t *testing.T) {
 	}
 }
 
+func TestInspectFindsEndpointLabelsTooCloseOnSameLink(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "rows"},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "p1", Port: "HundredGigE0/0/1/0"},
+			To:   model.LinkEndpoint{Node: "p2", Port: "HundredGigE0/0/1/0"},
+		}},
+	}
+	geometry := map[string]endpointGeometry{
+		endpointKey(0, true):  {Point: point{X: 100, Y: 100}, Side: "right"},
+		endpointKey(0, false): {Point: point{X: 220, Y: 100}, Side: "left"},
+	}
+	routes := map[int]linkRoute{
+		0: directRoute(point{X: 100, Y: 100}, point{X: 220, Y: 100}, "right", "left", ""),
+	}
+	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
+	found := false
+	for _, finding := range findings {
+		found = found || finding.Code == "endpoint_labels_too_close"
+	}
+	if !found {
+		t.Fatalf("close labels on the same link were not reported: %+v", findings)
+	}
+}
+
+func TestInspectAllowsSeparatedEndpointLabelsOnSameLink(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "rows"},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "p1", Port: "HundredGigE0/0/1/0"},
+			To:   model.LinkEndpoint{Node: "p2", Port: "HundredGigE0/0/1/0"},
+		}},
+	}
+	geometry := map[string]endpointGeometry{
+		endpointKey(0, true):  {Point: point{X: 100, Y: 100}, Side: "right"},
+		endpointKey(0, false): {Point: point{X: 500, Y: 100}, Side: "left"},
+	}
+	routes := map[int]linkRoute{
+		0: directRoute(point{X: 100, Y: 100}, point{X: 500, Y: 100}, "right", "left", ""),
+	}
+	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
+	for _, finding := range findings {
+		if finding.Code == "endpoint_labels_too_close" {
+			t.Fatalf("separated labels were reported as too close: %+v", findings)
+		}
+	}
+}
+
 func TestInspectFindsLinkThroughInterfaceLabel(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme: model.Theme{Layout: "rows"},

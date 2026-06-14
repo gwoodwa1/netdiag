@@ -337,6 +337,17 @@ func targetedCandidates(doc *spec.Document, report svg.InspectionReport) []candi
 				},
 			})
 		}
+		for _, side := range []string{"top", "bottom", "left", "right"} {
+			value := side
+			result = append(result, candidate{
+				description: fmt.Sprintf("separate link %d endpoint labels along the %s side", linkID, value),
+				apply: func(trial *spec.Document) {
+					fromPosition, toPosition := 0.25, 0.75
+					setEndpointRoute(&trial.Links[index].From, value, &fromPosition, 140)
+					setEndpointRoute(&trial.Links[index].To, value, &toPosition, 140)
+				},
+			})
+		}
 		for _, rotation := range []int{0, 90} {
 			value := rotation
 			result = append(result, candidate{
@@ -347,15 +358,26 @@ func targetedCandidates(doc *spec.Document, report svg.InspectionReport) []candi
 				},
 			})
 		}
+		for _, rotations := range [][2]int{{90, 270}, {270, 90}, {90, 0}, {0, 90}} {
+			fromRotation, toRotation := rotations[0], rotations[1]
+			result = append(result, candidate{
+				description: fmt.Sprintf("separate interface label rotations on link %d to %d/%d degrees", linkID, fromRotation, toRotation),
+				apply: func(trial *spec.Document) {
+					trial.Links[index].From.LabelRotation = fromRotation
+					trial.Links[index].To.LabelRotation = toRotation
+				},
+			})
+		}
 	}
 	return result
 }
 
 func problemLinkIDs(report svg.InspectionReport, linkCount int) []int {
 	type priority struct {
-		linkID int
-		errors int
-		total  int
+		linkID     int
+		errors     int
+		labelIssue int
+		total      int
 	}
 	byLink := make(map[int]*priority)
 	for _, finding := range report.Findings {
@@ -370,6 +392,9 @@ func problemLinkIDs(report svg.InspectionReport, linkCount int) []int {
 				if finding.Severity == svg.InspectionError {
 					item.errors++
 				}
+				if finding.Code == "endpoint_labels_too_close" {
+					item.labelIssue++
+				}
 			}
 		}
 	}
@@ -380,6 +405,9 @@ func problemLinkIDs(report svg.InspectionReport, linkCount int) []int {
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].errors != items[j].errors {
 			return items[i].errors > items[j].errors
+		}
+		if items[i].labelIssue != items[j].labelIssue {
+			return items[i].labelIssue > items[j].labelIssue
 		}
 		if items[i].total != items[j].total {
 			return items[i].total > items[j].total

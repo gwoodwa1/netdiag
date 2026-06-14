@@ -41,9 +41,10 @@ type InspectionReport struct {
 }
 
 type inspectedLabel struct {
-	Link int
-	Node string
-	Box  box
+	Link   int
+	Node   string
+	Source bool
+	Box    box
 }
 
 // Inspect measures the geometry produced by the native renderer. It does not
@@ -315,6 +316,15 @@ func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[st
 	for left := 0; left < len(labels); left++ {
 		for right := left + 1; right < len(labels); right++ {
 			if labels[left].Link == labels[right].Link {
+				if labelBoxDistance(labels[left].Box, labels[right].Box) < 24 {
+					link := doc.Links[labels[left].Link-1]
+					findings = append(findings, InspectionFinding{
+						Code: "endpoint_labels_too_close", Severity: InspectionWarning,
+						Message: fmt.Sprintf("source and target interface labels for link %d (%s) have less than 24px clearance", labels[left].Link, describeLink(link)),
+						Nodes:   []string{link.From.Node, link.To.Node}, Links: []int{labels[left].Link},
+						Suggestion: "separate the endpoint positions, add endpoint stubs, or rotate one endpoint label",
+					})
+				}
 				continue
 			}
 			if boxesOverlap(labels[left].Box, labels[right].Box) {
@@ -350,10 +360,16 @@ func inspectionLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map
 			}
 			item := geometry[endpointKey(index, source)]
 			location := endpointLabelLocation(routes[index], item, source, degrees[endpoint.Node], useDiagonal)
-			labels = append(labels, inspectedLabel{Link: index + 1, Node: endpoint.Node, Box: interfaceLabelBox(location, label, endpoint.LabelRotation, doc.Theme.InterfaceLabelStyle)})
+			labels = append(labels, inspectedLabel{Link: index + 1, Node: endpoint.Node, Source: source, Box: interfaceLabelBox(location, label, endpoint.LabelRotation, doc.Theme.InterfaceLabelStyle)})
 		}
 	}
 	return labels
+}
+
+func labelBoxDistance(left, right box) float64 {
+	dx := math.Max(0, math.Max(left.X-(right.X+right.W), right.X-(left.X+left.W)))
+	dy := math.Max(0, math.Max(left.Y-(right.Y+right.H), right.Y-(left.Y+left.H)))
+	return math.Hypot(dx, dy)
 }
 
 func endpointLabelLocation(route linkRoute, endpoint endpointGeometry, source bool, degree int, useDiagonal bool) point {
