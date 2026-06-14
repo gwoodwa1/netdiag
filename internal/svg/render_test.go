@@ -514,6 +514,30 @@ func TestHubSpokeMultiHomedPEUsesDistinctAttachmentSides(t *testing.T) {
 	}
 }
 
+func TestEndpointPositionPinsTerminationAlongSide(t *testing.T) {
+	position := 0.25
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Nodes: []model.Node{{ID: "pe", Role: "edge-router"}, {ID: "p", Role: "core-router"}},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "pe", Port: "Hu0/0", Side: "top", Position: &position},
+			To:   model.LinkEndpoint{Node: "p", Port: "Hu0/0"},
+		}},
+	}
+	nodes := map[string]placedNode{
+		"pe": {ID: "pe", Node: diagram.Nodes[0], Box: box{X: 100, Y: 100, W: 280, H: 82}},
+		"p":  {ID: "p", Node: diagram.Nodes[1], Box: box{X: 500, Y: 500, W: 280, H: 82}},
+	}
+	geometry, err := endpointAttachments(diagram, nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := geometry[endpointKey(0, true)]
+	if got.Side != "top" || got.Point != (point{X: 170, Y: 100}) {
+		t.Fatalf("positioned endpoint = %+v, want top at {170 100}", got)
+	}
+}
+
 func TestHubSpokeFanOutPreservesExplicitAttachmentSide(t *testing.T) {
 	node := placedNode{Node: model.Node{Role: "edge-router"}, Box: box{X: 100, Y: 100, W: 280, H: 82}}
 	items := []attachment{

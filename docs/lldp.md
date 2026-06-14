@@ -140,6 +140,20 @@ combination that minimizes crossings across the complete diagram. Crossings
 between links leaving the same device are also penalized when they use
 different attachment points.
 
+For diagrams that still need a manual routing adjustment, an endpoint can pin
+both its rectangle side and its normalized position along that side:
+
+```yaml
+to:
+  node: phx-pe1
+  port: HundredGigE0/0/0/0
+  side: top
+  position: 0.25
+```
+
+`position` ranges from `0.0` to `1.0` and requires `side`. This keeps manual
+adjustments stable when the canvas or device box changes size.
+
 ## Architecture
 
 The LLDP package separates format detection, vendor parsers, normalization,

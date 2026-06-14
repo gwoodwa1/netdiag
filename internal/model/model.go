@@ -51,11 +51,12 @@ type Link struct {
 }
 
 type LinkEndpoint struct {
-	Node    string
-	Port    string
-	Side    string
-	Label   string
-	Address string
+	Node     string
+	Port     string
+	Side     string
+	Position *float64
+	Label    string
+	Address  string
 }
 
 type LinkLabels struct {
@@ -240,18 +241,20 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		}
 		links = append(links, Link{
 			From: LinkEndpoint{
-				Node:    linkSpec.From.Node,
-				Port:    linkSpec.From.Port,
-				Side:    linkSpec.From.Side,
-				Label:   linkSpec.From.Label,
-				Address: linkSpec.From.Address,
+				Node:     linkSpec.From.Node,
+				Port:     linkSpec.From.Port,
+				Side:     linkSpec.From.Side,
+				Position: linkSpec.From.Position,
+				Label:    linkSpec.From.Label,
+				Address:  linkSpec.From.Address,
 			},
 			To: LinkEndpoint{
-				Node:    linkSpec.To.Node,
-				Port:    linkSpec.To.Port,
-				Side:    linkSpec.To.Side,
-				Label:   linkSpec.To.Label,
-				Address: linkSpec.To.Address,
+				Node:     linkSpec.To.Node,
+				Port:     linkSpec.To.Port,
+				Side:     linkSpec.To.Side,
+				Position: linkSpec.To.Position,
+				Label:    linkSpec.To.Label,
+				Address:  linkSpec.To.Address,
 			},
 			Label:        linkSpec.Label,
 			Style:        linkSpec.Style,

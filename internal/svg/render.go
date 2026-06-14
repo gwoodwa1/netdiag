@@ -53,6 +53,7 @@ type attachment struct {
 	PeerY     float64
 	Side      string
 	Pinned    bool
+	Position  *float64
 }
 
 type endpointGeometry struct {
@@ -541,8 +542,8 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 		if toSide == "" {
 			toSide = defaultToSide
 		}
-		attachments[from.Node] = append(attachments[from.Node], attachment{index, true, from.Port, toCenter.X, toCenter.Y, fromSide, from.Side != ""})
-		attachments[to.Node] = append(attachments[to.Node], attachment{index, false, to.Port, fromCenter.X, fromCenter.Y, toSide, to.Side != ""})
+		attachments[from.Node] = append(attachments[from.Node], attachment{index, true, from.Port, toCenter.X, toCenter.Y, fromSide, from.Side != "", from.Position})
+		attachments[to.Node] = append(attachments[to.Node], attachment{index, false, to.Port, fromCenter.X, fromCenter.Y, toSide, to.Side != "", to.Position})
 	}
 
 	result := make(map[string]endpointGeometry)
@@ -571,6 +572,22 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 			for slot, item := range sideItems {
 				x := node.Box.X
 				y := node.Box.Y + 18
+				if item.Position != nil {
+					if side == "top" || side == "bottom" {
+						x = node.Box.X + node.Box.W**item.Position
+						y = node.Box.Y
+						if side == "bottom" {
+							y += node.Box.H
+						}
+					} else {
+						y = node.Box.Y + node.Box.H**item.Position
+						if side == "right" {
+							x += node.Box.W
+						}
+					}
+					result[endpointKey(item.LinkIndex, item.Source)] = endpointGeometry{Point: point{x, y}, Side: side}
+					continue
+				}
 				if side == "top" || side == "bottom" {
 					x += 22
 					if len(sideItems) > 1 {

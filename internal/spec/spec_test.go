@@ -283,6 +283,30 @@ func TestValidateRejectsInvalidEndpointAddress(t *testing.T) {
 	}
 }
 
+func TestValidateLinkEndpointPosition(t *testing.T) {
+	position := 0.25
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []Link{{
+			From: LinkEndpoint{Node: "a", Port: "Eth0/0", Side: "top", Position: &position},
+			To:   LinkEndpoint{Node: "b", Port: "Eth0/0"},
+		}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("valid endpoint position rejected: %v", err)
+	}
+	position = 1.25
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected out-of-range endpoint position validation error")
+	}
+	doc.Links[0].From.Side = ""
+	position = 0.25
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected endpoint position without side validation error")
+	}
+}
+
 func TestValidateRejectsLongIconLabel(t *testing.T) {
 	doc := &Document{
 		Version: 1,

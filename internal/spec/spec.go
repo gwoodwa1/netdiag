@@ -72,11 +72,12 @@ type Node struct {
 }
 
 type LinkEndpoint struct {
-	Node    string `yaml:"node"`
-	Port    string `yaml:"port"`
-	Side    string `yaml:"side,omitempty"`
-	Label   string `yaml:"label,omitempty"`
-	Address string `yaml:"address,omitempty"`
+	Node     string   `yaml:"node"`
+	Port     string   `yaml:"port"`
+	Side     string   `yaml:"side,omitempty"`
+	Position *float64 `yaml:"position,omitempty"`
+	Label    string   `yaml:"label,omitempty"`
+	Address  string   `yaml:"address,omitempty"`
 }
 
 func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
@@ -95,11 +96,12 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	type rawLinkEndpoint struct {
-		Node    string `yaml:"node"`
-		Port    string `yaml:"port"`
-		Side    string `yaml:"side"`
-		Label   string `yaml:"label"`
-		Address string `yaml:"address"`
+		Node     string   `yaml:"node"`
+		Port     string   `yaml:"port"`
+		Side     string   `yaml:"side"`
+		Position *float64 `yaml:"position"`
+		Label    string   `yaml:"label"`
+		Address  string   `yaml:"address"`
 	}
 	var raw rawLinkEndpoint
 	if err := value.Decode(&raw); err != nil {
@@ -108,6 +110,7 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 	le.Node = raw.Node
 	le.Port = raw.Port
 	le.Side = raw.Side
+	le.Position = raw.Position
 	le.Label = raw.Label
 	le.Address = raw.Address
 	return nil
@@ -321,6 +324,14 @@ func Validate(doc *Document) error {
 		for endpointName, endpoint := range map[string]LinkEndpoint{"from": from, "to": to} {
 			if endpoint.Side != "" && endpoint.Side != "top" && endpoint.Side != "right" && endpoint.Side != "bottom" && endpoint.Side != "left" {
 				problems = append(problems, fmt.Sprintf("link %d %s side must be top, right, bottom, or left", i+1, endpointName))
+			}
+			if endpoint.Position != nil {
+				if endpoint.Side == "" {
+					problems = append(problems, fmt.Sprintf("link %d %s position requires side", i+1, endpointName))
+				}
+				if *endpoint.Position < 0 || *endpoint.Position > 1 {
+					problems = append(problems, fmt.Sprintf("link %d %s position must be between 0 and 1", i+1, endpointName))
+				}
 			}
 			if endpoint.Address != "" {
 				if _, _, err := net.ParseCIDR(endpoint.Address); err != nil {
