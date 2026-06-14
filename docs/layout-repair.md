@@ -13,8 +13,10 @@ the input as `<name>.improved.yaml`.
 
 The repairer tries global routing and clearance settings first. It then tries
 targeted endpoint sides, positions, stubs, and label rotations on links named
-by the deterministic inspector. Candidates are evaluated concurrently, but
-selection remains deterministic.
+by the deterministic inspector. Unreadable source/target label pairs are
+prioritized and can be separated with independent rotations or attachment
+positions. Candidates are evaluated concurrently, but selection remains
+deterministic.
 
 Only strict improvements are accepted. The objective is:
 

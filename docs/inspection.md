@@ -19,6 +19,8 @@ Current finding codes:
 - `link_crossing`: links without a shared endpoint cross.
 - `link_through_node`: a route passes through an unrelated device.
 - `crowded_endpoints`: link terminations on one device side are too close.
+- `endpoint_labels_too_close`: a link's source and target interface labels do
+  not have enough clearance to remain independently readable.
 - `label_overlap`: interface-label boxes overlap.
 - `label_link_overlap`: an unrelated link passes through an interface label.
 - `label_node_overlap`: an interface label overlaps an unrelated device.

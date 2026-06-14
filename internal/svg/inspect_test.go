@@ -131,7 +131,7 @@ func TestInspectFindsEndpointLabelsTooCloseOnSameLink(t *testing.T) {
 	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
 	found := false
 	for _, finding := range findings {
-		found = found || finding.Code == "endpoint_labels_too_close"
+		found = found || finding.Code == "endpoint_labels_too_close" && finding.Severity == InspectionError
 	}
 	if !found {
 		t.Fatalf("close labels on the same link were not reported: %+v", findings)

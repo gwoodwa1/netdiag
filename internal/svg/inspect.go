@@ -319,7 +319,7 @@ func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[st
 				if labelBoxDistance(labels[left].Box, labels[right].Box) < 24 {
 					link := doc.Links[labels[left].Link-1]
 					findings = append(findings, InspectionFinding{
-						Code: "endpoint_labels_too_close", Severity: InspectionWarning,
+						Code: "endpoint_labels_too_close", Severity: InspectionError,
 						Message: fmt.Sprintf("source and target interface labels for link %d (%s) have less than 24px clearance", labels[left].Link, describeLink(link)),
 						Nodes:   []string{link.From.Node, link.To.Node}, Links: []int{labels[left].Link},
 						Suggestion: "separate the endpoint positions, add endpoint stubs, or rotate one endpoint label",

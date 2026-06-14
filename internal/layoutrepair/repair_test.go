@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/gwoodwa1/netdiag/internal/spec"
+	"github.com/gwoodwa1/netdiag/internal/svg"
 )
 
 func TestImproveRoutesAroundIntermediateNode(t *testing.T) {
@@ -101,5 +102,35 @@ func TestBetterPrioritizesWeightedPenaltyThenErrors(t *testing.T) {
 	}
 	if !better(Score{Penalty: 40, Errors: 1, Warnings: 4}, Score{Penalty: 40, Errors: 2}) {
 		t.Fatal("fewer errors should win when weighted penalties are equal")
+	}
+}
+
+func TestProblemLinksPrioritizeUnreadableEndpointLabels(t *testing.T) {
+	report := svg.InspectionReport{Findings: []svg.InspectionFinding{
+		{Code: "link_through_node", Severity: svg.InspectionError, Links: []int{1}},
+		{Code: "link_through_node", Severity: svg.InspectionError, Links: []int{1}},
+		{Code: "endpoint_labels_too_close", Severity: svg.InspectionError, Links: []int{9}},
+	}}
+	links := problemLinkIDs(report, 10)
+	if len(links) == 0 || links[0] != 9 {
+		t.Fatalf("unreadable endpoint labels were not prioritized: %v", links)
+	}
+}
+
+func TestTargetedCandidatesGroupUnreadableEndpointLabels(t *testing.T) {
+	doc := &spec.Document{Links: []spec.Link{{}, {}, {}}}
+	report := svg.InspectionReport{Findings: []svg.InspectionFinding{
+		{Code: "endpoint_labels_too_close", Severity: svg.InspectionError, Links: []int{1}},
+		{Code: "endpoint_labels_too_close", Severity: svg.InspectionError, Links: []int{3}},
+	}}
+	candidates := targetedCandidates(doc, report)
+	if len(candidates) == 0 {
+		t.Fatal("no targeted candidates generated")
+	}
+	trial := &spec.Document{Links: []spec.Link{{}, {}, {}}}
+	candidates[0].apply(trial)
+	if trial.Links[0].From.LabelRotation != 90 || trial.Links[0].To.LabelRotation != 90 ||
+		trial.Links[2].From.LabelRotation != 90 || trial.Links[2].To.LabelRotation != 90 {
+		t.Fatalf("grouped label repair did not rotate all unreadable links: %+v", trial.Links)
 	}
 }
