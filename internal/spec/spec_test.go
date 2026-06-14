@@ -88,6 +88,17 @@ func TestValidateAcceptsHubSpokeLayout(t *testing.T) {
 	}
 }
 
+func TestValidateAcceptsDrawIORenderer(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Diagram: Diagram{Renderer: "drawio"},
+		Nodes:   map[string]Node{"router-01": {Role: "router"}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("draw.io renderer rejected: %v", err)
+	}
+}
+
 func TestValidateAcceptsPremiumThemeAndRejectsUnknownTheme(t *testing.T) {
 	doc := &Document{Version: 1, Diagram: Diagram{Theme: "premium"}, Nodes: map[string]Node{"router": {Role: "router"}}}
 	if err := Validate(doc); err != nil {

@@ -70,6 +70,7 @@ netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.svg
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.html
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.png
 netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.pdf
+netdiag render examples/spine-leaf.yaml --renderer drawio -o examples/spine-leaf.drawio
 ```
 
 When no renderer is selected, `netdiag render` recommends and selects one from
@@ -82,7 +83,10 @@ netdiag render examples/skills/d2-elk-hard-cases.yaml --renderer d2 --layout elk
   --report render-report.json -o examples/skills/d2-elk-hard-cases.elk.svg
 ```
 
-The output extension selects SVG, interactive HTML, PNG, or PDF. HTML embeds
+The output extension selects SVG, interactive HTML, PNG, PDF, or editable
+draw.io XML. The draw.io backend maps network roles to editable draw.io shapes
+and preserves groups, nodes, links, and interface labels without requiring a
+draw.io installation. HTML embeds
 the native SVG with offline pan, zoom, inspection, and group-collapse controls.
 PNG and PDF use a locally installed converter. See
 [docs/export.md](docs/export.md) and [docs/interactive.md](docs/interactive.md).
@@ -99,10 +103,10 @@ for the hard-case results and [SKILLS.md](SKILLS.md) for the LLM repair loop.
 
 Authored YAML is resolved and expanded into `spec.Document`, then validated and
 compiled into the renderer-neutral `model.Diagram` intermediate
-representation. Native SVG, D2, planning, and recommendation code consume that
-IR rather than parsing source YAML. Renderer support is advertised through the
-planner's `RendererCapability` contract, keeping recommendation logic separate
-from backend implementation details.
+representation. Native SVG, D2, draw.io export, planning, and recommendation
+code consume that IR rather than parsing source YAML. Renderer support is
+advertised through the planner's `RendererCapability` contract, keeping
+recommendation logic separate from backend implementation details.
 
 ## Template blocks
 

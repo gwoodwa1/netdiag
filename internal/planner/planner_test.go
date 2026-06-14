@@ -62,6 +62,23 @@ func TestEveryRendererAdvertisesEveryKnownCapability(t *testing.T) {
 	}
 }
 
+func TestPlanSupportsDrawIO(t *testing.T) {
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "a"}, {ID: "b"}},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "a", Port: "Eth0/0"},
+			To:   model.LinkEndpoint{Node: "b", Port: "Eth0/0"},
+		}},
+	}
+	plan, err := Build(diagram, "drawio")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Renderer != "drawio" {
+		t.Fatalf("renderer = %q, want drawio", plan.Renderer)
+	}
+}
+
 func TestRecommendNativeForSiteAwareLayout(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme:  model.Theme{Layout: "sites", LinkStyle: "orthogonal"},

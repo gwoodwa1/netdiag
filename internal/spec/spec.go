@@ -246,8 +246,8 @@ func Validate(doc *Document) error {
 	if doc.Diagram.Layout != "" && doc.Diagram.Layout != "rows" && doc.Diagram.Layout != "ring" && doc.Diagram.Layout != "sites" && doc.Diagram.Layout != "hub-spoke" && doc.Diagram.Layout != "auto" && doc.Diagram.Layout != "manual" && doc.Diagram.Layout != "elk" {
 		problems = append(problems, "diagram layout must be auto, rows, ring, sites, hub-spoke, manual, or elk")
 	}
-	if doc.Diagram.Renderer != "" && doc.Diagram.Renderer != "native" && doc.Diagram.Renderer != "d2" {
-		problems = append(problems, "diagram renderer must be native or d2")
+	if doc.Diagram.Renderer != "" && doc.Diagram.Renderer != "native" && doc.Diagram.Renderer != "d2" && doc.Diagram.Renderer != "drawio" {
+		problems = append(problems, "diagram renderer must be native, d2, or drawio")
 	}
 	if doc.Diagram.Theme != "" && doc.Diagram.Theme != "light" && doc.Diagram.Theme != "premium" && doc.Diagram.Theme != "nord" && doc.Diagram.Theme != "dracula" {
 		problems = append(problems, "diagram theme must be light, premium, nord, or dracula")

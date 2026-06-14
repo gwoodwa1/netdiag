@@ -1,4 +1,4 @@
-# SVG, PNG, and PDF export
+# SVG, HTML, PNG, PDF, and draw.io export
 
 SVG is netdiag's native deterministic output:
 
@@ -13,6 +13,17 @@ netdiag render diagram.yaml -o diagram.html
 netdiag render diagram.yaml -o diagram.png
 netdiag render diagram.yaml -o diagram.pdf
 ```
+
+Create an editable draw.io document by selecting the draw.io renderer:
+
+```sh
+netdiag render diagram.yaml --renderer drawio -o diagram.drawio
+```
+
+The draw.io serializer is dependency-free and maps the renderer-neutral
+diagram model to editable groups, role-based device shapes, interface labels,
+and orthogonal links. It is an export target for manual refinement; netdiag
+remains the source of truth.
 
 Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
 and group-collapse controls. See [interactive.md](interactive.md).

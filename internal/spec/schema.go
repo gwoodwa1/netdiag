@@ -39,7 +39,7 @@ func JSONSchema() ([]byte, error) {
 					"endpoint_clearance":    map[string]interface{}{"type": "number", "minimum": 0, "maximum": 200},
 					"interface_labels":      map[string]interface{}{"enum": []string{"ends", "none"}},
 					"theme":                 map[string]interface{}{"enum": []string{"light", "premium", "nord", "dracula"}},
-					"renderer":              map[string]interface{}{"enum": []string{"native", "d2"}},
+					"renderer":              map[string]interface{}{"enum": []string{"native", "d2", "drawio"}},
 					"link_styles":           map[string]interface{}{"$ref": "#/$defs/linkStyleRules"},
 					"interface_label_style": map[string]interface{}{"$ref": "#/$defs/interfaceLabelStyle"},
 				},

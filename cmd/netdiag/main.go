@@ -11,6 +11,7 @@ import (
 
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
 	"github.com/gwoodwa1/netdiag/internal/discoverylayout"
+	"github.com/gwoodwa1/netdiag/internal/drawio"
 	"github.com/gwoodwa1/netdiag/internal/export"
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/interactive"
@@ -77,7 +78,7 @@ func render(args []string) {
 			output = args[i]
 		case "--backend", "--renderer":
 			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --backend requires native or d2")
+				fmt.Fprintln(os.Stderr, "error: --backend requires native, d2, or drawio")
 				os.Exit(2)
 			}
 			i++
@@ -112,7 +113,7 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf] [--renderer native|d2] [--icons directory] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--icons directory] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
 	}
 	if iconDir == "" {
@@ -143,14 +144,31 @@ func render(args []string) {
 		} else {
 			result, err = d2backend.Render(diag, d2backend.Options{Layout: layout})
 		}
+	case "drawio":
+		if iconDir != "" {
+			err = fmt.Errorf("custom SVG icon packs are not embedded in draw.io output")
+		} else {
+			result, err = drawio.Render(diag)
+		}
 	default:
-		err = fmt.Errorf("unknown backend %q; use native or d2", backend)
+		err = fmt.Errorf("unknown backend %q; use native, d2, or drawio", backend)
 	}
 	exitOnError(err)
 
 	target := output
 	if target == "" {
-		target = strings.TrimSuffix(input, filepath.Ext(input)) + ".svg"
+		extension := ".svg"
+		if backend == "drawio" {
+			extension = ".drawio"
+		}
+		target = strings.TrimSuffix(input, filepath.Ext(input)) + extension
+	}
+	targetExtension := strings.ToLower(filepath.Ext(target))
+	if backend == "drawio" && targetExtension != ".drawio" {
+		exitOnError(fmt.Errorf("draw.io renderer output must use the .drawio extension"))
+	}
+	if backend != "drawio" && targetExtension == ".drawio" {
+		exitOnError(fmt.Errorf(".drawio output requires --renderer drawio"))
 	}
 	if strings.EqualFold(filepath.Ext(target), ".html") {
 		if backend != "native" {
@@ -200,12 +218,12 @@ func capabilities(args []string) {
 
 func plan(args []string) {
 	flags := flag.NewFlagSet("plan", flag.ExitOnError)
-	renderer := flags.String("renderer", "", "renderer to assess: native or d2")
+	renderer := flags.String("renderer", "", "renderer to assess: native, d2, or drawio")
 	backend := flags.String("backend", "", "alias for --renderer")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
 	flags.Parse(args)
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag plan [--renderer native|d2] [--json] <diagram.yaml>")
+		fmt.Fprintln(os.Stderr, "usage: netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>")
 		os.Exit(2)
 	}
 	doc, err := loadDocument(flags.Arg(0))
@@ -764,9 +782,9 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf] [--backend native|d2] [--icons directory] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--icons directory] [--layout elk|dagre]
   netdiag capabilities [--json]
-  netdiag plan [--renderer native|d2] [--json] <diagram.yaml>
+  netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]

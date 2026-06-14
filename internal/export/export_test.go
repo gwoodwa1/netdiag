@@ -29,6 +29,17 @@ func TestWriteHTML(t *testing.T) {
 	}
 }
 
+func TestWriteDrawIO(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "diagram.drawio")
+	if err := Write(path, []byte("<mxfile/>")); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "<mxfile/>" {
+		t.Fatalf("unexpected draw.io output: %q, %v", data, err)
+	}
+}
+
 func TestWriteRejectsUnknownFormat(t *testing.T) {
 	err := Write(filepath.Join(t.TempDir(), "diagram.bmp"), []byte("<svg/>"))
 	if err == nil || !strings.Contains(err.Error(), "unsupported output format") {

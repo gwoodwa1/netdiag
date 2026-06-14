@@ -132,6 +132,14 @@ var renderers = []RendererCapability{
 		FeatureManualPlacement: Unsupported,
 		FeatureSiteAwareLayout: Unsupported, FeatureOrthogonalRouting: BestEffort,
 	}},
+	staticRendererCapability{name: "drawio", levels: map[string]SupportLevel{
+		FeatureGroups: Strict, FeatureNestedGroups: BestEffort,
+		FeatureEndpointSides: BestEffort, FeatureEndpointAddresses: Strict,
+		FeatureSourceLabels: Strict, FeatureMiddleLabels: Strict, FeatureTargetLabels: Strict,
+		FeatureParallelLinks: BestEffort, FeatureNetworkCards: BestEffort, FeatureCustomIcons: Unsupported,
+		FeatureManualPlacement: Unsupported,
+		FeatureSiteAwareLayout: BestEffort, FeatureOrthogonalRouting: Strict,
+	}},
 }
 
 func Capabilities() []RendererCapabilities {
@@ -163,7 +171,7 @@ func Recommend(diagram *model.Diagram) string {
 func Build(diagram *model.Diagram, renderer string) (Plan, error) {
 	capability, ok := rendererByName(renderer)
 	if !ok {
-		return Plan{}, fmt.Errorf("unknown renderer %q; use native or d2", renderer)
+		return Plan{}, fmt.Errorf("unknown renderer %q; use native, d2, or drawio", renderer)
 	}
 	plan := Plan{
 		Renderer: renderer, RecommendedRenderer: Recommend(diagram),
