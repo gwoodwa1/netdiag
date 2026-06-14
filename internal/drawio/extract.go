@@ -42,8 +42,13 @@ type extractedGeometry struct {
 }
 
 type extractedPoints struct {
-	As     string                 `xml:"as,attr"`
-	Points []layoutoverride.Point `xml:"mxPoint"`
+	As     string           `xml:"as,attr"`
+	Points []extractedPoint `xml:"mxPoint"`
+}
+
+type extractedPoint struct {
+	X float64 `xml:"x,attr"`
+	Y float64 `xml:"y,attr"`
 }
 
 func ExtractOverrides(data []byte, diagram *model.Diagram) (*layoutoverride.Document, error) {
@@ -194,7 +199,10 @@ func extractLink(cell extractedCell) layoutoverride.Link {
 		result.Style = "orthogonal"
 	}
 	if cell.Geometry != nil && cell.Geometry.Points != nil && cell.Geometry.Points.As == "points" {
-		result.Waypoints = cell.Geometry.Points.Points
+		result.Waypoints = make([]layoutoverride.Point, len(cell.Geometry.Points.Points))
+		for index, point := range cell.Geometry.Points.Points {
+			result.Waypoints[index] = layoutoverride.Point{X: point.X, Y: point.Y}
+		}
 	}
 	return result
 }
