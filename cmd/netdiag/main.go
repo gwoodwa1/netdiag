@@ -59,6 +59,8 @@ func main() {
 		inspect(os.Args[2:])
 	case "improve-layout":
 		improveLayout(os.Args[2:])
+	case "extract-overrides":
+		extractOverrides(os.Args[2:])
 	case "lldp":
 		convertLLDP(os.Args[2:])
 	case "discover":
@@ -70,6 +72,53 @@ func main() {
 		usage()
 		os.Exit(2)
 	}
+}
+
+func extractOverrides(args []string) {
+	var input, sourcePath, output string
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--source":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: --source requires a diagram YAML file")
+				os.Exit(2)
+			}
+			i++
+			sourcePath = args[i]
+		case "-o", "--output":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
+				os.Exit(2)
+			}
+			i++
+			output = args[i]
+		default:
+			if strings.HasPrefix(args[i], "-") || input != "" {
+				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
+				os.Exit(2)
+			}
+			input = args[i]
+		}
+	}
+	if input == "" || sourcePath == "" {
+		fmt.Fprintln(os.Stderr, "usage: netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml]")
+		os.Exit(2)
+	}
+	sourceDoc, err := loadDocument(sourcePath)
+	exitOnError(err)
+	diagram, err := model.Compile(sourceDoc)
+	exitOnError(err)
+	data, err := os.ReadFile(input)
+	exitOnError(err)
+	overrides, err := drawio.ExtractOverrides(data, diagram)
+	exitOnError(err)
+	result, err := layoutoverride.Format(overrides)
+	exitOnError(err)
+	if output == "" {
+		output = strings.TrimSuffix(input, filepath.Ext(input)) + ".layout.yaml"
+	}
+	exitOnError(os.WriteFile(output, result, 0o644))
+	fmt.Printf("extracted layout overrides to %s\n", output)
 }
 
 func render(args []string) {
@@ -941,6 +990,7 @@ Usage:
   netdiag recommend [--json] <diagram.yaml>
   netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>
   netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]
+  netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml]
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)

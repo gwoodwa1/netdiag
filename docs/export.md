@@ -60,6 +60,17 @@ netdiag render diagram.yaml --renderer drawio \
   --layout-overrides diagram.layout.yaml -o diagram.drawio
 ```
 
+After manually moving supported netdiag-managed objects in diagrams.net,
+extract their current presentation metadata and render it again:
+
+```sh
+netdiag extract-overrides edited.drawio --source diagram.yaml \
+  -o diagram.layout.yaml
+
+netdiag render diagram.yaml --renderer drawio \
+  --layout-overrides diagram.layout.yaml -o diagram.drawio
+```
+
 Draw.io cells include stable `netdiag-id` and `netdiag-kind` metadata for
 nodes, groups, links, and endpoint labels. Links without an explicit ID receive
 a deterministic ID based on their normalized endpoints, so reordering links
@@ -68,9 +79,10 @@ does not change their identity.
 Layout overrides currently support node and group bounds, locks, and style
 metadata, plus link endpoint sides, waypoints, locks, and the `orthogonal`,
 `straight`, or `curved` style presets. Node and nested-group coordinates are
-relative to their Draw.io parent. Importing edits from an existing `.drawio`
-file is not yet supported; arbitrary Draw.io-only edits may not survive a fresh
-render.
+relative to their Draw.io parent. `extract-overrides` reads only netdiag-managed
+nodes, groups, and links carrying stable metadata. Arbitrary Draw.io shapes,
+annotations, text changes, and decoration are deliberately ignored and may not
+survive a fresh render.
 
 Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
 and group-collapse controls. See [interactive.md](interactive.md).
