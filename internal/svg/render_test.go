@@ -193,6 +193,41 @@ func TestRenderIncludesStructuredLabelsAndAddresses(t *testing.T) {
 	}
 }
 
+func TestRenderPlacesLinkAnnotationsAboveNodes(t *testing.T) {
+	doc := &spec.Document{
+		Version: 1,
+		Nodes:   map[string]spec.Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []spec.Link{{
+			From:   spec.LinkEndpoint{Node: "a", Port: "Ethernet0/0", Address: "10.0.0.1/30"},
+			To:     spec.LinkEndpoint{Node: "b", Port: "Ethernet0/1", Address: "10.0.0.2/30"},
+			Labels: &spec.LinkLabels{Middle: "WAN"},
+			Bundle: "Port-Channel10",
+		}},
+	}
+	diag, err := model.Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := Render(diag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(result)
+	links := strings.Index(got, `id="links"`)
+	nodes := strings.Index(got, `id="nodes"`)
+	annotations := strings.Index(got, `id="link-annotations"`)
+	legend := strings.Index(got, `id="bundle-legend"`)
+	if links < 0 || nodes < 0 || annotations < 0 || legend < 0 || !(links < nodes && nodes < annotations && annotations < legend) {
+		t.Fatalf("unexpected SVG layer order: links=%d nodes=%d annotations=%d legend=%d", links, nodes, annotations, legend)
+	}
+	if !strings.Contains(got, `<g id="link-annotations" pointer-events="none">`) {
+		t.Fatal("link annotations should not steal interactive node or link clicks")
+	}
+	if strings.Index(got, `class="interface-label-badge"`) < annotations {
+		t.Fatal("interface label rendered before the annotation layer")
+	}
+}
+
 func TestNodesStayOutsideHeadingGutter(t *testing.T) {
 	doc := &spec.Document{
 		Version: 1,
