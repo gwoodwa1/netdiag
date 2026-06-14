@@ -102,4 +102,13 @@ func TestExtractOverridesIgnoresUnmanagedCellsAndRejectsUnknownManagedIDs(t *tes
 	if _, err := ExtractOverrides([]byte(unknown), diagram); err == nil {
 		t.Fatal("unknown managed node was accepted")
 	}
+
+	wrapped := []byte(`<mxfile><diagram><mxGraphModel><root><object label="managed"><mxCell id="node-known" netdiag-id="known" netdiag-kind="node"><mxGeometry x="10" y="20" width="30" height="40"></mxGeometry></mxCell></object></root></mxGraphModel></diagram></mxfile>`)
+	result, err = ExtractOverrides(wrapped, diagram)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := result.LayoutOverrides.Nodes["known"]; got.X == nil || *got.X != 10 {
+		t.Fatalf("wrapped managed cell was not extracted: %+v", got)
+	}
 }

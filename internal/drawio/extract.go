@@ -22,10 +22,6 @@ type drawioPage struct {
 	Content string `xml:",innerxml"`
 }
 
-type extractedGraph struct {
-	Cells []extractedCell `xml:"root>mxCell"`
-}
-
 type extractedCell struct {
 	Style       string             `xml:"style,attr"`
 	NetdiagID   string             `xml:"netdiag-id,attr"`
@@ -78,11 +74,11 @@ func ExtractOverrides(data []byte, diagram *model.Diagram) (*layoutoverride.Docu
 		if err != nil {
 			return nil, fmt.Errorf("decode draw.io page %d: %w", pageIndex+1, err)
 		}
-		var graph extractedGraph
-		if err := xml.Unmarshal(graphData, &graph); err != nil {
+		cells, err := extractCells(graphData)
+		if err != nil {
 			return nil, fmt.Errorf("parse draw.io page %d graph: %w", pageIndex+1, err)
 		}
-		for _, cell := range graph.Cells {
+		for _, cell := range cells {
 			if cell.NetdiagID == "" || cell.NetdiagKind == "" {
 				continue
 			}
@@ -122,6 +118,29 @@ func ExtractOverrides(data []byte, diagram *model.Diagram) (*layoutoverride.Docu
 		return nil, fmt.Errorf("validate extracted layout overrides: %w", err)
 	}
 	return result, nil
+}
+
+func extractCells(data []byte) ([]extractedCell, error) {
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	var cells []extractedCell
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			return cells, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok || start.Name.Local != "mxCell" {
+			continue
+		}
+		var cell extractedCell
+		if err := decoder.DecodeElement(&cell, &start); err != nil {
+			return nil, err
+		}
+		cells = append(cells, cell)
+	}
 }
 
 func topologyIDs(diagram *model.Diagram) (map[string]bool, map[string]bool, map[string]bool, error) {
@@ -195,8 +214,6 @@ func extractLink(cell extractedCell) layoutoverride.Link {
 		result.Style = "curved"
 	case values["edgeStyle"] == "none":
 		result.Style = "straight"
-	default:
-		result.Style = "orthogonal"
 	}
 	if cell.Geometry != nil && cell.Geometry.Points != nil && cell.Geometry.Points.As == "points" {
 		result.Waypoints = make([]layoutoverride.Point, len(cell.Geometry.Points.Points))
