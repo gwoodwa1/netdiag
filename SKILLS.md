@@ -13,9 +13,11 @@ Use this workflow when an LLM creates or repairs a network diagram.
    `netdiag render diagram.yaml --report render-report.json -o diagram.svg`.
 7. Inspect the native layout:
    `netdiag inspect --json diagram.yaml`.
-8. Repair reported geometry issues using endpoint sides, positions, stubs,
-   rotations, and layout clearance values.
-9. If required, compare ELK explicitly:
+8. Run bounded deterministic repair:
+   `netdiag improve-layout diagram.yaml -o diagram-improved.yaml`.
+9. Inspect the improved file and repair any remaining geometry issues using
+   endpoint sides, positions, stubs, rotations, and layout clearance values.
+10. If required, compare ELK explicitly:
    `netdiag render diagram.yaml --renderer d2 --layout elk -o diagram.d2.svg`.
 
 Do not assume D2 endpoint-side hints are authoritative. The D2 spike proves

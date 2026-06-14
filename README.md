@@ -63,6 +63,7 @@ netdiag fmt -w examples/spine-leaf.yaml
 netdiag capabilities
 netdiag recommend examples/spine-leaf.yaml
 netdiag inspect examples/spine-leaf.yaml
+netdiag improve-layout discovered.yaml -o discovered-improved.yaml
 netdiag discover lldp show-lldp-neighbors-detail.txt --local leaf-01 -o discovered.yaml
 netdiag discover lldp lldp-captures/ -o discovered-network.yaml
 netdiag discover isis isis-captures/ -o discovered-isis.yaml
@@ -93,6 +94,17 @@ netdiag inspect --json --fail-on error diagram.yaml
 ```
 
 See [docs/inspection.md](docs/inspection.md) for finding codes and CI usage.
+
+Apply bounded deterministic layout repair. Candidates are accepted only when
+they improve the inspector objective:
+
+```sh
+netdiag improve-layout diagram.yaml -o diagram-improved.yaml
+netdiag inspect diagram-improved.yaml
+```
+
+See [docs/layout-repair.md](docs/layout-repair.md) for the search policy and
+tradeoffs.
 
 The output extension selects SVG, interactive HTML, PNG, PDF, or editable
 draw.io XML. The draw.io backend maps network roles to editable draw.io shapes

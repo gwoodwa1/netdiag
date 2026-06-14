@@ -62,27 +62,19 @@ func Improve(input *spec.Document, options Options) (*spec.Document, Report, err
 	}
 	result := Report{Before: score(currentReport), After: score(currentReport), Changes: []Change{}}
 	for round := 1; round <= options.MaxRounds && result.CandidatesEvaluated < options.MaxCandidates; round++ {
-		candidates := globalCandidates(current)
-		candidates = append(candidates, targetedCandidates(current, currentReport)...)
-		remaining := options.MaxCandidates - result.CandidatesEvaluated
-		if len(candidates) > remaining {
-			candidates = candidates[:remaining]
-		}
-		bestDoc := current
-		bestReport := currentReport
-		bestDescription := ""
-		evaluations, err := evaluateCandidates(current, candidates)
+		global := limitCandidates(globalCandidates(current), options.MaxCandidates-result.CandidatesEvaluated)
+		bestDoc, bestReport, bestDescription, err := selectImprovement(current, currentReport, global)
 		if err != nil {
 			return nil, result, err
 		}
-		result.CandidatesEvaluated += len(candidates)
-		for index, evaluation := range evaluations {
-			if !evaluation.valid {
-				continue
+		result.CandidatesEvaluated += len(global)
+		if bestDescription == "" && result.CandidatesEvaluated < options.MaxCandidates {
+			targeted := limitCandidates(targetedCandidates(current, currentReport), options.MaxCandidates-result.CandidatesEvaluated)
+			bestDoc, bestReport, bestDescription, err = selectImprovement(current, currentReport, targeted)
+			if err != nil {
+				return nil, result, err
 			}
-			if better(score(evaluation.report), score(bestReport)) {
-				bestDoc, bestReport, bestDescription = evaluation.doc, evaluation.report, candidates[index].description
-			}
+			result.CandidatesEvaluated += len(targeted)
 		}
 		if bestDescription == "" {
 			break
@@ -94,6 +86,30 @@ func Improve(input *spec.Document, options Options) (*spec.Document, Report, err
 		result.After = after
 	}
 	return current, result, nil
+}
+
+func limitCandidates(candidates []candidate, limit int) []candidate {
+	if len(candidates) > limit {
+		return candidates[:limit]
+	}
+	return candidates
+}
+
+func selectImprovement(current *spec.Document, currentReport svg.InspectionReport, candidates []candidate) (*spec.Document, svg.InspectionReport, string, error) {
+	bestDoc, bestReport, bestDescription := current, currentReport, ""
+	evaluations, err := evaluateCandidates(current, candidates)
+	if err != nil {
+		return nil, svg.InspectionReport{}, "", err
+	}
+	for index, evaluation := range evaluations {
+		if !evaluation.valid {
+			continue
+		}
+		if better(score(evaluation.report), score(bestReport)) {
+			bestDoc, bestReport, bestDescription = evaluation.doc, evaluation.report, candidates[index].description
+		}
+	}
+	return bestDoc, bestReport, bestDescription, nil
 }
 
 type evaluation struct {
