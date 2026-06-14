@@ -325,6 +325,31 @@ func targetedCandidates(doc *spec.Document, report svg.InspectionReport) []candi
 		})
 	}
 	sidePairs := [][2]string{{"top", "bottom"}, {"bottom", "top"}, {"left", "right"}, {"right", "left"}}
+	linksByNode := linksByObstructedNode(report, len(doc.Links))
+	nodeIDs := make([]string, 0, len(linksByNode))
+	for nodeID := range linksByNode {
+		nodeIDs = append(nodeIDs, nodeID)
+	}
+	sort.Strings(nodeIDs)
+	for _, nodeID := range nodeIDs {
+		obstructedLinks := linksByNode[nodeID]
+		if len(obstructedLinks) < 2 {
+			continue
+		}
+		for _, pair := range sidePairs {
+			ids := append([]int(nil), obstructedLinks...)
+			fromSide, toSide := pair[0], pair[1]
+			result = append(result, candidate{
+				description: fmt.Sprintf("reroute %d links around node %s from %s to %s", len(ids), nodeID, fromSide, toSide),
+				apply: func(trial *spec.Document) {
+					for _, linkID := range ids {
+						setEndpointRoute(&trial.Links[linkID-1].From, fromSide, nil, 180)
+						setEndpointRoute(&trial.Links[linkID-1].To, toSide, nil, 180)
+					}
+				},
+			})
+		}
+	}
 	for _, linkID := range linkIDs {
 		index := linkID - 1
 		for _, pair := range sidePairs {
@@ -380,6 +405,31 @@ func targetedCandidates(doc *spec.Document, report svg.InspectionReport) []candi
 				},
 			})
 		}
+	}
+	return result
+}
+
+func linksByObstructedNode(report svg.InspectionReport, linkCount int) map[string][]int {
+	seen := make(map[string]map[int]bool)
+	result := make(map[string][]int)
+	for _, finding := range report.Findings {
+		if finding.Code != "link_through_node" {
+			continue
+		}
+		for _, nodeID := range finding.Nodes {
+			if seen[nodeID] == nil {
+				seen[nodeID] = make(map[int]bool)
+			}
+			for _, linkID := range finding.Links {
+				if linkID > 0 && linkID <= linkCount && !seen[nodeID][linkID] {
+					seen[nodeID][linkID] = true
+					result[nodeID] = append(result[nodeID], linkID)
+				}
+			}
+		}
+	}
+	for nodeID := range result {
+		sort.Ints(result[nodeID])
 	}
 	return result
 }

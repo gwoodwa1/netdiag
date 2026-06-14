@@ -337,9 +337,11 @@ links:
     - from:
         node: core-a-p1
         port: HundredGigE0/0/1/0
+        label_rotation: 90
       to:
         node: core-a-p2
         port: HundredGigE0/0/1/0
+        label_rotation: 90
       protocol: lldp
     - from:
         node: core-a-p2
@@ -534,9 +536,11 @@ links:
     - from:
         node: core-b-p1
         port: HundredGigE0/0/1/0
+        label_rotation: 90
       to:
         node: core-b-p2
         port: HundredGigE0/0/1/0
+        label_rotation: 90
       protocol: lldp
     - from:
         node: core-b-p2

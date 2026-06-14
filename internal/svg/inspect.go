@@ -213,9 +213,9 @@ func inspectRoutesThroughNodes(doc *model.Diagram, routes map[int]linkRoute, nod
 			if polylineIntersectsBox(samples, expandBox(nodes[nodeID].Box, 5)) {
 				findings = append(findings, InspectionFinding{
 					Code: "link_through_node", Severity: InspectionError,
-					Message: fmt.Sprintf("link %d (%s) passes through node %s", index+1, describeLink(link), nodeID),
+					Message: fmt.Sprintf("link %d (%s) passes behind node %s, creating an apparent unlabeled endpoint", index+1, describeLink(link), nodeID),
 					Nodes:   []string{nodeID}, Links: []int{index + 1},
-					Suggestion: "use orthogonal routing, move the endpoint side, or increase layout spacing",
+					Suggestion: "reroute the link around the node using endpoint sides or stubs, or increase layout spacing",
 				})
 			}
 		}

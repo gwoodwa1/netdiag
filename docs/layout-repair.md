@@ -15,8 +15,9 @@ The repairer tries global routing and clearance settings first. It then tries
 targeted endpoint sides, positions, stubs, and label rotations on links named
 by the deterministic inspector. Unreadable source/target label pairs are
 prioritized and can be separated with independent rotations or attachment
-positions. Candidates are evaluated concurrently, but selection remains
-deterministic.
+positions. Links passing behind the same unrelated node can be rerouted as a
+group to remove apparent unlabeled endpoints. Candidates are evaluated
+concurrently, but selection remains deterministic.
 
 Only strict improvements are accepted. The objective is:
 

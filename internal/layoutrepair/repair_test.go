@@ -134,3 +134,27 @@ func TestTargetedCandidatesGroupUnreadableEndpointLabels(t *testing.T) {
 		t.Fatalf("grouped label repair did not rotate all unreadable links: %+v", trial.Links)
 	}
 }
+
+func TestTargetedCandidatesGroupLinksPassingBehindSameNode(t *testing.T) {
+	doc := &spec.Document{Links: []spec.Link{{}, {}, {}}}
+	report := svg.InspectionReport{Findings: []svg.InspectionFinding{
+		{Code: "link_through_node", Severity: svg.InspectionError, Nodes: []string{"core"}, Links: []int{1}},
+		{Code: "link_through_node", Severity: svg.InspectionError, Nodes: []string{"core"}, Links: []int{3}},
+	}}
+	candidates := targetedCandidates(doc, report)
+	found := false
+	for _, candidate := range candidates {
+		if candidate.description == "reroute 2 links around node core from top to bottom" {
+			found = true
+			trial := &spec.Document{Links: []spec.Link{{}, {}, {}}}
+			candidate.apply(trial)
+			if trial.Links[0].From.Side != "top" || trial.Links[0].To.Side != "bottom" ||
+				trial.Links[2].From.Side != "top" || trial.Links[2].To.Side != "bottom" {
+				t.Fatalf("grouped obstruction repair did not reroute every link: %+v", trial.Links)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("no grouped obstruction repair candidate generated")
+	}
+}
