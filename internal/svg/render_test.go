@@ -536,6 +536,41 @@ func TestPlanDiagonalRoutesReducesGlobalCrossings(t *testing.T) {
 	}
 }
 
+func TestDiagonalPlannerAvoidsUnrelatedNodeBox(t *testing.T) {
+	links := []routedLink{{
+		Index: 0, FromNode: "a", ToNode: "b",
+		Start: point{X: 0, Y: 100}, End: point{X: 500, Y: 100},
+	}}
+	nodes := map[string]placedNode{
+		"a":      {Box: box{X: -80, Y: 60, W: 80, H: 80}},
+		"middle": {Box: box{X: 220, Y: 60, W: 60, H: 80}},
+		"b":      {Box: box{X: 500, Y: 60, W: 80, H: 80}},
+	}
+	routes := planDiagonalRoutesWithObstacles(links, 24, nodes)
+	route := routes[0]
+	if routeIntersectsObstacle(route, expandBox(nodes["middle"].Box, 24)) {
+		t.Fatalf("diagonal route still crosses unrelated node: %+v", route)
+	}
+	if strings.Contains(route.Path, " Q ") || len(route.Points) < 3 {
+		t.Fatalf("obstructed diagonal route did not receive waypoint detour: %+v", route)
+	}
+}
+
+func TestDiagonalPlannerKeepsClearRouteCurved(t *testing.T) {
+	links := []routedLink{{
+		Index: 0, FromNode: "a", ToNode: "b",
+		Start: point{X: 0, Y: 100}, End: point{X: 500, Y: 100},
+	}}
+	nodes := map[string]placedNode{
+		"a": {Box: box{X: -80, Y: 60, W: 80, H: 80}},
+		"b": {Box: box{X: 500, Y: 60, W: 80, H: 80}},
+	}
+	route := planDiagonalRoutesWithObstacles(links, 24, nodes)[0]
+	if !strings.Contains(route.Path, " Q ") {
+		t.Fatalf("clear diagonal route unnecessarily lost its curve: %+v", route)
+	}
+}
+
 func TestRouteProximityPenaltyProtectsClearanceWithoutCrossing(t *testing.T) {
 	first := directRoute(point{X: 0, Y: 0}, point{X: 400, Y: 0}, "right", "left", "clean")
 	near := directRoute(point{X: 0, Y: 12}, point{X: 400, Y: 12}, "right", "left", "clean")

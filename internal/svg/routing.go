@@ -3,6 +3,7 @@ package svg
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 )
 
@@ -18,6 +19,10 @@ func planDiagonalRoutes(links []routedLink) map[int]linkRoute {
 }
 
 func planDiagonalRoutesWithClearance(links []routedLink, clearance float64) map[int]linkRoute {
+	return planDiagonalRoutesWithObstacles(links, clearance, nil)
+}
+
+func planDiagonalRoutesWithObstacles(links []routedLink, clearance float64, nodes map[string]placedNode) map[int]linkRoute {
 	const (
 		candidateCount = 13
 		passes         = 4
@@ -39,6 +44,9 @@ func planDiagonalRoutesWithClearance(links []routedLink, clearance float64) map[
 			}
 			routes[link.Index] = best
 		}
+	}
+	for _, link := range links {
+		routes[link.Index] = avoidRouteObstacles(link, routes[link.Index], nodes, clearance)
 	}
 	return routes
 }
@@ -86,6 +94,157 @@ func diagonalRouteScore(link routedLink, candidate linkRoute, links []routedLink
 		score += routeProximityPenalty(candidate, otherRoute, clearance)
 	}
 	return score
+}
+
+func routeObstacleCount(link routedLink, route linkRoute, nodes map[string]placedNode, clearance float64) int {
+	count := 0
+	for nodeID, node := range nodes {
+		if nodeID == link.FromNode || nodeID == link.ToNode {
+			continue
+		}
+		if routeIntersectsObstacle(route, expandBox(node.Box, clearance)) {
+			count++
+		}
+	}
+	return count
+}
+
+func routeIntersectsObstacle(route linkRoute, obstacle box) bool {
+	points := sampleRoute(route, 32)
+	for index := 1; index < len(points); index++ {
+		if generalSegmentIntersectsBox(points[index-1], points[index], obstacle) {
+			return true
+		}
+	}
+	return false
+}
+
+func avoidRouteObstacles(link routedLink, route linkRoute, nodes map[string]placedNode, clearance float64) linkRoute {
+	if len(nodes) == 0 || routeObstacleCount(link, route, nodes, clearance) == 0 {
+		return route
+	}
+	obstacles := make([]box, 0, len(nodes))
+	nodeIDs := make([]string, 0, len(nodes))
+	for nodeID := range nodes {
+		if nodeID != link.FromNode && nodeID != link.ToNode {
+			nodeIDs = append(nodeIDs, nodeID)
+		}
+	}
+	sort.Strings(nodeIDs)
+	for _, nodeID := range nodeIDs {
+		obstacles = append(obstacles, expandBox(nodes[nodeID].Box, clearance))
+	}
+	start, end := link.Start, link.End
+	if link.StartStub > 0 {
+		start = movePoint(link.Start, link.StartSide, link.StartStub)
+	}
+	if link.EndStub > 0 {
+		end = movePoint(link.End, link.EndSide, link.EndStub)
+	}
+	detour := visibilityRoute(start, end, obstacles)
+	if len(detour) == 0 {
+		return route
+	}
+	points := append([]point{link.Start}, detour...)
+	points = append(points, link.End)
+	points = simplifyPolyline(points)
+	label, horizontal := longestSegmentLabel(points)
+	return linkRoute{Points: points, Path: polylinePath(points), Label: label, LabelHorizontal: horizontal}
+}
+
+func visibilityRoute(start, end point, obstacles []box) []point {
+	const cornerOffset = 2.0
+	points := []point{start, end}
+	for _, obstacle := range obstacles {
+		points = append(points,
+			point{X: obstacle.X - cornerOffset, Y: obstacle.Y - cornerOffset},
+			point{X: obstacle.X + obstacle.W + cornerOffset, Y: obstacle.Y - cornerOffset},
+			point{X: obstacle.X + obstacle.W + cornerOffset, Y: obstacle.Y + obstacle.H + cornerOffset},
+			point{X: obstacle.X - cornerOffset, Y: obstacle.Y + obstacle.H + cornerOffset},
+		)
+	}
+	distance := make([]float64, len(points))
+	previous := make([]int, len(points))
+	visited := make([]bool, len(points))
+	for index := range distance {
+		distance[index] = math.Inf(1)
+		previous[index] = -1
+	}
+	distance[0] = 0
+	for range points {
+		current := -1
+		for index := range points {
+			if !visited[index] && (current < 0 || distance[index] < distance[current]) {
+				current = index
+			}
+		}
+		if current < 0 || math.IsInf(distance[current], 1) {
+			break
+		}
+		if current == 1 {
+			break
+		}
+		visited[current] = true
+		for next := range points {
+			if current == next || visited[next] || segmentBlocked(points[current], points[next], obstacles) {
+				continue
+			}
+			candidate := distance[current] + math.Hypot(points[next].X-points[current].X, points[next].Y-points[current].Y)
+			if candidate < distance[next] {
+				distance[next], previous[next] = candidate, current
+			}
+		}
+	}
+	if previous[1] < 0 {
+		return nil
+	}
+	result := []point{end}
+	for current := previous[1]; current >= 0; current = previous[current] {
+		result = append(result, points[current])
+		if current == 0 {
+			break
+		}
+	}
+	for left, right := 0, len(result)-1; left < right; left, right = left+1, right-1 {
+		result[left], result[right] = result[right], result[left]
+	}
+	return result
+}
+
+func segmentBlocked(start, end point, obstacles []box) bool {
+	for _, obstacle := range obstacles {
+		if generalSegmentIntersectsBox(start, end, obstacle) {
+			return true
+		}
+	}
+	return false
+}
+
+func simplifyPolyline(points []point) []point {
+	var result []point
+	for _, current := range points {
+		if len(result) > 0 && samePoint(result[len(result)-1], current) {
+			continue
+		}
+		if len(result) >= 2 && math.Abs(crossProduct(result[len(result)-2], result[len(result)-1], current)) < 0.001 {
+			result[len(result)-1] = current
+			continue
+		}
+		result = append(result, current)
+	}
+	return result
+}
+
+func polylinePath(points []point) string {
+	if len(points) == 0 {
+		return ""
+	}
+	var out strings.Builder
+	fmt.Fprintf(&out, "M %.1f %.1f", points[0].X, points[0].Y)
+	for _, value := range points[1:] {
+		fmt.Fprintf(&out, " L %.1f %.1f", value.X, value.Y)
+	}
+	return out.String()
 }
 
 func routeProximityPenalty(a, b linkRoute, clearance float64) float64 {

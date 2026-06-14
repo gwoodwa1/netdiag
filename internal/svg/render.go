@@ -371,7 +371,7 @@ func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[s
 		if clearance == 0 {
 			clearance = 24
 		}
-		diagonalRoutes = planDiagonalRoutesWithClearance(links, clearance)
+		diagonalRoutes = planDiagonalRoutesWithObstacles(links, clearance, nodes)
 	}
 	bundleVisuals, err := buildBundleVisuals(doc, geometry)
 	if err != nil {

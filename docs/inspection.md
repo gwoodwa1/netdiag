@@ -37,3 +37,7 @@ netdiag inspect --json --fail-on warning diagram.yaml > inspection.json
 Inspection measures the native renderer. It does not parse SVG and does not use
 AI, browser rendering, fonts, or image comparison, so identical inputs produce
 identical reports.
+
+Hub-spoke diagonal routing treats unrelated node boxes as hard obstacles. It
+uses `diagram.route_clearance` around those boxes and inserts deterministic
+waypoint detours when the crossing-aware curved route would hit a device.

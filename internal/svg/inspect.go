@@ -124,7 +124,7 @@ func inspectionRoutes(doc *model.Diagram, nodes map[string]placedNode, geometry 
 		if clearance == 0 {
 			clearance = 24
 		}
-		result = planDiagonalRoutesWithClearance(links, clearance)
+		result = planDiagonalRoutesWithObstacles(links, clearance, nodes)
 	} else {
 		for index := range doc.Links {
 			start := geometry[endpointKey(index, true)]
