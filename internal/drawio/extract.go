@@ -29,6 +29,12 @@ type extractedCell struct {
 	Geometry    *extractedGeometry `xml:"mxGeometry"`
 }
 
+type extractedObject struct {
+	NetdiagID   string        `xml:"netdiag-id,attr"`
+	NetdiagKind string        `xml:"netdiag-kind,attr"`
+	Cell        extractedCell `xml:"mxCell"`
+}
+
 type extractedGeometry struct {
 	X      float64          `xml:"x,attr"`
 	Y      float64          `xml:"y,attr"`
@@ -132,14 +138,29 @@ func extractCells(data []byte) ([]extractedCell, error) {
 			return nil, err
 		}
 		start, ok := token.(xml.StartElement)
-		if !ok || start.Name.Local != "mxCell" {
+		if !ok {
 			continue
 		}
-		var cell extractedCell
-		if err := decoder.DecodeElement(&cell, &start); err != nil {
-			return nil, err
+		switch start.Name.Local {
+		case "mxCell":
+			var cell extractedCell
+			if err := decoder.DecodeElement(&cell, &start); err != nil {
+				return nil, err
+			}
+			cells = append(cells, cell)
+		case "object", "UserObject":
+			var object extractedObject
+			if err := decoder.DecodeElement(&object, &start); err != nil {
+				return nil, err
+			}
+			if object.Cell.NetdiagID == "" {
+				object.Cell.NetdiagID = object.NetdiagID
+			}
+			if object.Cell.NetdiagKind == "" {
+				object.Cell.NetdiagKind = object.NetdiagKind
+			}
+			cells = append(cells, object.Cell)
 		}
-		cells = append(cells, cell)
 	}
 }
 
