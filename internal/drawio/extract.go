@@ -42,7 +42,7 @@ type extractedGeometry struct {
 }
 
 type extractedPoints struct {
-	As     string           `xml:"as,attr"`
+	As     string                 `xml:"as,attr"`
 	Points []layoutoverride.Point `xml:"mxPoint"`
 }
 
