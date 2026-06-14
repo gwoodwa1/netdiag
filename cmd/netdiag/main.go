@@ -17,6 +17,7 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/interactive"
 	"github.com/gwoodwa1/netdiag/internal/isis"
+	"github.com/gwoodwa1/netdiag/internal/layoutoverride"
 	"github.com/gwoodwa1/netdiag/internal/layoutrepair"
 	"github.com/gwoodwa1/netdiag/internal/lldp"
 	"github.com/gwoodwa1/netdiag/internal/model"
@@ -72,7 +73,7 @@ func main() {
 }
 
 func render(args []string) {
-	var input, output, backend, layout, reportPath, iconDir string
+	var input, output, backend, layout, reportPath, iconDir, layoutOverridesPath string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "-o", "--output":
@@ -110,6 +111,13 @@ func render(args []string) {
 			}
 			i++
 			iconDir = args[i]
+		case "--layout-overrides":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: --layout-overrides requires a YAML file")
+				os.Exit(2)
+			}
+			i++
+			layoutOverridesPath = args[i]
 		default:
 			if strings.HasPrefix(args[i], "-") || input != "" {
 				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
@@ -139,6 +147,14 @@ func render(args []string) {
 	}
 	renderPlan, err := planner.Build(diag, backend)
 	exitOnError(err)
+	var layoutOverrides *layoutoverride.Document
+	if layoutOverridesPath != "" {
+		if backend != "drawio" {
+			exitOnError(fmt.Errorf("--layout-overrides currently requires the draw.io renderer"))
+		}
+		layoutOverrides, err = layoutoverride.Load(layoutOverridesPath)
+		exitOnError(err)
+	}
 
 	var result []byte
 	switch backend {
@@ -154,7 +170,7 @@ func render(args []string) {
 		if iconDir != "" {
 			err = fmt.Errorf("custom SVG icon packs are not embedded in draw.io output")
 		} else {
-			result, err = drawio.Render(diag)
+			result, err = drawio.RenderWithOptions(diag, drawio.Options{Overrides: layoutOverrides})
 		}
 	default:
 		err = fmt.Errorf("unknown backend %q; use native, d2, or drawio", backend)
@@ -919,7 +935,7 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--icons directory] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--layout-overrides layout.yaml] [--icons directory] [--layout elk|dagre]
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>

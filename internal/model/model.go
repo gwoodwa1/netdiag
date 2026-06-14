@@ -1,6 +1,8 @@
 package model
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -37,6 +39,7 @@ type Group struct {
 }
 
 type Link struct {
+	ID           string
 	From         LinkEndpoint
 	To           LinkEndpoint
 	Label        string
@@ -48,6 +51,19 @@ type Link struct {
 	MultiChassis bool
 	Trunk        *Trunk
 	Labels       LinkLabels
+}
+
+func (link Link) StableID() string {
+	if link.ID != "" {
+		return link.ID
+	}
+	left := link.From.Node + ":" + link.From.Port
+	right := link.To.Node + ":" + link.To.Port
+	if right < left {
+		left, right = right, left
+	}
+	sum := sha256.Sum256([]byte(left + "--" + right))
+	return fmt.Sprintf("auto-%x", sum[:8])
 }
 
 type LinkEndpoint struct {
@@ -244,6 +260,7 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 			labels.Target = spec.DisplayPort(linkSpec.To.Port)
 		}
 		links = append(links, Link{
+			ID: linkSpec.ID,
 			From: LinkEndpoint{
 				Node:          linkSpec.From.Node,
 				Port:          linkSpec.From.Port,

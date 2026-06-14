@@ -125,6 +125,7 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Link struct {
+	ID           string       `yaml:"id,omitempty"`
 	From         LinkEndpoint `yaml:"from"`
 	To           LinkEndpoint `yaml:"to"`
 	Label        string       `yaml:"label,omitempty"`
@@ -323,6 +324,9 @@ func Validate(doc *Document) error {
 	}
 
 	for i, link := range doc.Links {
+		if strings.TrimSpace(link.ID) == "" && link.ID != "" {
+			problems = append(problems, fmt.Sprintf("link %d ID cannot be blank", i+1))
+		}
 		from := link.From
 		if from.Node == "" || from.Port == "" {
 			problems = append(problems, fmt.Sprintf("link %d from: endpoint must include both node and interface", i+1))
@@ -390,6 +394,17 @@ func Validate(doc *Document) error {
 					problems = append(problems, fmt.Sprintf("link %d contains an empty allowed VLAN", i+1))
 				}
 			}
+		}
+	}
+	linkIDs := make(map[string]int)
+	for i, link := range doc.Links {
+		if link.ID == "" {
+			continue
+		}
+		if previous, ok := linkIDs[link.ID]; ok {
+			problems = append(problems, fmt.Sprintf("links %d and %d use duplicate ID %q", previous+1, i+1, link.ID))
+		} else {
+			linkIDs[link.ID] = i
 		}
 	}
 	for i, link := range doc.Links {

@@ -117,6 +117,7 @@ func JSONSchema() ([]byte, error) {
 				"additionalProperties": false,
 				"required":             []string{"from", "to"},
 				"properties": map[string]interface{}{
+					"id":            map[string]interface{}{"type": "string", "minLength": 1},
 					"from":          map[string]interface{}{"$ref": "#/$defs/endpoint"},
 					"to":            map[string]interface{}{"$ref": "#/$defs/endpoint"},
 					"label":         map[string]interface{}{"type": "string"},
