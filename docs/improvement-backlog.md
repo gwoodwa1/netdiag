@@ -47,6 +47,35 @@ Candidate areas:
 **Done when:** each geometry defect receives a focused regression test, and
 high-risk pure helpers have direct boundary-case coverage.
 
+### Strengthen ISIS and YAML diagnostic coverage
+
+**Status:** open
+
+**Priority:** medium-high
+
+LLDP and specification parsing have broad focused coverage, while the ISIS
+package currently has one main happy-path test for each supported format.
+`internal/yamlutil` is exercised indirectly by callers but has no direct tests
+for its strict decoding and compiler-style diagnostic behavior.
+
+Candidate ISIS cases:
+
+- malformed and empty IOS XR, Junos XML, and OpenConfig inputs
+- partial rows, missing fields, invalid holdtimes, and malformed system IDs
+- local-node detection variants and format auto-detection failures
+- reciprocal-link deduplication and incomplete-neighbor conversion behavior
+
+Candidate YAML diagnostic cases:
+
+- unknown fields and malformed YAML
+- empty input and multi-document input behavior
+- line/column excerpts at the beginning and end of a file
+- errors without locations and deeply nested input
+
+**Done when:** each supported ISIS format has focused failure and partial-input
+coverage, and `yamlutil.DecodeStrict`/`Context` have direct stable diagnostic
+tests.
+
 ### Consistent CLI parsing and command help
 
 **Status:** addressed  
@@ -211,10 +240,12 @@ in a substantial part of that graph. This is not automatically a defect, but
 the cost should be measured and intentional.
 
 **Done when:** release builds record binary-size and dependency-footprint
-baselines; optional backend costs are measured; unnecessary dependencies are
-removed where doing so has a meaningful benefit; and packaging changes such as
-build tags or split binaries are adopted only if measurements justify the added
-complexity.
+baselines; optional backend costs are measured, including a prototype no-D2
+build variant; unnecessary dependencies are removed where doing so has a
+meaningful benefit; and packaging changes such as build tags or split binaries
+are adopted only if measurements justify the added complexity. Any decision to
+omit D2 from the default binary must account for CLI compatibility and actual
+user demand.
 
 ### Automate releases and binary distribution
 
@@ -307,6 +338,20 @@ policy decision, not an automatic downgrade.
 
 Do not treat historical counts as current facts. Re-audit the current tree
 before creating work from them.
+
+### “`cmd/netdiag` has zero tests”
+
+Overstated. The package has focused shared-flag parser tests, but command
+execution in `main.go` remains largely subprocess-only and is still a
+significant coverage gap tracked above.
+
+### Broad old-style error-wrapping counts
+
+Do not promote a raw `%v`/`%s` count without classifying occurrences. The
+reviewed Draw.io, ISIS, LLDP, and CLI production paths already use `%w` where
+callers benefit from preserving an underlying error; several apparent
+old-style occurrences are test failure messages rather than wrapped production
+errors. Continue the targeted error-handling audit instead.
 
 ### “Replace CLI parsing with Cobra to support `--key=value`”
 
