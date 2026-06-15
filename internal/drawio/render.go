@@ -52,6 +52,26 @@ type points struct {
 
 type Options struct {
 	Overrides *layoutoverride.Document
+	Report    *LayoutReport
+}
+
+type LayoutReport struct {
+	Preserved    LayoutPreserved
+	AutoPlaced   []LayoutPlacement
+	AutoRouted   []string
+	IgnoredStale []string
+}
+
+type LayoutPreserved struct {
+	Nodes  int
+	Groups int
+	Links  int
+}
+
+type LayoutPlacement struct {
+	Kind string
+	ID   string
+	Near string
 }
 
 func Render(diagram *model.Diagram) ([]byte, error) {
@@ -67,18 +87,40 @@ func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 	if err := validateOverrideReferences(diagram, options.Overrides); err != nil {
 		return nil, err
 	}
+	return renderWithOptions(diagram, options)
+}
+
+func RenderWithLayoutReport(diagram *model.Diagram, options Options) ([]byte, LayoutReport, error) {
+	if options.Overrides != nil {
+		if err := layoutoverride.Validate(options.Overrides); err != nil {
+			return nil, LayoutReport{}, fmt.Errorf("invalid layout overrides: %w", err)
+		}
+	}
+	overrides, report, err := reconcileOverrides(diagram, options.Overrides)
+	if err != nil {
+		return nil, LayoutReport{}, err
+	}
+	options.Overrides = overrides
+	options.Report = &report
+	result, err := renderWithOptions(diagram, options)
+	sort.Strings(report.AutoRouted)
+	return result, report, err
+}
+
+func renderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) {
 	overrides := layoutoverride.Overrides{}
 	if options.Overrides != nil {
 		overrides = options.Overrides.LayoutOverrides
 	}
 	cells := []cell{{ID: "0"}, {ID: "1", Parent: "0"}}
-	nodeParent, groupCells := layoutGroups(diagram.Groups, overrides.Groups)
+	nodeParent, groupCells := layoutGroups(diagram.Groups, overrides.Groups, options.Report)
 	cells = append(cells, groupCells...)
 
 	nodes := append([]model.Node(nil), diagram.Nodes...)
 	sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
 	neighbors := nodeNeighbors(diagram.Links)
 	placed := overriddenNodePlacements(nodes, nodeParent, overrides.Nodes)
+	anchors := placementIDs(placed)
 	groupSlots := make(map[string]int)
 	ungrouped := 0
 	for _, node := range nodes {
@@ -102,8 +144,11 @@ func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 		if override, ok := overrides.Nodes[node.ID]; ok {
 			x, y, width, height = applyBounds(x, y, width, height, override)
 			style = applyBoundsStyle(style, override)
-		} else if nearX, nearY, ok := placeNearManagedNeighbor(node.ID, parent, width, height, neighbors, placed); ok {
+		} else if nearX, nearY, nearID, ok := placeNearManagedNeighbor(node.ID, parent, width, height, neighbors, placed, anchors); ok {
 			x, y = nearX, nearY
+			reportAutoPlaced(options.Report, "node", node.ID, nearID)
+		} else {
+			reportAutoPlaced(options.Report, "node", node.ID, "")
 		}
 		placed[node.ID] = nodePlacement{Parent: parent, X: x, Y: y, Width: width, Height: height}
 		cells = append(cells, cell{
@@ -123,6 +168,8 @@ func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 		if override, ok := overrides.Links[stableID]; ok {
 			style = applyLinkOverride(style, override)
 			linkGeometry.Points = overridePoints(override.Waypoints)
+		} else if options.Report != nil {
+			options.Report.AutoRouted = append(options.Report.AutoRouted, stableID)
 		}
 		cells = append(cells, cell{
 			ID: linkID, Value: link.MiddleLabel(),
@@ -190,21 +237,33 @@ func overriddenNodePlacements(nodes []model.Node, nodeParent map[string]string, 
 	return result
 }
 
-func placeNearManagedNeighbor(id, parent string, width, height float64, neighbors map[string][]string, placed map[string]nodePlacement) (float64, float64, bool) {
+func placementIDs(placed map[string]nodePlacement) map[string]bool {
+	result := make(map[string]bool, len(placed))
+	for id := range placed {
+		result[id] = true
+	}
+	return result
+}
+
+func placeNearManagedNeighbor(id, parent string, width, height float64, neighbors map[string][]string, placed map[string]nodePlacement, anchors map[string]bool) (float64, float64, string, bool) {
+	const maxAttempts = 8
 	for _, neighborID := range neighbors[id] {
+		if !anchors[neighborID] {
+			continue
+		}
 		neighbor, ok := placed[neighborID]
 		if !ok || neighbor.Parent != parent {
 			continue
 		}
 		x, y := neighbor.X, neighbor.Y+neighbor.Height+80
-		for attempts := 0; attempts < len(placed)+1; attempts++ {
+		for attempts := 0; attempts < maxAttempts; attempts++ {
 			if !placementOverlaps(parent, x, y, width, height, placed) {
-				return x, y, true
+				return x, y, neighborID, true
 			}
 			x += width + 70
 		}
 	}
-	return 0, 0, false
+	return 0, 0, "", false
 }
 
 func placementOverlaps(parent string, x, y, width, height float64, placed map[string]nodePlacement) bool {
@@ -220,7 +279,7 @@ func placementOverlaps(parent string, x, y, width, height float64, placed map[st
 	return false
 }
 
-func layoutGroups(groups []model.Group, overrides map[string]layoutoverride.Bounds) (map[string]string, []cell) {
+func layoutGroups(groups []model.Group, overrides map[string]layoutoverride.Bounds, report *LayoutReport) (map[string]string, []cell) {
 	nodeParent := make(map[string]string)
 	var cells []cell
 	sorted := append([]model.Group(nil), groups...)
@@ -249,6 +308,9 @@ func layoutGroups(groups []model.Group, overrides map[string]layoutoverride.Boun
 		groupSlots[parent]++
 		width, height := 650.0, 360.0
 		override := overrides[group.ID]
+		if _, ok := overrides[group.ID]; !ok {
+			reportAutoPlaced(report, "group", group.ID, "")
+		}
 		x, y, width, height = applyBounds(x, y, width, height, override)
 		style := applyBoundsStyle("swimlane;html=1;rounded=1;horizontal=1;startSize=32;fillColor=#dbeafe;swimlaneFillColor=#eff6ff;strokeColor=#93c5fd;fontStyle=1;", override)
 		cells = append(cells, cell{
@@ -261,6 +323,12 @@ func layoutGroups(groups []model.Group, overrides map[string]layoutoverride.Boun
 		}
 	}
 	return nodeParent, cells
+}
+
+func reportAutoPlaced(report *LayoutReport, kind, id, near string) {
+	if report != nil {
+		report.AutoPlaced = append(report.AutoPlaced, LayoutPlacement{Kind: kind, ID: id, Near: near})
+	}
 }
 
 func groupDepth(id string, parentByID map[string]string) int {
@@ -292,6 +360,85 @@ func appendEdgeLabel(cells []cell, id, parent, semanticID, value string, positio
 		Connectable: "0",
 		Geometry:    &geometry{X: position, Relative: "1", As: "geometry", Offset: &point{As: "offset"}},
 	})
+}
+
+func reconcileOverrides(diagram *model.Diagram, overrides *layoutoverride.Document) (*layoutoverride.Document, LayoutReport, error) {
+	var report LayoutReport
+	nodes, groups, links, err := topologyIDs(diagram)
+	if err != nil {
+		return nil, report, err
+	}
+	if overrides == nil {
+		return nil, report, nil
+	}
+	result := &layoutoverride.Document{
+		Version: overrides.Version,
+		LayoutOverrides: layoutoverride.Overrides{
+			Nodes:  make(map[string]layoutoverride.Bounds),
+			Groups: make(map[string]layoutoverride.Bounds),
+			Links:  make(map[string]layoutoverride.Link),
+		},
+	}
+	for id, value := range overrides.LayoutOverrides.Nodes {
+		if nodes[id] {
+			result.LayoutOverrides.Nodes[id] = value
+			report.Preserved.Nodes++
+		} else {
+			report.IgnoredStale = append(report.IgnoredStale, "node "+id)
+		}
+	}
+	for id, value := range overrides.LayoutOverrides.Groups {
+		if groups[id] {
+			result.LayoutOverrides.Groups[id] = value
+			report.Preserved.Groups++
+		} else {
+			report.IgnoredStale = append(report.IgnoredStale, "group "+id)
+		}
+	}
+	for id, value := range overrides.LayoutOverrides.Links {
+		if links[id] {
+			result.LayoutOverrides.Links[id] = value
+			report.Preserved.Links++
+		} else {
+			report.IgnoredStale = append(report.IgnoredStale, "link "+id)
+		}
+	}
+	sort.Strings(report.IgnoredStale)
+	return result, report, nil
+}
+
+func FormatLayoutReport(report LayoutReport) string {
+	var result strings.Builder
+	fmt.Fprintf(&result, "Preserved:\n- %d nodes\n- %d links\n- %d groups\n\n", report.Preserved.Nodes, report.Preserved.Links, report.Preserved.Groups)
+	result.WriteString("Auto-placed:\n")
+	if len(report.AutoPlaced) == 0 {
+		result.WriteString("- none\n")
+	} else {
+		for _, placement := range report.AutoPlaced {
+			if placement.Near != "" {
+				fmt.Fprintf(&result, "- %s %s near %s\n", placement.Kind, placement.ID, placement.Near)
+			} else {
+				fmt.Fprintf(&result, "- %s %s using generated placement\n", placement.Kind, placement.ID)
+			}
+		}
+	}
+	result.WriteString("\nAuto-routed:\n")
+	if len(report.AutoRouted) == 0 {
+		result.WriteString("- none\n")
+	} else {
+		for _, id := range report.AutoRouted {
+			fmt.Fprintf(&result, "- %s\n", id)
+		}
+	}
+	result.WriteString("\nIgnored stale overrides:\n")
+	if len(report.IgnoredStale) == 0 {
+		result.WriteString("- none\n")
+	} else {
+		for _, id := range report.IgnoredStale {
+			fmt.Fprintf(&result, "- %s\n", id)
+		}
+	}
+	return result.String()
 }
 
 func validateOverrideReferences(diagram *model.Diagram, overrides *layoutoverride.Document) error {

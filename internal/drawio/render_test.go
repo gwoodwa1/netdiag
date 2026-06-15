@@ -2,6 +2,8 @@ package drawio
 
 import (
 	"encoding/xml"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -149,6 +151,122 @@ func TestRenderRejectsUnknownOverrideReference(t *testing.T) {
 	}
 }
 
+func TestRenderWithLayoutReportReconcilesTopologyDrift(t *testing.T) {
+	x, y := 400.0, 200.0
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "core-a"}, {ID: "edge-new"}},
+		Links: []model.Link{{
+			ID: "new-link", From: model.LinkEndpoint{Node: "core-a"}, To: model.LinkEndpoint{Node: "edge-new"},
+		}},
+	}
+	overrides := &layoutoverride.Document{
+		Version: 1,
+		LayoutOverrides: layoutoverride.Overrides{
+			Nodes: map[string]layoutoverride.Bounds{
+				"core-a":   {X: &x, Y: &y},
+				"old-edge": {X: &x, Y: &y},
+			},
+			Links: map[string]layoutoverride.Link{"old-link": {}},
+		},
+	}
+	if _, err := RenderWithOptions(diagram, Options{Overrides: overrides}); err == nil {
+		t.Fatal("strict render accepted stale overrides")
+	}
+	_, report, err := RenderWithLayoutReport(diagram, Options{Overrides: overrides})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Preserved.Nodes != 1 || report.Preserved.Links != 0 {
+		t.Fatalf("unexpected preserved counts: %+v", report.Preserved)
+	}
+	if !reflect.DeepEqual(report.IgnoredStale, []string{"link old-link", "node old-edge"}) {
+		t.Fatalf("unexpected stale overrides: %+v", report.IgnoredStale)
+	}
+	if !reflect.DeepEqual(report.AutoPlaced, []LayoutPlacement{{Kind: "node", ID: "edge-new", Near: "core-a"}}) {
+		t.Fatalf("unexpected auto placement: %+v", report.AutoPlaced)
+	}
+	if !reflect.DeepEqual(report.AutoRouted, []string{"new-link"}) {
+		t.Fatalf("unexpected auto routes: %+v", report.AutoRouted)
+	}
+	formatted := FormatLayoutReport(report)
+	for _, want := range []string{"- node edge-new near core-a", "- new-link", "- node old-edge"} {
+		if !strings.Contains(formatted, want) {
+			t.Fatalf("layout report does not contain %q:\n%s", want, formatted)
+		}
+	}
+}
+
+func TestPlaceNearManagedNeighborUsesSortedNeighborAndFallsBackWhenFull(t *testing.T) {
+	neighbors := map[string][]string{"new": {"core-a", "core-b"}}
+	placed := map[string]nodePlacement{
+		"core-a": {Parent: "1", X: 100, Y: 100, Width: 170, Height: 70},
+		"core-b": {Parent: "1", X: 900, Y: 100, Width: 170, Height: 70},
+	}
+	anchors := placementIDs(placed)
+	x, y, near, ok := placeNearManagedNeighbor("new", "1", 170, 70, neighbors, placed, anchors)
+	if !ok || near != "core-a" || x != 100 || y != 250 {
+		t.Fatalf("unexpected multiple-neighbor placement: x=%v y=%v near=%q ok=%v", x, y, near, ok)
+	}
+
+	for index := 0; index < 8; index++ {
+		id := fmt.Sprintf("block-a-%d", index)
+		placed[id] = nodePlacement{Parent: "1", X: 100 + float64(index)*240, Y: 250, Width: 170, Height: 70}
+		id = fmt.Sprintf("block-b-%d", index)
+		placed[id] = nodePlacement{Parent: "1", X: 900 + float64(index)*240, Y: 250, Width: 170, Height: 70}
+	}
+	if _, _, _, ok := placeNearManagedNeighbor("new", "1", 170, 70, neighbors, placed, anchors); ok {
+		t.Fatal("placement unexpectedly succeeded when candidate area was full")
+	}
+	if _, _, _, ok := placeNearManagedNeighbor("new", "group-site", 170, 70, neighbors, placed, anchors); ok {
+		t.Fatal("placement unexpectedly used a neighbor from another group")
+	}
+}
+
+func TestLayoutReportPlacesNewNodeInsideResizedGroupAndReportsNoNeighborFallback(t *testing.T) {
+	groupX, groupY, groupWidth, groupHeight := 50.0, 60.0, 1100.0, 700.0
+	coreX, coreY := 120.0, 140.0
+	diagram := &model.Diagram{
+		Groups: []model.Group{{ID: "site", NodeIDs: []string{"core", "edge"}}, {ID: "empty-site", NodeIDs: []string{"isolated"}}},
+		Nodes:  []model.Node{{ID: "core"}, {ID: "edge"}, {ID: "isolated"}},
+		Links: []model.Link{{
+			ID: "edge-link", From: model.LinkEndpoint{Node: "core"}, To: model.LinkEndpoint{Node: "edge"},
+		}},
+	}
+	overrides := &layoutoverride.Document{
+		Version: 1,
+		LayoutOverrides: layoutoverride.Overrides{
+			Groups: map[string]layoutoverride.Bounds{"site": {
+				X: &groupX, Y: &groupY, Width: &groupWidth, Height: &groupHeight,
+			}},
+			Nodes: map[string]layoutoverride.Bounds{"core": {X: &coreX, Y: &coreY}},
+		},
+	}
+	rendered, report, err := RenderWithLayoutReport(diagram, Options{Overrides: overrides})
+	if err != nil {
+		t.Fatal(err)
+	}
+	extracted, err := ExtractOverrides(rendered, diagram)
+	if err != nil {
+		t.Fatal(err)
+	}
+	site := extracted.LayoutOverrides.Groups["site"]
+	if *site.Width != groupWidth || *site.Height != groupHeight {
+		t.Fatalf("resized group was not preserved: %+v", site)
+	}
+	edge := extracted.LayoutOverrides.Nodes["edge"]
+	if *edge.X != coreX || *edge.Y != coreY+70+80 {
+		t.Fatalf("new grouped node was not placed near its positioned neighbor: %+v", edge)
+	}
+	wantPlacements := []LayoutPlacement{
+		{Kind: "group", ID: "empty-site"},
+		{Kind: "node", ID: "edge", Near: "core"},
+		{Kind: "node", ID: "isolated"},
+	}
+	if !reflect.DeepEqual(report.AutoPlaced, wantPlacements) {
+		t.Fatalf("unexpected grouped/fallback placements: %+v", report.AutoPlaced)
+	}
+}
+
 func TestRenderRejectsDuplicateAutomaticLinkIDs(t *testing.T) {
 	link := model.Link{From: model.LinkEndpoint{Node: "a"}, To: model.LinkEndpoint{Node: "b"}}
 	diagram := &model.Diagram{
@@ -157,6 +275,9 @@ func TestRenderRejectsDuplicateAutomaticLinkIDs(t *testing.T) {
 	}
 	if _, err := Render(diagram); err == nil {
 		t.Fatal("duplicate automatic link IDs were accepted")
+	}
+	if _, _, err := RenderWithLayoutReport(diagram, Options{}); err == nil {
+		t.Fatal("layout-report render accepted duplicate automatic link IDs")
 	}
 }
 

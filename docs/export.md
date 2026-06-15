@@ -57,7 +57,7 @@ layout_overrides:
 
 ```sh
 netdiag render diagram.yaml --renderer drawio \
-  --layout-overrides diagram.layout.yaml -o diagram.drawio
+  --layout-overrides diagram.layout.yaml --layout-report -o diagram.drawio
 ```
 
 After manually moving supported netdiag-managed objects in diagrams.net,
@@ -119,12 +119,20 @@ XML the primary model.
 
 When topology grows, an existing layout override file can be applied directly
 to the updated source. Existing managed nodes, groups, and links retain their
-saved layout state. A new node is placed near the first already positioned
-adjacent node in the same Draw.io parent, with deterministic collision
+saved layout state. A new node is placed near the first adjacent node with
+preserved override geometry in the same Draw.io parent, with deterministic collision
 avoidance; otherwise it receives deterministic generated placement. New links
 receive generated routing. If topology removes or renames managed objects, use
 `extract-overrides --report` against the updated source to identify and omit
 stale layout state before returning to strict automation.
+
+`--layout-report` prints the reconciliation decisions made while rendering:
+preserved nodes/groups/links, generated placements and their chosen neighbours,
+generated link routes, and ignored stale overrides. It also explicitly enables
+tolerant rendering with stale overrides. Rendering with layout overrides but
+without `--layout-report` remains strict and fails on removed or renamed object
+IDs. Renames are treated as deletion plus addition; no identity inference or
+migration map is currently applied.
 
 Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
 and group-collapse controls. See [interactive.md](interactive.md).

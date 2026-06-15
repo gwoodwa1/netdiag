@@ -136,6 +136,7 @@ func extractOverrides(args []string) {
 
 func render(args []string) {
 	var input, output, backend, layout, reportPath, iconDir, layoutOverridesPath string
+	var layoutReport bool
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "-o", "--output":
@@ -180,6 +181,8 @@ func render(args []string) {
 			}
 			i++
 			layoutOverridesPath = args[i]
+		case "--layout-report":
+			layoutReport = true
 		default:
 			if strings.HasPrefix(args[i], "-") || input != "" {
 				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
@@ -189,7 +192,7 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--icons directory] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--icons directory] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
 	}
 	if iconDir == "" {
@@ -217,8 +220,12 @@ func render(args []string) {
 		layoutOverrides, err = layoutoverride.Load(layoutOverridesPath)
 		exitOnError(err)
 	}
+	if layoutReport && backend != "drawio" {
+		exitOnError(fmt.Errorf("--layout-report requires the draw.io renderer"))
+	}
 
 	var result []byte
+	var drawioLayoutReport drawio.LayoutReport
 	switch backend {
 	case "native":
 		result, err = svg.RenderWithOptions(diag, svg.Options{IconDir: iconDir})
@@ -231,6 +238,8 @@ func render(args []string) {
 	case "drawio":
 		if iconDir != "" {
 			err = fmt.Errorf("custom SVG icon packs are not embedded in draw.io output")
+		} else if layoutReport {
+			result, drawioLayoutReport, err = drawio.RenderWithLayoutReport(diag, drawio.Options{Overrides: layoutOverrides})
 		} else {
 			result, err = drawio.RenderWithOptions(diag, drawio.Options{Overrides: layoutOverrides})
 		}
@@ -274,6 +283,10 @@ func render(args []string) {
 		exitOnError(writeJSONFile(reportPath, report))
 	}
 	fmt.Printf("rendered %s using %s\n", target, backend)
+	if layoutReport {
+		fmt.Println()
+		fmt.Print(drawio.FormatLayoutReport(drawioLayoutReport))
+	}
 	for _, warning := range report.Warnings {
 		fmt.Fprintf(os.Stderr, "warning [%s]: %s\n", warning.Code, warning.Message)
 	}
@@ -997,7 +1010,7 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--layout-overrides layout.yaml] [--icons directory] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--icons directory] [--layout elk|dagre]
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
