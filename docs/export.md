@@ -117,6 +117,15 @@ Keep the topology YAML and extracted layout override YAML in version control.
 The Draw.io file can be regenerated for another editing pass without making its
 XML the primary model.
 
+When topology grows, an existing layout override file can be applied directly
+to the updated source. Existing managed nodes, groups, and links retain their
+saved layout state. A new node is placed near the first already positioned
+adjacent node in the same Draw.io parent, with deterministic collision
+avoidance; otherwise it receives deterministic generated placement. New links
+receive generated routing. If topology removes or renames managed objects, use
+`extract-overrides --report` against the updated source to identify and omit
+stale layout state before returning to strict automation.
+
 Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
 and group-collapse controls. See [interactive.md](interactive.md).
 

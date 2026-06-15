@@ -77,6 +77,8 @@ func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 
 	nodes := append([]model.Node(nil), diagram.Nodes...)
 	sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
+	neighbors := nodeNeighbors(diagram.Links)
+	placed := overriddenNodePlacements(nodes, nodeParent, overrides.Nodes)
 	groupSlots := make(map[string]int)
 	ungrouped := 0
 	for _, node := range nodes {
@@ -100,7 +102,10 @@ func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 		if override, ok := overrides.Nodes[node.ID]; ok {
 			x, y, width, height = applyBounds(x, y, width, height, override)
 			style = applyBoundsStyle(style, override)
+		} else if nearX, nearY, ok := placeNearManagedNeighbor(node.ID, parent, width, height, neighbors, placed); ok {
+			x, y = nearX, nearY
 		}
+		placed[node.ID] = nodePlacement{Parent: parent, X: x, Y: y, Width: width, Height: height}
 		cells = append(cells, cell{
 			ID: nodeCellID(node.ID), Value: defaultString(node.Label, node.ID), Style: style,
 			Parent: parent, Vertex: "1", NetdiagID: node.ID, NetdiagKind: "node",
@@ -149,6 +154,70 @@ func RenderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 	out.Write(graph.Bytes())
 	out.WriteString(`</diagram></mxfile>`)
 	return out.Bytes(), nil
+}
+
+type nodePlacement struct {
+	Parent              string
+	X, Y, Width, Height float64
+}
+
+func nodeNeighbors(links []model.Link) map[string][]string {
+	result := make(map[string][]string)
+	for _, link := range links {
+		result[link.From.Node] = append(result[link.From.Node], link.To.Node)
+		result[link.To.Node] = append(result[link.To.Node], link.From.Node)
+	}
+	for id := range result {
+		sort.Strings(result[id])
+	}
+	return result
+}
+
+func overriddenNodePlacements(nodes []model.Node, nodeParent map[string]string, overrides map[string]layoutoverride.Bounds) map[string]nodePlacement {
+	result := make(map[string]nodePlacement)
+	for _, node := range nodes {
+		override, ok := overrides[node.ID]
+		if !ok || override.X == nil || override.Y == nil {
+			continue
+		}
+		parent := nodeParent[node.ID]
+		if parent == "" {
+			parent = "1"
+		}
+		_, _, width, height := applyBounds(0, 0, 170, 70, override)
+		result[node.ID] = nodePlacement{Parent: parent, X: *override.X, Y: *override.Y, Width: width, Height: height}
+	}
+	return result
+}
+
+func placeNearManagedNeighbor(id, parent string, width, height float64, neighbors map[string][]string, placed map[string]nodePlacement) (float64, float64, bool) {
+	for _, neighborID := range neighbors[id] {
+		neighbor, ok := placed[neighborID]
+		if !ok || neighbor.Parent != parent {
+			continue
+		}
+		x, y := neighbor.X, neighbor.Y+neighbor.Height+80
+		for attempts := 0; attempts < len(placed)+1; attempts++ {
+			if !placementOverlaps(parent, x, y, width, height, placed) {
+				return x, y, true
+			}
+			x += width + 70
+		}
+	}
+	return 0, 0, false
+}
+
+func placementOverlaps(parent string, x, y, width, height float64, placed map[string]nodePlacement) bool {
+	const gap = 20.0
+	for _, item := range placed {
+		if item.Parent != parent {
+			continue
+		}
+		if x < item.X+item.Width+gap && x+width+gap > item.X && y < item.Y+item.Height+gap && y+height+gap > item.Y {
+			return true
+		}
+	}
+	return false
 }
 
 func layoutGroups(groups []model.Group, overrides map[string]layoutoverride.Bounds) (map[string]string, []cell) {

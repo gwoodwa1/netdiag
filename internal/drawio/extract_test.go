@@ -162,3 +162,82 @@ func TestExtractOverridesWithReportSummarizesIgnoredAndMissingObjects(t *testing
 		t.Fatalf("unexpected formatted report:\n%s", formatted)
 	}
 }
+
+func TestTopologyGrowthPreservesExistingLayoutAndPlacesNewObjectsDeterministically(t *testing.T) {
+	coreAX, coreAY := 320.0, 180.0
+	coreBX, coreBY := 760.0, 180.0
+	v1 := &model.Diagram{
+		Nodes: []model.Node{{ID: "core-a"}, {ID: "core-b"}},
+		Links: []model.Link{{
+			ID: "core-link", From: model.LinkEndpoint{Node: "core-a"}, To: model.LinkEndpoint{Node: "core-b"},
+		}},
+	}
+	polished := &layoutoverride.Document{
+		Version: 1,
+		LayoutOverrides: layoutoverride.Overrides{
+			Nodes: map[string]layoutoverride.Bounds{
+				"core-a": {X: &coreAX, Y: &coreAY},
+				"core-b": {X: &coreBX, Y: &coreBY},
+			},
+			Links: map[string]layoutoverride.Link{
+				"core-link": {Waypoints: []layoutoverride.Point{{X: 575, Y: 215}}},
+			},
+		},
+	}
+	renderedV1, err := RenderWithOptions(v1, Options{Overrides: polished})
+	if err != nil {
+		t.Fatal(err)
+	}
+	extractedV1, err := ExtractOverrides(renderedV1, v1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v2 := &model.Diagram{
+		Nodes: []model.Node{{ID: "core-a"}, {ID: "core-b"}, {ID: "edge-01"}},
+		Links: []model.Link{
+			{ID: "core-link", From: model.LinkEndpoint{Node: "core-a"}, To: model.LinkEndpoint{Node: "core-b"}},
+			{ID: "edge-link", From: model.LinkEndpoint{Node: "core-a"}, To: model.LinkEndpoint{Node: "edge-01"}},
+		},
+	}
+	firstV2, err := RenderWithOptions(v2, Options{Overrides: extractedV1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondV2, err := RenderWithOptions(v2, Options{Overrides: extractedV1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(firstV2, secondV2) {
+		t.Fatal("new topology objects were not placed deterministically")
+	}
+
+	extractedV2, err := ExtractOverrides(firstV2, v2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, expected := range map[string]layoutoverride.Bounds{
+		"core-a": extractedV1.LayoutOverrides.Nodes["core-a"],
+		"core-b": extractedV1.LayoutOverrides.Nodes["core-b"],
+	} {
+		got := extractedV2.LayoutOverrides.Nodes[id]
+		if *got.X != *expected.X || *got.Y != *expected.Y || *got.Width != *expected.Width || *got.Height != *expected.Height {
+			t.Fatalf("existing node %s moved after topology growth: got=%+v expected=%+v", id, got, expected)
+		}
+	}
+	gotCoreLink := extractedV2.LayoutOverrides.Links["core-link"]
+	wantCoreLink := extractedV1.LayoutOverrides.Links["core-link"]
+	if len(gotCoreLink.Waypoints) != 1 || gotCoreLink.Waypoints[0] != wantCoreLink.Waypoints[0] {
+		t.Fatalf("existing link route changed after topology growth: got=%+v expected=%+v", gotCoreLink, wantCoreLink)
+	}
+	edge := extractedV2.LayoutOverrides.Nodes["edge-01"]
+	if edge.X == nil || edge.Y == nil {
+		t.Fatalf("new node was not auto-placed: %+v", edge)
+	}
+	if *edge.X != coreAX || *edge.Y != coreAY+70+80 {
+		t.Fatalf("new node was not placed near its managed neighbor: %+v", edge)
+	}
+	if _, ok := extractedV2.LayoutOverrides.Links["edge-link"]; !ok {
+		t.Fatal("new link was not rendered")
+	}
+}
