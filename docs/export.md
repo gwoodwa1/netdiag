@@ -137,6 +137,11 @@ without `--layout-report` remains strict and fails on removed or renamed object
 IDs. Renames are treated as deletion plus addition; no identity inference or
 migration map is currently applied.
 
+Use `--output-report json` with `--layout-report` to emit the reconciliation
+report as JSON on stdout for CI or PR comments. Use `netdiag doctor drawio` to
+check managed metadata integrity, and `netdiag diff-layout` to review semantic
+changes between two extracted layout files.
+
 Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
 and group-collapse controls. See [interactive.md](interactive.md).
 

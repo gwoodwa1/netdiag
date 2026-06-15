@@ -61,6 +61,10 @@ func main() {
 		improveLayout(os.Args[2:])
 	case "extract-overrides":
 		extractOverrides(os.Args[2:])
+	case "doctor":
+		doctor(os.Args[2:])
+	case "diff-layout":
+		diffLayout(os.Args[2:])
 	case "lldp":
 		convertLLDP(os.Args[2:])
 	case "discover":
@@ -137,6 +141,7 @@ func extractOverrides(args []string) {
 func render(args []string) {
 	var input, output, backend, layout, reportPath, iconDir, layoutOverridesPath string
 	var layoutReport bool
+	var outputReport string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "-o", "--output":
@@ -183,6 +188,13 @@ func render(args []string) {
 			layoutOverridesPath = args[i]
 		case "--layout-report":
 			layoutReport = true
+		case "--output-report":
+			if i+1 >= len(args) {
+				fmt.Fprintln(os.Stderr, "error: --output-report requires text or json")
+				os.Exit(2)
+			}
+			i++
+			outputReport = args[i]
 		default:
 			if strings.HasPrefix(args[i], "-") || input != "" {
 				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
@@ -192,7 +204,7 @@ func render(args []string) {
 		}
 	}
 	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--icons directory] [--layout elk|dagre] [--report report.json]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--output-report text|json] [--icons directory] [--layout elk|dagre] [--report report.json]")
 		os.Exit(2)
 	}
 	if iconDir == "" {
@@ -222,6 +234,15 @@ func render(args []string) {
 	}
 	if layoutReport && backend != "drawio" {
 		exitOnError(fmt.Errorf("--layout-report requires the draw.io renderer"))
+	}
+	if outputReport != "" && !layoutReport {
+		exitOnError(fmt.Errorf("--output-report requires --layout-report"))
+	}
+	if outputReport == "" {
+		outputReport = "text"
+	}
+	if outputReport != "text" && outputReport != "json" {
+		exitOnError(fmt.Errorf("--output-report must be text or json"))
 	}
 
 	var result []byte
@@ -282,13 +303,86 @@ func render(args []string) {
 	if reportPath != "" {
 		exitOnError(writeJSONFile(reportPath, report))
 	}
-	fmt.Printf("rendered %s using %s\n", target, backend)
-	if layoutReport {
+	if outputReport == "json" {
+		fmt.Fprintf(os.Stderr, "rendered %s using %s\n", target, backend)
+		writeJSON(drawioLayoutReport)
+	} else {
+		fmt.Printf("rendered %s using %s\n", target, backend)
+	}
+	if layoutReport && outputReport == "text" {
 		fmt.Println()
 		fmt.Print(drawio.FormatLayoutReport(drawioLayoutReport))
 	}
 	for _, warning := range report.Warnings {
 		fmt.Fprintf(os.Stderr, "warning [%s]: %s\n", warning.Code, warning.Message)
+	}
+}
+
+func doctor(args []string) {
+	if len(args) != 2 || args[0] != "drawio" {
+		fmt.Fprintln(os.Stderr, "usage: netdiag doctor drawio <diagram.drawio>")
+		os.Exit(2)
+	}
+	data, err := os.ReadFile(args[1])
+	exitOnError(err)
+	report, err := drawio.Doctor(data)
+	exitOnError(err)
+	fmt.Printf("Draw.io round-trip safe: %t\n", report.RoundTripSafe)
+	fmt.Printf("Managed: %d nodes, %d groups, %d links, %d labels\n", report.Managed.Nodes, report.Managed.Groups, report.Managed.Links, report.Managed.Labels)
+	fmt.Printf("Unmanaged: %d annotations, %d decorative shapes, %d connectors\n", report.Unmanaged.Annotations, report.Unmanaged.DecorativeShapes, report.Unmanaged.Connectors)
+	for _, warning := range report.Warnings {
+		fmt.Printf("warning: %s\n", warning)
+	}
+	for _, problem := range report.Problems {
+		fmt.Printf("problem: %s\n", problem)
+	}
+	if !report.RoundTripSafe {
+		os.Exit(1)
+	}
+}
+
+func diffLayout(args []string) {
+	var paths []string
+	jsonOutput := false
+	for _, arg := range args {
+		if arg == "--json" {
+			jsonOutput = true
+		} else if strings.HasPrefix(arg, "-") {
+			fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", arg)
+			os.Exit(2)
+		} else {
+			paths = append(paths, arg)
+		}
+	}
+	if len(paths) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: netdiag diff-layout <old.layout.yaml> <new.layout.yaml> [--json]")
+		os.Exit(2)
+	}
+	oldDoc, err := layoutoverride.Load(paths[0])
+	exitOnError(err)
+	newDoc, err := layoutoverride.Load(paths[1])
+	exitOnError(err)
+	diff := layoutoverride.Compare(oldDoc, newDoc)
+	if jsonOutput {
+		writeJSON(diff)
+		return
+	}
+	printLayoutChanges := func(kind string, changes layoutoverride.Changes) {
+		for _, id := range changes.Added {
+			fmt.Printf("added %s: %s\n", kind, id)
+		}
+		for _, id := range changes.Removed {
+			fmt.Printf("removed %s: %s\n", kind, id)
+		}
+		for _, id := range changes.Changed {
+			fmt.Printf("changed %s: %s\n", kind, id)
+		}
+	}
+	printLayoutChanges("node", diff.Nodes)
+	printLayoutChanges("group", diff.Groups)
+	printLayoutChanges("link", diff.Links)
+	if diff.Empty() {
+		fmt.Println("no layout changes")
 	}
 }
 
@@ -1010,13 +1104,15 @@ func usage() {
 	fmt.Print(`netdiag renders concise YAML network diagrams.
 
 Usage:
-  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--icons directory] [--layout elk|dagre]
+  netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--backend native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--output-report text|json] [--icons directory] [--layout elk|dagre]
   netdiag capabilities [--json]
   netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>
   netdiag recommend [--json] <diagram.yaml>
   netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>
   netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]
   netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml] [--report]
+  netdiag doctor drawio <diagram.drawio>
+  netdiag diff-layout <old.layout.yaml> <new.layout.yaml> [--json]
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)

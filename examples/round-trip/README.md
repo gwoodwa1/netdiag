@@ -6,6 +6,8 @@ This directory demonstrates the full lifecycle:
 topology-v1.yaml -> topology-v1.drawio -> topology-v1.layout.yaml
                                       |
                                       +-> topology-v2.yaml -> topology-v2.drawio
+                                                               |
+                                                               +-> topology-v2.layout.yaml
 ```
 
 Recreate the committed Draw.io files:
@@ -25,6 +27,14 @@ go run ./cmd/netdiag render examples/round-trip/topology-v2.yaml \
 
 The second render preserves the polished v1 nodes and routes, places `edge-02`
 near `core-b`, and reports the generated placement and route.
+
+Review only the durable layout changes:
+
+```sh
+go run ./cmd/netdiag diff-layout \
+  examples/round-trip/topology-v1.layout.yaml \
+  examples/round-trip/topology-v2.layout.yaml
+```
 
 After editing `topology-v1.drawio` in diagrams.net, extract supported layout
 intent again:

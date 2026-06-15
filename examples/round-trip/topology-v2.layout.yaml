@@ -1,0 +1,39 @@
+version: 1
+layout_overrides:
+    nodes:
+        core-a:
+            x: 320
+            "y": 180
+            width: 190
+            height: 80
+            locked: true
+        core-b:
+            x: 760
+            "y": 180
+            width: 190
+            height: 80
+            locked: true
+        edge-01:
+            x: 320
+            "y": 410
+            width: 190
+            height: 80
+            locked: true
+        edge-02:
+            x: 760
+            "y": 340
+            width: 170
+            height: 70
+    links:
+        core-a__core-b:
+            source_side: right
+            target_side: left
+            waypoints:
+                - x: 600
+                  "y": 220
+            locked: true
+        core-a__edge-01:
+            source_side: bottom
+            target_side: top
+            locked: true
+        core-b__edge-02: {}

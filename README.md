@@ -72,6 +72,27 @@ The reproducible [worked round-trip example](docs/round-trip.md) includes v1
 and v2 topology YAML, layout overrides, generated Draw.io files, and a visual
 raw-versus-refined IOS-XR discovery example.
 
+### What survives regeneration?
+
+| Draw.io edit | Preserved? |
+| --- | --- |
+| Move/resize managed nodes and groups | Yes |
+| Adjust managed link waypoints, attachment sides, routing style, or lock state | Yes |
+| Move or rewrite generated labels | No |
+| Add annotations, decorative shapes, or unmanaged connectors | No |
+| Rename nodes or add/remove topology links in Draw.io | No; edit topology YAML instead |
+
+Check and review the lifecycle artefacts directly:
+
+```sh
+netdiag doctor drawio topology.drawio
+netdiag diff-layout topology-v1.layout.yaml topology-v2.layout.yaml
+netdiag diff-layout topology-v1.layout.yaml topology-v2.layout.yaml --json
+netdiag render topology-v2.yaml --renderer drawio \
+  --layout-overrides topology-v1.layout.yaml \
+  --layout-report --output-report json -o topology-v2.drawio
+```
+
 ## CLI workflow
 
 ```sh
@@ -98,6 +119,8 @@ netdiag render examples/spine-leaf.yaml -o examples/spine-leaf.pdf
 netdiag render examples/spine-leaf.yaml --renderer drawio -o examples/spine-leaf.drawio
 netdiag render examples/spine-leaf.yaml --renderer drawio --layout-overrides spine-leaf.layout.yaml --layout-report -o examples/spine-leaf.drawio
 netdiag extract-overrides examples/spine-leaf.drawio --source examples/spine-leaf.yaml -o spine-leaf.layout.yaml --report
+netdiag doctor drawio examples/spine-leaf.drawio
+netdiag diff-layout old.layout.yaml new.layout.yaml
 ```
 
 When no renderer is selected, `netdiag render` recommends and selects one from

@@ -27,6 +27,8 @@ reproducible topology evolution:
   and its link.
 - [`topology-v2.drawio`](../examples/round-trip/topology-v2.drawio) preserves
   v1 layout intent and deterministically places the new node near `core-b`.
+- [`topology-v2.layout.yaml`](../examples/round-trip/topology-v2.layout.yaml)
+  is the extracted evolved layout used for semantic review.
 
 ```sh
 # Generate an editable Draw.io file.
@@ -61,6 +63,31 @@ Auto-placed:
 
 Auto-routed:
 - core-b__edge-02
+```
+
+Check Draw.io metadata integrity and review only the durable layout changes:
+
+```sh
+netdiag doctor drawio examples/round-trip/topology-v2.drawio
+
+netdiag diff-layout \
+  examples/round-trip/topology-v1.layout.yaml \
+  examples/round-trip/topology-v2.layout.yaml
+```
+
+```text
+added node: edge-02
+added link: core-b__edge-02
+```
+
+For CI or PR comments, use JSON:
+
+```sh
+netdiag render examples/round-trip/topology-v2.yaml \
+  --renderer drawio \
+  --layout-overrides examples/round-trip/topology-v1.layout.yaml \
+  --layout-report --output-report json \
+  -o examples/round-trip/topology-v2.drawio
 ```
 
 ## IOS-XR discovery before and after

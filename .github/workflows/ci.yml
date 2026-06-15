@@ -58,6 +58,13 @@ jobs:
             --layout-overrides examples/round-trip/topology-v1.layout.yaml \
             --layout-report \
             -o examples/round-trip/topology-v2.drawio
+          go run ./cmd/netdiag extract-overrides examples/round-trip/topology-v2.drawio \
+            --source examples/round-trip/topology-v2.yaml \
+            -o examples/round-trip/topology-v2.layout.yaml
+          go run ./cmd/netdiag doctor drawio examples/round-trip/topology-v2.drawio
+          go run ./cmd/netdiag diff-layout \
+            examples/round-trip/topology-v1.layout.yaml \
+            examples/round-trip/topology-v2.layout.yaml
           go run ./cmd/netdiag discover lldp \
             examples/discovery/lldp-iosxr-8-site-dual-plane-captures \
             -o /tmp/lldp-iosxr-8-site-raw.yaml
@@ -68,6 +75,7 @@ jobs:
             docs/playground.html \
             examples/round-trip/topology-v1.drawio \
             examples/round-trip/topology-v2.drawio \
+            examples/round-trip/topology-v2.layout.yaml \
             examples/round-trip/iosxr-raw-discovery.svg
 
       - name: Check Markdown links

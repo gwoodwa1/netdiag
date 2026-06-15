@@ -56,22 +56,22 @@ type Options struct {
 }
 
 type LayoutReport struct {
-	Preserved    LayoutPreserved
-	AutoPlaced   []LayoutPlacement
-	AutoRouted   []string
-	IgnoredStale []string
+	Preserved    LayoutPreserved   `json:"preserved"`
+	AutoPlaced   []LayoutPlacement `json:"auto_placed,omitempty"`
+	AutoRouted   []string          `json:"auto_routed,omitempty"`
+	IgnoredStale []string          `json:"ignored_stale_overrides,omitempty"`
 }
 
 type LayoutPreserved struct {
-	Nodes  int
-	Groups int
-	Links  int
+	Nodes  int `json:"nodes"`
+	Groups int `json:"groups"`
+	Links  int `json:"links"`
 }
 
 type LayoutPlacement struct {
-	Kind string
-	ID   string
-	Near string
+	Kind string `json:"kind"`
+	ID   string `json:"id"`
+	Near string `json:"near,omitempty"`
 }
 
 func Render(diagram *model.Diagram) ([]byte, error) {
