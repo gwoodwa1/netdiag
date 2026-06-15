@@ -69,3 +69,6 @@ and use `netdiag diff-layout` to review the durable intent that changed.
 See [round-trip.md](round-trip.md), [inspection.md](inspection.md),
 [layout-repair.md](layout-repair.md), and [export.md](export.md) for the
 supported workflows and contracts.
+
+Engineering improvement suggestions and their current triage are recorded in
+[improvement-backlog.md](improvement-backlog.md).

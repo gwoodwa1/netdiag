@@ -51,6 +51,8 @@ small community and example ecosystem.
 
 See [Fit and limitations](docs/fit-and-limitations.md) for the candid scope,
 current maturity constraints, mitigations, and features that are not promised.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, architecture,
+common change workflows, and the CI-equivalent verification command.
 
 ## Playground
 
