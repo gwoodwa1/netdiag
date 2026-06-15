@@ -35,6 +35,21 @@ Try it in Docker with no local Go installation:
 docker build -t netdiag . && docker run --rm -v "$PWD:/work" -w /work netdiag render examples/templates/national-telco-template.yaml -o /work/national-telco.png
 ```
 
+## Fit and limitations
+
+Netdiag is built for topology-aware, repeatable network documentation. It is a
+good fit for YAML-owned topology, deterministic publication output, discovery
+workflows, and Draw.io refinement with durable layout intent.
+
+It is deliberately not a general-purpose diagramming canvas or a live
+monitoring system. Dense topologies may still need human refinement, the D2
+backend remains experimental, templates have Phase 1 limits, and host PNG/PDF
+exports require a local converter. The project also currently has a small
+community and example ecosystem.
+
+See [Fit and limitations](docs/fit-and-limitations.md) for the candid scope,
+current maturity constraints, mitigations, and features that are not promised.
+
 ## Playground
 
 Open the dependency-free [netdiag playground](docs/playground.html) to explore
