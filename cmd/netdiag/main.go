@@ -2,12 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/d2backend"
@@ -79,39 +77,19 @@ func main() {
 }
 
 func extractOverrides(args []string) {
-	var input, sourcePath, output string
-	var report bool
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--source":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --source requires a diagram YAML file")
-				os.Exit(2)
-			}
-			i++
-			sourcePath = args[i]
-		case "-o", "--output":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
-				os.Exit(2)
-			}
-			i++
-			output = args[i]
-		case "--report":
-			report = true
-		default:
-			if strings.HasPrefix(args[i], "-") || input != "" {
-				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
-				os.Exit(2)
-			}
-			input = args[i]
-		}
-	}
-	if input == "" || sourcePath == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml] [--report]")
+	flags := commandFlags("extract-overrides", "usage: netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml] [--report]")
+	sourcePath := flags.String("source", "", "source topology YAML file")
+	var output string
+	flags.StringVar(&output, "o", "", "output layout YAML path")
+	flags.StringVar(&output, "output", "", "output layout YAML path")
+	report := flags.Bool("report", false, "print extraction diagnostics")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 1 || *sourcePath == "" {
+		flags.Usage()
 		os.Exit(2)
 	}
-	sourceDoc, err := loadDocument(sourcePath)
+	input := flags.Arg(0)
+	sourceDoc, err := loadDocument(*sourcePath)
 	exitOnError(err)
 	diagram, err := model.Compile(sourceDoc)
 	exitOnError(err)
@@ -119,7 +97,7 @@ func extractOverrides(args []string) {
 	exitOnError(err)
 	var overrides *layoutoverride.Document
 	var extractionReport drawio.ExtractionReport
-	if report {
+	if *report {
 		overrides, extractionReport, err = drawio.ExtractOverridesWithReport(data, diagram)
 	} else {
 		overrides, err = drawio.ExtractOverrides(data, diagram)
@@ -132,81 +110,32 @@ func extractOverrides(args []string) {
 	}
 	exitOnError(os.WriteFile(output, result, 0o644))
 	fmt.Printf("extracted layout overrides to %s\n", output)
-	if report {
+	if *report {
 		fmt.Println()
 		fmt.Print(drawio.FormatExtractionReport(extractionReport))
 	}
 }
 
 func render(args []string) {
-	var input, output, backend, layout, reportPath, iconDir, layoutOverridesPath string
-	var layoutReport bool
-	var outputReport string
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "-o", "--output":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
-				os.Exit(2)
-			}
-			i++
-			output = args[i]
-		case "--backend", "--renderer":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --backend requires native, d2, or drawio")
-				os.Exit(2)
-			}
-			i++
-			backend = args[i]
-		case "--report":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --report requires an output path")
-				os.Exit(2)
-			}
-			i++
-			reportPath = args[i]
-		case "--layout":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --layout requires elk or dagre")
-				os.Exit(2)
-			}
-			i++
-			layout = args[i]
-		case "--icons", "--icon-dir":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --icons requires a directory")
-				os.Exit(2)
-			}
-			i++
-			iconDir = args[i]
-		case "--layout-overrides":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --layout-overrides requires a YAML file")
-				os.Exit(2)
-			}
-			i++
-			layoutOverridesPath = args[i]
-		case "--layout-report":
-			layoutReport = true
-		case "--output-report":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --output-report requires text or json")
-				os.Exit(2)
-			}
-			i++
-			outputReport = args[i]
-		default:
-			if strings.HasPrefix(args[i], "-") || input != "" {
-				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
-				os.Exit(2)
-			}
-			input = args[i]
-		}
-	}
-	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag render <diagram.yaml> [-o diagram.svg|diagram.html|diagram.png|diagram.pdf|diagram.drawio] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--output-report text|json] [--icons directory] [--layout elk|dagre] [--report report.json]")
+	flags := commandFlags("render", "usage: netdiag render <diagram.yaml> [-o output] [--renderer native|d2|drawio] [--layout-overrides layout.yaml] [--layout-report] [--output-report text|json] [--icons directory] [--layout elk|dagre] [--report report.json]")
+	var output, backend, iconDir string
+	flags.StringVar(&output, "o", "", "output path")
+	flags.StringVar(&output, "output", "", "output path")
+	flags.StringVar(&backend, "backend", "", "renderer backend: native, d2, or drawio")
+	flags.StringVar(&backend, "renderer", "", "renderer backend: native, d2, or drawio")
+	reportPath := flags.String("report", "", "write renderer capability report JSON")
+	layout := flags.String("layout", "", "D2 layout engine: elk or dagre")
+	flags.StringVar(&iconDir, "icons", "", "custom SVG icon directory")
+	flags.StringVar(&iconDir, "icon-dir", "", "custom SVG icon directory")
+	layoutOverridesPath := flags.String("layout-overrides", "", "Draw.io layout override YAML")
+	layoutReport := flags.Bool("layout-report", false, "print Draw.io topology reconciliation report")
+	outputReport := flags.String("output-report", "", "layout report format: text or json")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 1 {
+		flags.Usage()
 		os.Exit(2)
 	}
+	input := flags.Arg(0)
 	if iconDir == "" {
 		iconDir = os.Getenv("NETDIAG_ICONS")
 	}
@@ -225,23 +154,23 @@ func render(args []string) {
 	renderPlan, err := planner.Build(diag, backend)
 	exitOnError(err)
 	var layoutOverrides *layoutoverride.Document
-	if layoutOverridesPath != "" {
+	if *layoutOverridesPath != "" {
 		if backend != "drawio" {
 			exitOnError(fmt.Errorf("--layout-overrides currently requires the draw.io renderer"))
 		}
-		layoutOverrides, err = layoutoverride.Load(layoutOverridesPath)
+		layoutOverrides, err = layoutoverride.Load(*layoutOverridesPath)
 		exitOnError(err)
 	}
-	if layoutReport && backend != "drawio" {
+	if *layoutReport && backend != "drawio" {
 		exitOnError(fmt.Errorf("--layout-report requires the draw.io renderer"))
 	}
-	if outputReport != "" && !layoutReport {
+	if *outputReport != "" && !*layoutReport {
 		exitOnError(fmt.Errorf("--output-report requires --layout-report"))
 	}
-	if outputReport == "" {
-		outputReport = "text"
+	if *outputReport == "" {
+		*outputReport = "text"
 	}
-	if outputReport != "text" && outputReport != "json" {
+	if *outputReport != "text" && *outputReport != "json" {
 		exitOnError(fmt.Errorf("--output-report must be text or json"))
 	}
 
@@ -254,12 +183,12 @@ func render(args []string) {
 		if iconDir != "" {
 			err = fmt.Errorf("custom SVG icon packs require the native renderer")
 		} else {
-			result, err = d2backend.Render(diag, d2backend.Options{Layout: layout})
+			result, err = d2backend.Render(diag, d2backend.Options{Layout: *layout})
 		}
 	case "drawio":
 		if iconDir != "" {
 			err = fmt.Errorf("custom SVG icon packs are not embedded in draw.io output")
-		} else if layoutReport {
+		} else if *layoutReport {
 			result, drawioLayoutReport, err = drawio.RenderWithLayoutReport(diag, drawio.Options{Overrides: layoutOverrides})
 		} else {
 			result, err = drawio.RenderWithOptions(diag, drawio.Options{Overrides: layoutOverrides})
@@ -294,22 +223,22 @@ func render(args []string) {
 	exitOnError(export.Write(target, result))
 	reportLayout := diag.Theme.Layout
 	if backend == "d2" {
-		reportLayout = layout
+		reportLayout = *layout
 		if reportLayout == "" {
 			reportLayout = "elk"
 		}
 	}
 	report := planner.Report(renderPlan, reportLayout, target)
-	if reportPath != "" {
-		exitOnError(writeJSONFile(reportPath, report))
+	if *reportPath != "" {
+		exitOnError(writeJSONFile(*reportPath, report))
 	}
-	if outputReport == "json" {
+	if *outputReport == "json" {
 		fmt.Fprintf(os.Stderr, "rendered %s using %s\n", target, backend)
 		writeJSON(drawioLayoutReport)
 	} else {
 		fmt.Printf("rendered %s using %s\n", target, backend)
 	}
-	if layoutReport && outputReport == "text" {
+	if *layoutReport && *outputReport == "text" {
 		fmt.Println()
 		fmt.Print(drawio.FormatLayoutReport(drawioLayoutReport))
 	}
@@ -342,28 +271,19 @@ func doctor(args []string) {
 }
 
 func diffLayout(args []string) {
-	var paths []string
-	jsonOutput := false
-	for _, arg := range args {
-		if arg == "--json" {
-			jsonOutput = true
-		} else if strings.HasPrefix(arg, "-") {
-			fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", arg)
-			os.Exit(2)
-		} else {
-			paths = append(paths, arg)
-		}
-	}
-	if len(paths) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag diff-layout <old.layout.yaml> <new.layout.yaml> [--json]")
+	flags := commandFlags("diff-layout", "usage: netdiag diff-layout <old.layout.yaml> <new.layout.yaml> [--json]")
+	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 2 {
+		flags.Usage()
 		os.Exit(2)
 	}
-	oldDoc, err := layoutoverride.Load(paths[0])
+	oldDoc, err := layoutoverride.Load(flags.Arg(0))
 	exitOnError(err)
-	newDoc, err := layoutoverride.Load(paths[1])
+	newDoc, err := layoutoverride.Load(flags.Arg(1))
 	exitOnError(err)
 	diff := layoutoverride.Compare(oldDoc, newDoc)
-	if jsonOutput {
+	if *jsonOutput {
 		writeJSON(diff)
 		return
 	}
@@ -387,11 +307,11 @@ func diffLayout(args []string) {
 }
 
 func capabilities(args []string) {
-	flags := flag.NewFlagSet("capabilities", flag.ExitOnError)
+	flags := commandFlags("capabilities", "usage: netdiag capabilities [--json]")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag capabilities [--json]")
+		flags.Usage()
 		os.Exit(2)
 	}
 	result := planner.Capabilities()
@@ -408,13 +328,13 @@ func capabilities(args []string) {
 }
 
 func plan(args []string) {
-	flags := flag.NewFlagSet("plan", flag.ExitOnError)
+	flags := commandFlags("plan", "usage: netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>")
 	renderer := flags.String("renderer", "", "renderer to assess: native, d2, or drawio")
 	backend := flags.String("backend", "", "alias for --renderer")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag plan [--renderer native|d2|drawio] [--json] <diagram.yaml>")
+		flags.Usage()
 		os.Exit(2)
 	}
 	doc, err := loadDocument(flags.Arg(0))
@@ -447,11 +367,11 @@ func plan(args []string) {
 }
 
 func recommend(args []string) {
-	flags := flag.NewFlagSet("recommend", flag.ExitOnError)
+	flags := commandFlags("recommend", "usage: netdiag recommend [--json] <diagram.yaml>")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag recommend [--json] <diagram.yaml>")
+		flags.Usage()
 		os.Exit(2)
 	}
 	doc, err := loadDocument(flags.Arg(0))
@@ -467,13 +387,13 @@ func recommend(args []string) {
 }
 
 func inspect(args []string) {
-	flags := flag.NewFlagSet("inspect", flag.ExitOnError)
+	flags := commandFlags("inspect", "usage: netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
 	failOn := flags.String("fail-on", "", "exit non-zero when findings reach warning or error")
 	limit := flags.Int("limit", 50, "maximum findings to print in text output; 0 prints all")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>")
+		flags.Usage()
 		os.Exit(2)
 	}
 	if *limit < 0 {
@@ -522,50 +442,20 @@ func inspect(args []string) {
 }
 
 func improveLayout(args []string) {
-	input, output := "", ""
-	rounds, maxCandidates := 3, 80
-	jsonOutput := false
-	for index := 0; index < len(args); index++ {
-		switch args[index] {
-		case "-o", "--output":
-			if index+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
-				os.Exit(2)
-			}
-			index++
-			output = args[index]
-		case "--rounds", "--max-candidates":
-			if index+1 >= len(args) {
-				fmt.Fprintf(os.Stderr, "error: %s requires a count\n", args[index])
-				os.Exit(2)
-			}
-			name := args[index]
-			index++
-			value, err := strconv.Atoi(args[index])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %s requires an integer\n", name)
-				os.Exit(2)
-			}
-			if name == "--rounds" {
-				rounds = value
-			} else {
-				maxCandidates = value
-			}
-		case "--json":
-			jsonOutput = true
-		default:
-			if strings.HasPrefix(args[index], "-") || input != "" {
-				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[index])
-				os.Exit(2)
-			}
-			input = args[index]
-		}
-	}
-	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]")
+	flags := commandFlags("improve-layout", "usage: netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]")
+	var output string
+	flags.StringVar(&output, "o", "", "output improved YAML path")
+	flags.StringVar(&output, "output", "", "output improved YAML path")
+	rounds := flags.Int("rounds", 3, "maximum repair rounds")
+	maxCandidates := flags.Int("max-candidates", 80, "maximum candidates per round")
+	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 1 {
+		flags.Usage()
 		os.Exit(2)
 	}
-	if rounds < 1 || maxCandidates < 1 {
+	input := flags.Arg(0)
+	if *rounds < 1 || *maxCandidates < 1 {
 		fmt.Fprintln(os.Stderr, "error: --rounds and --max-candidates must be greater than zero")
 		os.Exit(2)
 	}
@@ -574,12 +464,12 @@ func improveLayout(args []string) {
 	}
 	doc, err := loadDocument(input)
 	exitOnError(err)
-	improved, report, err := layoutrepair.Improve(doc, layoutrepair.Options{MaxRounds: rounds, MaxCandidates: maxCandidates})
+	improved, report, err := layoutrepair.Improve(doc, layoutrepair.Options{MaxRounds: *rounds, MaxCandidates: *maxCandidates})
 	exitOnError(err)
 	result, err := spec.Format(improved)
 	exitOnError(err)
 	exitOnError(os.WriteFile(output, result, 0o644))
-	if jsonOutput {
+	if *jsonOutput {
 		writeJSON(report)
 		return
 	}
@@ -598,51 +488,25 @@ func improveLayout(args []string) {
 }
 
 func convertLLDP(args []string) {
-	format, input, local, output := "auto", "", "", ""
-	autoLayout := false
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--format":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --format requires auto, openconfig, juniper-xml, cisco, juniper, or arista")
-				os.Exit(2)
-			}
-			i++
-			format = args[i]
-		case "--local":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --local requires a device name")
-				os.Exit(2)
-			}
-			i++
-			local = args[i]
-		case "--auto-layout":
-			autoLayout = true
-		case "-o", "--output":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
-				os.Exit(2)
-			}
-			i++
-			output = args[i]
-		default:
-			if (strings.HasPrefix(args[i], "-") && args[i] != "-") || input != "" {
-				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
-				os.Exit(2)
-			}
-			input = args[i]
-		}
-	}
-	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]")
+	flags := commandFlags("discover lldp", "usage: netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]")
+	format := flags.String("format", "auto", "input format")
+	local := flags.String("local", "", "local device name")
+	autoLayout := flags.Bool("auto-layout", false, "apply deterministic discovery layout")
+	var output string
+	flags.StringVar(&output, "o", "", "output topology YAML path")
+	flags.StringVar(&output, "output", "", "output topology YAML path")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 1 {
+		flags.Usage()
 		os.Exit(2)
 	}
-	results, err := loadLLDPResults(input, format, local)
+	input := flags.Arg(0)
+	results, err := loadLLDPResults(input, *format, *local)
 	exitOnError(err)
 	doc, err := lldp.ToDocumentSet(results)
 	exitOnError(err)
 	var layoutReport discoverylayout.Report
-	if autoLayout {
+	if *autoLayout {
 		layoutReport = discoverylayout.Apply(doc)
 	}
 	exitOnError(spec.Prepare(doc))
@@ -658,7 +522,7 @@ func convertLLDP(args []string) {
 	if report.MergedObservations > 0 {
 		fmt.Printf("merged %d reciprocal or duplicate observation(s)\n", report.MergedObservations)
 	}
-	printAutoLayoutReport(autoLayout, layoutReport)
+	printAutoLayoutReport(*autoLayout, layoutReport)
 }
 
 func discover(args []string) {
@@ -678,51 +542,25 @@ func discover(args []string) {
 }
 
 func convertISIS(args []string) {
-	format, input, local, output := "auto", "", "", ""
-	autoLayout := false
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--format":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --format requires auto, iosxr, juniper-xml, or openconfig")
-				os.Exit(2)
-			}
-			i++
-			format = args[i]
-		case "--local":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: --local requires a device name")
-				os.Exit(2)
-			}
-			i++
-			local = args[i]
-		case "--auto-layout":
-			autoLayout = true
-		case "-o", "--output":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
-				os.Exit(2)
-			}
-			i++
-			output = args[i]
-		default:
-			if (strings.HasPrefix(args[i], "-") && args[i] != "-") || input != "" {
-				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
-				os.Exit(2)
-			}
-			input = args[i]
-		}
-	}
-	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]")
+	flags := commandFlags("discover isis", "usage: netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]")
+	format := flags.String("format", "auto", "input format")
+	local := flags.String("local", "", "local device name")
+	autoLayout := flags.Bool("auto-layout", false, "apply deterministic discovery layout")
+	var output string
+	flags.StringVar(&output, "o", "", "output topology YAML path")
+	flags.StringVar(&output, "output", "", "output topology YAML path")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 1 {
+		flags.Usage()
 		os.Exit(2)
 	}
-	results, err := loadISISResults(input, format, local)
+	input := flags.Arg(0)
+	results, err := loadISISResults(input, *format, *local)
 	exitOnError(err)
 	doc, err := isis.ToDocumentSet(results)
 	exitOnError(err)
 	var layoutReport discoverylayout.Report
-	if autoLayout {
+	if *autoLayout {
 		layoutReport = discoverylayout.Apply(doc)
 	}
 	exitOnError(spec.Prepare(doc))
@@ -738,7 +576,7 @@ func convertISIS(args []string) {
 	if report.MergedObservations > 0 {
 		fmt.Printf("merged %d reciprocal or duplicate observation(s)\n", report.MergedObservations)
 	}
-	printAutoLayoutReport(autoLayout, layoutReport)
+	printAutoLayoutReport(*autoLayout, layoutReport)
 }
 
 func printAutoLayoutReport(enabled bool, report discoverylayout.Report) {
@@ -911,12 +749,12 @@ func printAssessments(title string, assessments []planner.Assessment) {
 }
 
 func validate(args []string) {
-	flags := flag.NewFlagSet("validate", flag.ExitOnError)
+	flags := commandFlags("validate", "usage: netdiag validate [--json] <diagram.yaml>")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag validate [--json] <diagram.yaml>")
+		flags.Usage()
 		os.Exit(2)
 	}
 
@@ -955,28 +793,16 @@ func schema(args []string) {
 }
 
 func expand(args []string) {
-	var input, output string
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "-o", "--output":
-			if i+1 >= len(args) {
-				fmt.Fprintln(os.Stderr, "error: -o requires an output path")
-				os.Exit(2)
-			}
-			i++
-			output = args[i]
-		default:
-			if strings.HasPrefix(args[i], "-") || input != "" {
-				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
-				os.Exit(2)
-			}
-			input = args[i]
-		}
-	}
-	if input == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag expand <diagram.yaml> [-o expanded.yaml]")
+	flags := commandFlags("expand", "usage: netdiag expand <diagram.yaml> [-o expanded.yaml]")
+	var output string
+	flags.StringVar(&output, "o", "", "output expanded YAML path")
+	flags.StringVar(&output, "output", "", "output expanded YAML path")
+	parseCommandFlags(flags, args)
+	if flags.NArg() != 1 {
+		flags.Usage()
 		os.Exit(2)
 	}
+	input := flags.Arg(0)
 	doc, err := loadDocument(input)
 	exitOnError(err)
 	result, err := spec.Format(doc)
@@ -990,11 +816,11 @@ func expand(args []string) {
 }
 
 func format(args []string) {
-	flags := flag.NewFlagSet("fmt", flag.ExitOnError)
+	flags := commandFlags("fmt", "usage: netdiag fmt [-w] <diagram.yaml>")
 	write := flags.Bool("w", false, "write formatted YAML back to the input file")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag fmt [-w] <diagram.yaml>")
+		flags.Usage()
 		os.Exit(2)
 	}
 	result, err := source.Format(flags.Arg(0))
@@ -1020,11 +846,11 @@ func loadDocument(path string) (*spec.Document, error) {
 }
 
 func listTemplates(args []string) {
-	flags := flag.NewFlagSet("templates", flag.ExitOnError)
+	flags := commandFlags("templates", "usage: netdiag templates [--json]")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag templates [--json]")
+		flags.Usage()
 		os.Exit(2)
 	}
 	registry, err := templateRegistry()
@@ -1042,11 +868,11 @@ func listTemplates(args []string) {
 }
 
 func listIcons(args []string) {
-	flags := flag.NewFlagSet("icons", flag.ExitOnError)
+	flags := commandFlags("icons", "usage: netdiag icons [--json]")
 	jsonOutput := flags.Bool("json", false, "emit machine-readable JSON")
-	flags.Parse(args)
+	parseCommandFlags(flags, args)
 	if flags.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "usage: netdiag icons [--json]")
+		flags.Usage()
 		os.Exit(2)
 	}
 	items := icons.List()

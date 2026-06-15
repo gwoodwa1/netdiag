@@ -38,6 +38,18 @@ for source in examples/*.yaml; do
   output="/tmp/netdiag-ci/$(basename "${source%.yaml}").svg"
   go run ./cmd/netdiag render "$source" -o "$output" >/dev/null
 done
+
+# Exercise the shared interspersed parser and --key=value syntax on real
+# commands, including documented input-first invocations.
+go run ./cmd/netdiag render examples/spine-leaf.yaml \
+  --renderer=native --output=/tmp/netdiag-ci/key-value.svg >/dev/null
+go run ./cmd/netdiag expand examples/templates/mpls-wan-template.yaml \
+  --output=/tmp/netdiag-ci/key-value-expanded.yaml >/dev/null
+go run ./cmd/netdiag improve-layout examples/spine-leaf.yaml \
+  --rounds=1 --max-candidates=1 --output=/tmp/netdiag-ci/key-value-improved.yaml >/dev/null
+go run ./cmd/netdiag discover lldp examples/discovery/lldp-iosxr-captures \
+  --format=auto --output=/tmp/netdiag-ci/key-value-discovered.yaml >/dev/null
+go run ./cmd/netdiag inspect examples/spine-leaf.yaml --limit=1 >/dev/null
 end_section
 
 section "Regenerate committed demos"
@@ -60,7 +72,10 @@ go run ./cmd/netdiag extract-overrides examples/round-trip/topology-v2.drawio \
 go run ./cmd/netdiag doctor drawio examples/round-trip/topology-v2.drawio >/dev/null
 go run ./cmd/netdiag diff-layout \
   examples/round-trip/topology-v1.layout.yaml \
-  examples/round-trip/topology-v2.layout.yaml >/dev/null
+  examples/round-trip/topology-v2.layout.yaml --json=true >/dev/null
+go run ./cmd/netdiag extract-overrides examples/round-trip/topology-v1.drawio \
+  --source=examples/round-trip/topology-v1.yaml \
+  --output=/tmp/netdiag-ci/key-value.layout.yaml >/dev/null
 go run ./cmd/netdiag discover lldp \
   examples/discovery/lldp-iosxr-8-site-dual-plane-captures \
   -o /tmp/lldp-iosxr-8-site-raw.yaml >/dev/null

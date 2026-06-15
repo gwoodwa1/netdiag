@@ -47,19 +47,17 @@ high-risk pure helpers have direct boundary-case coverage.
 
 ### Consistent CLI parsing and command help
 
-**Status:** open  
+**Status:** addressed  
 **Priority:** high
 
-Several commands use hand-rolled argument loops while others use
-`flag.NewFlagSet`. Consolidate command parsing so behavior and help are
-consistent, including `--key=value`, usage text, and validation. This is a
-user-facing footgun rather than only a code-style issue: hand-rolled parsers
-currently reject or mishandle syntax users reasonably expect from Go CLIs, and
-the resulting errors can be confusing.
+All option-bearing commands now use a shared `flag.FlagSet` convention with an
+interspersed-argument normalizer. Existing input-first commands remain valid,
+and options consistently support both `--key value` and `--key=value`.
 
-**Done when:** command-specific help is generated from one parsing approach and
-all supported options accept consistent syntax, including both `--key value`
-and `--key=value`.
+Focused parser tests cover input-first options, aliases, boolean flags, stdin
+(`-`), and literal arguments after `--`. The shared verification script also
+exercises `--key=value` through real render, extraction, discovery, expansion,
+repair, inspection, and layout-diff commands.
 
 ### Linting and error-handling audit
 
