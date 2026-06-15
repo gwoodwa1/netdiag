@@ -245,29 +245,29 @@ files when a new schema version is introduced.
 
 ### Refactor native renderer shared state
 
-**Status:** open
+**Status:** addressed
 
-The native SVG renderer passes shared values such as the output buffer, icon
-pack, theme, and premium state through many functions. Consider a renderer
-context only where it reduces parameter plumbing without hiding dependencies.
+The native renderer is split into focused files for definitions/themes,
+backgrounds, labels/bundles, nodes/icons, layout, routing, inspection, and
+orchestration. A narrow renderer context owns only the main output buffer and
+immutable visual dependencies. Documents, layouts, routes, geometry, label
+styles, and the phase-local annotation buffer remain explicit.
 
-**Done when:** rendering functions are easier to read and test, deterministic
-output remains byte-identical, and no renderer-neutral responsibilities move
-into the SVG package.
+Deterministic output remains byte-identical, visual helpers remain directly
+testable, and no renderer-neutral responsibilities moved into the SVG package.
 
 ### Break up inline SVG definitions
 
-**Status:** open
+**Status:** partially addressed
 
-`renderDefinitions` contains large inline SVG/CSS fragments. Extract cohesive
-helpers or carefully evaluated embedded fragments so definitions can be tested
-and reviewed independently. This refactor is safer than its size first
-suggests: CI already regenerates committed demos and fails when SVG output
-changes unexpectedly, providing a broad regression guard alongside focused
-tests.
+`renderDefinitions` and theme CSS now live in `internal/svg/definitions.go`,
+separate from orchestration. The definitions remain inline fragments and could
+still be split into cohesive helpers if a concrete review or testing need
+justifies it.
 
-**Done when:** filters, gradients, patterns, and theme definitions have clear
-ownership and existing generated SVG remains current.
+**Done when:** filters, gradients, patterns, and theme definitions are
+independently testable where that adds value, and existing generated SVG remains
+current.
 
 ## Product expansion candidates
 
