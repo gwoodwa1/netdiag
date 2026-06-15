@@ -9,6 +9,7 @@ a behavior matters.
 Requirements:
 
 - Go version declared in [`go.mod`](go.mod)
+- golangci-lint `v2.12.2` for the focused lint check
 - Python 3 for the Markdown-link check
 - Git
 - Docker only when testing the container or host-independent PNG/PDF export
@@ -23,12 +24,14 @@ go run ./cmd/netdiag render examples/spine-leaf.yaml -o /tmp/spine-leaf.svg
 Run the same verification used by GitHub Actions:
 
 ```sh
+./.github/scripts/lint.sh
 ./.github/scripts/verify.sh
 ```
 
-The script runs formatting checks, vet, tests, example validation and smoke
-rendering, generated-artifact freshness checks, Markdown-link validation, and
-`git diff --check`.
+The lint script runs the pinned, low-noise golangci-lint configuration used by
+CI. The verification script runs formatting checks, vet, tests, example
+validation and smoke rendering, generated-artifact freshness checks,
+Markdown-link validation, and `git diff --check`.
 
 ## Architecture and ownership
 

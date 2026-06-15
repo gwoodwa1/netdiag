@@ -2,6 +2,7 @@ package lldp
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -23,7 +24,7 @@ func parseJunosXML(data []byte) (Result, error) {
 	}
 	for {
 		token, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

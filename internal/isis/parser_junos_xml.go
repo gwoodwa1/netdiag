@@ -2,6 +2,7 @@ package isis
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -27,7 +28,7 @@ func parseJunosXML(data []byte) (Result, error) {
 	decoder := xml.NewDecoder(strings.NewReader(text[start:]))
 	for {
 		token, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

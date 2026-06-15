@@ -87,10 +87,6 @@ func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side stri
 
 const horizontalLabelOffset = 55.0
 
-func renderInterfaceLabel(out *bytes.Buffer, x, y float64, label string, style model.InterfaceLabelStyle) {
-	renderRotatedInterfaceLabel(out, x, y, label, 0, style)
-}
-
 func renderRotatedInterfaceLabel(out *bytes.Buffer, x, y float64, label string, rotation int, style model.InterfaceLabelStyle) {
 	fill := style.Fill
 	if fill == "" {

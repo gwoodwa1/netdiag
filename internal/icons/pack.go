@@ -3,6 +3,7 @@ package icons
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -87,7 +88,7 @@ func sanitizeSVG(data []byte, idPrefix string) (SVG, error) {
 
 	for {
 		token, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

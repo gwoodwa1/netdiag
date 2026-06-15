@@ -26,9 +26,11 @@ func convert(path, format string, svg []byte) error {
 		return err
 	}
 	tempPath := temp.Name()
-	defer os.Remove(tempPath)
+	defer func() {
+		_ = os.Remove(tempPath)
+	}()
 	if _, err := temp.Write(svg); err != nil {
-		temp.Close()
+		_ = temp.Close()
 		return err
 	}
 	if err := temp.Close(); err != nil {

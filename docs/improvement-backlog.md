@@ -111,14 +111,16 @@ that latent flakiness directly.
 
 ### Linting and error-handling audit
 
-**Status:** open
+**Status:** addressed
 
 **Priority:** medium-high
 
-CI currently runs formatting, `go vet`, tests, example validation/rendering,
-generated-artifact freshness, and Markdown-link checks. Start with a pinned
-`errcheck` step because silently ignored failures are especially risky in a CLI
-that writes diagrams, reports, and extracted layout intent.
+CI and local development run pinned golangci-lint `v2.12.2` with its
+conservative standard analyzer set plus `errorlint`. This includes `errcheck`,
+`govet`, `ineffassign`, `staticcheck`, and `unused` without enabling the noisy
+style-heavy full set. The initial audit fixed ignored flag/output/temporary-file
+errors, wrapped EOF comparisons, and a dead helper. Quick-fix and error-string
+style suggestions are explicitly excluded.
 
 After the initial audit, evaluate:
 
@@ -128,8 +130,8 @@ After the initial audit, evaluate:
 Avoid enabling noisy style-only rules without a demonstrated maintenance
 benefit.
 
-**Done when:** `errcheck` is pinned, reproducible, low-noise, and enforced in
-CI; any further lint rules have separately demonstrated value.
+Further lint rules should be enabled only when they have separately demonstrated
+value.
 
 ### Bound resource use for untrusted inputs
 

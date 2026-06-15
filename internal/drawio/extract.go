@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -247,7 +248,7 @@ func extractCells(data []byte) ([]extractedCell, error) {
 	var cells []extractedCell
 	for {
 		token, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return cells, nil
 		}
 		if err != nil {

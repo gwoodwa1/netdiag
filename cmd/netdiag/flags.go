@@ -11,14 +11,14 @@ func commandFlags(name, usage string) *flag.FlagSet {
 	flags := flag.NewFlagSet(name, flag.ExitOnError)
 	flags.SetOutput(os.Stderr)
 	flags.Usage = func() {
-		fmt.Fprintln(flags.Output(), usage)
+		_, _ = fmt.Fprintln(flags.Output(), usage)
 		flags.PrintDefaults()
 	}
 	return flags
 }
 
 func parseCommandFlags(flags *flag.FlagSet, args []string) {
-	flags.Parse(interspersedArgs(flags, args))
+	_ = flags.Parse(interspersedArgs(flags, args))
 }
 
 // interspersedArgs keeps netdiag's documented input-first syntax while using
