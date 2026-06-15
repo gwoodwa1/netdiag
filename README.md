@@ -1,6 +1,6 @@
 # Network Diagram Builder 
 
-[![CI](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml/badge.svg)](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml)
+[![CI](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/gwoodwa1/netdiag/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 [![Go version](https://img.shields.io/github/go-mod/go-version/gwoodwa1/netdiag)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
