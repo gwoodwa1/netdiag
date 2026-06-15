@@ -126,6 +126,10 @@ excluded because netdiag intentionally reads user-selected topology assets and
 writes shareable diagrams; deliberate subprocess and tainted-path cases retain
 local rationale comments.
 
+CI also runs a pinned Trivy filesystem scan for fixable high and critical
+dependency vulnerabilities and repository misconfigurations. Contributors can
+run the same scan locally before pushing dependency or workflow changes.
+
 After the initial audit, evaluate:
 
 - incomplete switches where typed enums are introduced (`exhaustive`)

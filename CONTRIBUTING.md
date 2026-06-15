@@ -10,6 +10,7 @@ Requirements:
 
 - Go version declared in [`go.mod`](go.mod)
 - golangci-lint `v2.12.2` for the focused lint check
+- Trivy `0.71.1` for dependency and configuration vulnerability scanning
 - Python 3 for the Markdown-link check
 - Git
 - Docker only when testing the container or host-independent PNG/PDF export
@@ -25,14 +26,17 @@ Run the same verification used by GitHub Actions:
 
 ```sh
 ./.github/scripts/lint.sh
+trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed \
+  --skip-dirs .git,.gocache,.gomodcache --exit-code 1 .
 ./.github/scripts/verify.sh
 ```
 
 The lint script runs the pinned, low-noise golangci-lint configuration used by
-CI, including correctness analyzers and `gosec` security checks. The
-verification script runs formatting checks, vet, tests, example validation and
-smoke rendering, generated-artifact freshness checks, Markdown-link validation,
-and `git diff --check`.
+CI, including correctness analyzers and `gosec` security checks. Trivy checks
+the repository for fixable high and critical dependency vulnerabilities and
+configuration problems. The verification script runs formatting checks, vet,
+tests, example validation and smoke rendering, generated-artifact freshness
+checks, Markdown-link validation, and `git diff --check`.
 
 ## Architecture and ownership
 
