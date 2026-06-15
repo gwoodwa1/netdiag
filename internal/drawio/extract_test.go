@@ -62,6 +62,13 @@ func TestExtractOverridesRoundTrip(t *testing.T) {
 	if _, ok := extracted.LayoutOverrides.Nodes["b"]; !ok {
 		t.Fatal("expected generated position for node b to be extracted")
 	}
+	rerendered, err := RenderWithOptions(diagram, Options{Overrides: extracted})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(rendered, rerendered) {
+		t.Fatal("render -> extract -> render did not produce byte-identical draw.io output")
+	}
 }
 
 func TestDecodeCompressedPage(t *testing.T) {
@@ -110,5 +117,48 @@ func TestExtractOverridesIgnoresUnmanagedCellsAndRejectsUnknownManagedIDs(t *tes
 	}
 	if got := result.LayoutOverrides.Nodes["known"]; got.X == nil || *got.X != 10 {
 		t.Fatalf("wrapped managed cell was not extracted: %+v", got)
+	}
+}
+
+func TestExtractOverridesWithReportSummarizesIgnoredAndMissingObjects(t *testing.T) {
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "known"}, {ID: "missing"}},
+		Links: []model.Link{{
+			ID: "current-link", From: model.LinkEndpoint{Node: "known"}, To: model.LinkEndpoint{Node: "missing"},
+		}},
+	}
+	data := []byte(`<mxfile><diagram><mxGraphModel><root>
+		<mxCell id="0"></mxCell>
+		<mxCell id="known" netdiag-id="known" netdiag-kind="node" vertex="1"><mxGeometry x="10" y="20" width="30" height="40"></mxGeometry></mxCell>
+		<mxCell id="stale-link" netdiag-id="stale-link" netdiag-kind="link" edge="1"><mxGeometry></mxGeometry></mxCell>
+		<mxCell id="generated-label" netdiag-id="label:known" netdiag-kind="label" vertex="1"></mxCell>
+		<mxCell id="annotation" value="note" style="text;html=1;" vertex="1"></mxCell>
+		<mxCell id="shape" style="rounded=1;" vertex="1"></mxCell>
+		<mxCell id="connector" edge="1"></mxCell>
+	</root></mxGraphModel></diagram></mxfile>`)
+
+	result, report, err := ExtractOverridesWithReport(data, diagram)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.LayoutOverrides.Nodes) != 1 || report.Managed.Nodes != 1 {
+		t.Fatalf("unexpected managed nodes: result=%+v report=%+v", result.LayoutOverrides.Nodes, report.Managed)
+	}
+	if report.Ignored.Annotations != 1 || report.Ignored.DecorativeShapes != 1 || report.Ignored.Connectors != 1 || report.Ignored.UnknownManaged != 1 {
+		t.Fatalf("unexpected ignored counts: %+v", report.Ignored)
+	}
+	got := strings.Join(report.Warnings, "\n")
+	for _, want := range []string{
+		"link current-link exists in source but was not found in draw.io",
+		"link stale-link exists in draw.io but source topology no longer contains it",
+		"node missing exists in source but was not found in draw.io",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("report warnings %q do not contain %q", got, want)
+		}
+	}
+	formatted := FormatExtractionReport(report)
+	if !strings.Contains(formatted, "1 manually added connectors without netdiag-id") || !strings.Contains(formatted, "Warnings:") {
+		t.Fatalf("unexpected formatted report:\n%s", formatted)
 	}
 }

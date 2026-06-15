@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/layoutoverride"
@@ -24,6 +25,8 @@ type drawioPage struct {
 
 type extractedCell struct {
 	Style       string             `xml:"style,attr"`
+	Vertex      string             `xml:"vertex,attr"`
+	Edge        string             `xml:"edge,attr"`
 	NetdiagID   string             `xml:"netdiag-id,attr"`
 	NetdiagKind string             `xml:"netdiag-kind,attr"`
 	Geometry    *extractedGeometry `xml:"mxGeometry"`
@@ -53,18 +56,47 @@ type extractedPoint struct {
 	Y float64 `xml:"y,attr"`
 }
 
+type ExtractionReport struct {
+	Managed  ExtractionManaged
+	Ignored  ExtractionIgnored
+	Warnings []string
+}
+
+type ExtractionManaged struct {
+	Nodes  int
+	Groups int
+	Links  int
+}
+
+type ExtractionIgnored struct {
+	Annotations      int
+	DecorativeShapes int
+	Connectors       int
+	UnknownManaged   int
+}
+
 func ExtractOverrides(data []byte, diagram *model.Diagram) (*layoutoverride.Document, error) {
+	result, _, err := extractOverrides(data, diagram, true)
+	return result, err
+}
+
+func ExtractOverridesWithReport(data []byte, diagram *model.Diagram) (*layoutoverride.Document, ExtractionReport, error) {
+	return extractOverrides(data, diagram, false)
+}
+
+func extractOverrides(data []byte, diagram *model.Diagram, strict bool) (*layoutoverride.Document, ExtractionReport, error) {
+	var report ExtractionReport
 	var file drawioFile
 	if err := xml.Unmarshal(data, &file); err != nil {
-		return nil, fmt.Errorf("parse draw.io file: %w", err)
+		return nil, report, fmt.Errorf("parse draw.io file: %w", err)
 	}
 	if len(file.Diagrams) == 0 {
-		return nil, fmt.Errorf("draw.io file contains no diagram pages")
+		return nil, report, fmt.Errorf("draw.io file contains no diagram pages")
 	}
 
 	nodes, groups, links, err := topologyIDs(diagram)
 	if err != nil {
-		return nil, err
+		return nil, report, err
 	}
 	result := &layoutoverride.Document{
 		Version: 1,
@@ -78,52 +110,136 @@ func ExtractOverrides(data []byte, diagram *model.Diagram) (*layoutoverride.Docu
 	for pageIndex, page := range file.Diagrams {
 		graphData, err := decodePage(page.Content)
 		if err != nil {
-			return nil, fmt.Errorf("decode draw.io page %d: %w", pageIndex+1, err)
+			return nil, report, fmt.Errorf("decode draw.io page %d: %w", pageIndex+1, err)
 		}
 		cells, err := extractCells(graphData)
 		if err != nil {
-			return nil, fmt.Errorf("parse draw.io page %d graph: %w", pageIndex+1, err)
+			return nil, report, fmt.Errorf("parse draw.io page %d graph: %w", pageIndex+1, err)
 		}
 		for _, cell := range cells {
 			if cell.NetdiagID == "" || cell.NetdiagKind == "" {
+				classifyIgnoredCell(cell, &report)
 				continue
 			}
 			key := cell.NetdiagKind + ":" + cell.NetdiagID
 			if seen[key] {
-				return nil, fmt.Errorf("draw.io file contains duplicate %s ID %q", cell.NetdiagKind, cell.NetdiagID)
+				return nil, report, fmt.Errorf("draw.io file contains duplicate %s ID %q", cell.NetdiagKind, cell.NetdiagID)
 			}
 			seen[key] = true
 			switch cell.NetdiagKind {
 			case "node":
 				if !nodes[cell.NetdiagID] {
-					return nil, fmt.Errorf("draw.io file references unknown node %q", cell.NetdiagID)
+					if strict {
+						return nil, report, fmt.Errorf("draw.io file references unknown node %q", cell.NetdiagID)
+					}
+					reportUnknownManaged(&report, "node", cell.NetdiagID)
+					continue
 				}
 				bounds, err := extractBounds(cell)
 				if err != nil {
-					return nil, err
+					return nil, report, err
 				}
 				result.LayoutOverrides.Nodes[cell.NetdiagID] = bounds
+				report.Managed.Nodes++
 			case "group":
 				if !groups[cell.NetdiagID] {
-					return nil, fmt.Errorf("draw.io file references unknown group %q", cell.NetdiagID)
+					if strict {
+						return nil, report, fmt.Errorf("draw.io file references unknown group %q", cell.NetdiagID)
+					}
+					reportUnknownManaged(&report, "group", cell.NetdiagID)
+					continue
 				}
 				bounds, err := extractBounds(cell)
 				if err != nil {
-					return nil, err
+					return nil, report, err
 				}
 				result.LayoutOverrides.Groups[cell.NetdiagID] = bounds
+				report.Managed.Groups++
 			case "link":
 				if !links[cell.NetdiagID] {
-					return nil, fmt.Errorf("draw.io file references unknown link %q", cell.NetdiagID)
+					if strict {
+						return nil, report, fmt.Errorf("draw.io file references unknown link %q", cell.NetdiagID)
+					}
+					reportUnknownManaged(&report, "link", cell.NetdiagID)
+					continue
 				}
 				result.LayoutOverrides.Links[cell.NetdiagID] = extractLink(cell)
+				report.Managed.Links++
 			}
 		}
 	}
 	if err := layoutoverride.Validate(result); err != nil {
-		return nil, fmt.Errorf("validate extracted layout overrides: %w", err)
+		return nil, report, fmt.Errorf("validate extracted layout overrides: %w", err)
 	}
-	return result, nil
+	if !strict {
+		appendMissingWarnings(&report, "node", nodes, result.LayoutOverrides.Nodes)
+		appendMissingWarnings(&report, "group", groups, result.LayoutOverrides.Groups)
+		appendMissingWarnings(&report, "link", links, result.LayoutOverrides.Links)
+		sort.Strings(report.Warnings)
+	}
+	return result, report, nil
+}
+
+func FormatExtractionReport(report ExtractionReport) string {
+	return fmt.Sprintf(`Managed objects:
+- %d nodes extracted
+- %d groups extracted
+- %d links extracted
+
+Ignored objects:
+- %d unmanaged annotations
+- %d decorative shapes
+- %d manually added connectors without netdiag-id
+- %d managed objects not present in source
+
+Warnings:
+%s`, report.Managed.Nodes, report.Managed.Groups, report.Managed.Links,
+		report.Ignored.Annotations, report.Ignored.DecorativeShapes, report.Ignored.Connectors, report.Ignored.UnknownManaged,
+		formatWarnings(report.Warnings))
+}
+
+func classifyIgnoredCell(cell extractedCell, report *ExtractionReport) {
+	switch {
+	case cell.Edge == "1":
+		report.Ignored.Connectors++
+	case cell.Vertex == "1" && hasStyleFlag(cell.Style, "text"):
+		report.Ignored.Annotations++
+	case cell.Vertex == "1":
+		report.Ignored.DecorativeShapes++
+	}
+}
+
+func reportUnknownManaged(report *ExtractionReport, kind, id string) {
+	report.Ignored.UnknownManaged++
+	report.Warnings = append(report.Warnings, fmt.Sprintf("%s %s exists in draw.io but source topology no longer contains it", kind, id))
+}
+
+func appendMissingWarnings[T any](report *ExtractionReport, kind string, expected map[string]bool, extracted map[string]T) {
+	for id := range expected {
+		if _, ok := extracted[id]; !ok {
+			report.Warnings = append(report.Warnings, fmt.Sprintf("%s %s exists in source but was not found in draw.io", kind, id))
+		}
+	}
+}
+
+func formatWarnings(warnings []string) string {
+	if len(warnings) == 0 {
+		return "- none\n"
+	}
+	var result strings.Builder
+	for _, warning := range warnings {
+		fmt.Fprintf(&result, "- %s\n", warning)
+	}
+	return result.String()
+}
+
+func hasStyleFlag(style, flag string) bool {
+	for _, entry := range strings.Split(style, ";") {
+		if entry == flag {
+			return true
+		}
+	}
+	return false
 }
 
 func extractCells(data []byte) ([]extractedCell, error) {

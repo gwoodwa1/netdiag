@@ -76,6 +76,7 @@ func main() {
 
 func extractOverrides(args []string) {
 	var input, sourcePath, output string
+	var report bool
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--source":
@@ -92,6 +93,8 @@ func extractOverrides(args []string) {
 			}
 			i++
 			output = args[i]
+		case "--report":
+			report = true
 		default:
 			if strings.HasPrefix(args[i], "-") || input != "" {
 				fmt.Fprintf(os.Stderr, "error: unexpected argument %q\n", args[i])
@@ -101,7 +104,7 @@ func extractOverrides(args []string) {
 		}
 	}
 	if input == "" || sourcePath == "" {
-		fmt.Fprintln(os.Stderr, "usage: netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml]")
+		fmt.Fprintln(os.Stderr, "usage: netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml] [--report]")
 		os.Exit(2)
 	}
 	sourceDoc, err := loadDocument(sourcePath)
@@ -110,7 +113,13 @@ func extractOverrides(args []string) {
 	exitOnError(err)
 	data, err := os.ReadFile(input)
 	exitOnError(err)
-	overrides, err := drawio.ExtractOverrides(data, diagram)
+	var overrides *layoutoverride.Document
+	var extractionReport drawio.ExtractionReport
+	if report {
+		overrides, extractionReport, err = drawio.ExtractOverridesWithReport(data, diagram)
+	} else {
+		overrides, err = drawio.ExtractOverrides(data, diagram)
+	}
 	exitOnError(err)
 	result, err := layoutoverride.Format(overrides)
 	exitOnError(err)
@@ -119,6 +128,10 @@ func extractOverrides(args []string) {
 	}
 	exitOnError(os.WriteFile(output, result, 0o644))
 	fmt.Printf("extracted layout overrides to %s\n", output)
+	if report {
+		fmt.Println()
+		fmt.Print(drawio.FormatExtractionReport(extractionReport))
+	}
 }
 
 func render(args []string) {
@@ -990,7 +1003,7 @@ Usage:
   netdiag recommend [--json] <diagram.yaml>
   netdiag inspect [--json] [--fail-on warning|error] [--limit count] <diagram.yaml>
   netdiag improve-layout <diagram.yaml> [-o improved.yaml] [--rounds count] [--max-candidates count] [--json]
-  netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml]
+  netdiag extract-overrides <edited.drawio> --source <diagram.yaml> [-o diagram.layout.yaml] [--report]
   netdiag discover lldp <output.txt|output.json|directory|-> [--format auto|openconfig|juniper-xml|cisco|juniper|arista] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag discover isis <output.txt|output.json|directory|-> [--format auto|iosxr|juniper-xml|openconfig] [--local hostname] [--auto-layout] [-o diagram.yaml]
   netdiag lldp ...  (compatibility alias)

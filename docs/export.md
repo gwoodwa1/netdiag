@@ -65,24 +65,57 @@ extract their current presentation metadata and render it again:
 
 ```sh
 netdiag extract-overrides edited.drawio --source diagram.yaml \
-  -o diagram.layout.yaml
+  -o diagram.layout.yaml --report
 
 netdiag render diagram.yaml --renderer drawio \
   --layout-overrides diagram.layout.yaml -o diagram.drawio
 ```
+
+`--report` prints managed object counts, ignored Draw.io object counts, and
+warnings for managed objects that exist on only one side of the source/Draw.io
+pair. Report mode ignores stale managed objects so that valid remaining layout
+state can still be extracted. Without `--report`, stale managed IDs remain a
+hard error.
 
 Draw.io cells include stable `netdiag-id` and `netdiag-kind` metadata for
 nodes, groups, links, and endpoint labels. Links without an explicit ID receive
 a deterministic ID based on their normalized endpoints, so reordering links
 does not change their identity.
 
-Layout overrides currently support node and group bounds, locks, and style
-metadata, plus link endpoint sides, waypoints, locks, and the `orthogonal`,
-`straight`, or `curved` style presets. Node and nested-group coordinates are
-relative to their Draw.io parent. `extract-overrides` reads only netdiag-managed
-nodes, groups, and links carrying stable metadata. Arbitrary Draw.io shapes,
-annotations, text changes, and decoration are deliberately ignored and may not
-survive a fresh render.
+Layout overrides currently support node and group bounds and locks, plus link
+endpoint sides, waypoints, locks, and the `orthogonal`, `straight`, or `curved`
+style presets. Node and nested-group coordinates are relative to their Draw.io
+parent. `extract-overrides` reads only netdiag-managed nodes, groups, and links
+carrying stable metadata. Arbitrary Draw.io shapes, annotations, text changes,
+and decoration are deliberately ignored and may not survive a fresh render.
+
+### Safe edits in Draw.io
+
+The durable model boundary is:
+
+- topology YAML is the network truth
+- Draw.io is the editable visual artefact
+- layout override YAML is durable human layout intent
+- SVG, HTML, PNG, and PDF are publication outputs
+
+Edits currently preserved by `extract-overrides`:
+
+- moving and resizing netdiag-managed nodes and groups
+- adjusting link waypoints and source/target attachment sides
+- selecting straight, curved, or orthogonal link routing
+- locking managed nodes, groups, and links
+
+Edits intentionally ignored or not currently preserved:
+
+- changing generated labels or moving labels directly in Draw.io
+- renaming nodes or changing topology in Draw.io
+- adding links manually without netdiag metadata
+- deleting or changing `netdiag-id` / `netdiag-kind` metadata
+- adding annotations, decorative shapes, or other unmanaged objects
+
+Keep the topology YAML and extracted layout override YAML in version control.
+The Draw.io file can be regenerated for another editing pass without making its
+XML the primary model.
 
 Interactive HTML embeds the native SVG and adds offline pan, zoom, inspection,
 and group-collapse controls. See [interactive.md](interactive.md).
