@@ -32,7 +32,7 @@ go build -o netdiag ./cmd/netdiag
 Try it in Docker with no local Go installation:
 
 ```sh
-docker build -t netdiag . && docker run --rm -v "$PWD:/work" -w /work netdiag render examples/templates/national-telco-template.yaml -o /work/national-telco.png
+docker build -t netdiag . && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work netdiag render examples/templates/national-telco-template.yaml -o /work/national-telco.png
 ```
 
 ## Fit and limitations
