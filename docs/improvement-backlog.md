@@ -75,6 +75,11 @@ render-extract-render test. Hand-authored custom icons and the initial round-tri
 layout intent are explicitly excluded, as are curated discovery YAML files that
 preserve refinements beyond raw import output.
 
+The repeated-render comparison is distinct from freshness checking. A
+non-deterministic render can occasionally match the committed artifact and pass
+a single-run freshness check; comparing two outputs from the same input exposes
+that latent flakiness directly.
+
 ### Linting and error-handling audit
 
 **Status:** open
@@ -112,6 +117,11 @@ input before parsing.
 This is primarily a denial-of-service and accidental-resource-exhaustion risk
 when processing very large or highly compressed files. It is not evidence that
 the current XML parser expands external entities.
+
+**Sequencing:** coordinate this with “Make CLI command execution directly
+testable.” Resource limits should live in reusable readers/parsers that command
+helpers can call in-process; otherwise important stdin and oversized-file tests
+remain unnecessarily dependent on subprocess execution.
 
 **Done when:**
 
@@ -181,6 +191,10 @@ The shared `flag.FlagSet` layer fixed the inconsistent option parsing problem,
 but command orchestration still mixes output, process exit behavior, and command
 logic in places. This encourages subprocess-only testing and makes individual
 failure paths harder to exercise.
+
+This item is an enabling dependency for complete resource-bounds coverage:
+decoupled command helpers make stdin limits, oversized files, diagnostics, and
+exit-code behavior practical to test directly.
 
 **Done when:** command helpers return errors or explicit result/status values;
 `main` owns final stderr formatting and exit-code selection; representative
