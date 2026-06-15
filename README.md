@@ -10,6 +10,9 @@ inspired by [cidrblock/drawthe.net](https://github.com/cidrblock/drawthe.net).
 The first working slice renders deterministic spine-leaf SVG diagrams with
 source interface labels, central link labels, and target interface labels.
 
+**Netdiag does not try to make auto-layout perfect; it makes manual layout
+repeatable.**
+
 ## Quick start
 
 ```sh
@@ -48,6 +51,26 @@ groups. It is generated entirely by netdiag and works without a server.
 
 See the [full example gallery](docs/gallery.md) for routing protocols, campus,
 cloud, security, data-center, and service-provider topologies.
+
+## Round-trip workflow
+
+Generate an editable Draw.io diagram, polish it manually, extract only the
+durable layout intent netdiag owns, then apply that intent as topology evolves:
+
+```text
+render -> edit -> extract-overrides -> re-render -> evolve -> layout-report
+```
+
+| Command | Purpose |
+| --- | --- |
+| `netdiag render topology.yaml --renderer drawio -o topology.drawio` | Generate an editable diagram |
+| `netdiag extract-overrides topology.drawio --source topology.yaml -o topology.layout.yaml --report` | Extract supported human layout intent |
+| `netdiag render topology.yaml --renderer drawio --layout-overrides topology.layout.yaml -o topology.drawio` | Reapply manual polish strictly |
+| `netdiag render topology-v2.yaml --renderer drawio --layout-overrides topology.layout.yaml --layout-report -o topology-v2.drawio` | Preserve old polish, place new objects, and explain changes |
+
+The reproducible [worked round-trip example](docs/round-trip.md) includes v1
+and v2 topology YAML, layout overrides, generated Draw.io files, and a visual
+raw-versus-refined IOS-XR discovery example.
 
 ## CLI workflow
 

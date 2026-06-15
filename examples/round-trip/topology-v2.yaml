@@ -1,0 +1,35 @@
+version: 1
+
+diagram:
+  title: Round-trip topology v2
+  subtitle: Existing polish preserved as discovery adds Edge 02
+  direction: right
+  interface_labels: ends
+
+nodes:
+  core-a:
+    label: Core A
+    role: core-router
+  core-b:
+    label: Core B
+    role: core-router
+  edge-01:
+    label: Edge 01
+    role: edge-router
+  edge-02:
+    label: Edge 02
+    role: edge-router
+
+links:
+  - id: core-a__core-b
+    from: core-a:HundredGigE0/0
+    to: core-b:HundredGigE0/0
+    label: 100G
+  - id: core-a__edge-01
+    from: core-a:HundredGigE0/1
+    to: edge-01:HundredGigE0/0
+    label: 100G
+  - id: core-b__edge-02
+    from: core-b:HundredGigE0/1
+    to: edge-02:HundredGigE0/0
+    label: 100G

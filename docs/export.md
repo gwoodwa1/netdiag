@@ -1,5 +1,8 @@
 # SVG, HTML, PNG, PDF, and draw.io export
 
+For a complete topology-v1 to topology-v2 walkthrough, see
+[round-trip.md](round-trip.md).
+
 SVG is netdiag's native deterministic output:
 
 ```sh

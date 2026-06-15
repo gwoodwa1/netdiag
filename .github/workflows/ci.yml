@@ -34,6 +34,8 @@ jobs:
           for source in examples/*.yaml examples/templates/*.yaml examples/includes/*.yaml; do
             go run ./cmd/netdiag validate "$source"
           done
+          go run ./cmd/netdiag validate examples/round-trip/topology-v1.yaml
+          go run ./cmd/netdiag validate examples/round-trip/topology-v2.yaml
 
       - name: Smoke-test native rendering
         run: |
@@ -47,7 +49,26 @@ jobs:
         run: |
           go run ./cmd/netdiag render examples/17-themed-link-status.yaml -o examples/17-themed-link-status.svg
           go run ./cmd/netdiag render examples/16-site-aware-wan.yaml -o docs/playground.html
-          git diff --exit-code -- examples/17-themed-link-status.svg docs/playground.html
+          go run ./cmd/netdiag render examples/round-trip/topology-v1.yaml \
+            --renderer drawio \
+            --layout-overrides examples/round-trip/topology-v1.layout.yaml \
+            -o examples/round-trip/topology-v1.drawio
+          go run ./cmd/netdiag render examples/round-trip/topology-v2.yaml \
+            --renderer drawio \
+            --layout-overrides examples/round-trip/topology-v1.layout.yaml \
+            --layout-report \
+            -o examples/round-trip/topology-v2.drawio
+          go run ./cmd/netdiag discover lldp \
+            examples/discovery/lldp-iosxr-8-site-dual-plane-captures \
+            -o /tmp/lldp-iosxr-8-site-raw.yaml
+          go run ./cmd/netdiag render /tmp/lldp-iosxr-8-site-raw.yaml \
+            -o examples/round-trip/iosxr-raw-discovery.svg
+          git diff --exit-code -- \
+            examples/17-themed-link-status.svg \
+            docs/playground.html \
+            examples/round-trip/topology-v1.drawio \
+            examples/round-trip/topology-v2.drawio \
+            examples/round-trip/iosxr-raw-discovery.svg
 
       - name: Check Markdown links
         run: python3 .github/scripts/check_markdown_links.py
