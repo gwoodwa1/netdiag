@@ -53,42 +53,30 @@ go run ./cmd/netdiag inspect examples/spine-leaf.yaml --limit=1 >/dev/null
 end_section
 
 section "Regenerate committed demos"
-go run ./cmd/netdiag render examples/17-themed-link-status.yaml \
-  -o examples/17-themed-link-status.svg >/dev/null
-go run ./cmd/netdiag render examples/16-site-aware-wan.yaml \
-  -o docs/playground.html >/dev/null
-go run ./cmd/netdiag render examples/round-trip/topology-v1.yaml \
-  --renderer drawio \
-  --layout-overrides examples/round-trip/topology-v1.layout.yaml \
-  -o examples/round-trip/topology-v1.drawio >/dev/null
+generated_outputs=()
+while IFS= read -r output; do
+  generated_outputs[${#generated_outputs[@]}]="$output"
+done < <(.github/scripts/regenerate.sh --list)
+.github/scripts/regenerate.sh
+git diff --exit-code -- "${generated_outputs[@]}"
+end_section
+
+section "Check repeated-render determinism"
+go run ./cmd/netdiag render examples/spine-leaf.yaml \
+  -o /tmp/netdiag-ci/determinism-native-a.svg >/dev/null
+go run ./cmd/netdiag render examples/spine-leaf.yaml \
+  -o /tmp/netdiag-ci/determinism-native-b.svg >/dev/null
+cmp /tmp/netdiag-ci/determinism-native-a.svg /tmp/netdiag-ci/determinism-native-b.svg
+
 go run ./cmd/netdiag render examples/round-trip/topology-v2.yaml \
   --renderer drawio \
   --layout-overrides examples/round-trip/topology-v1.layout.yaml \
-  --layout-report \
-  -o examples/round-trip/topology-v2.drawio >/dev/null
-go run ./cmd/netdiag extract-overrides examples/round-trip/topology-v2.drawio \
-  --source examples/round-trip/topology-v2.yaml \
-  -o examples/round-trip/topology-v2.layout.yaml >/dev/null
-go run ./cmd/netdiag doctor drawio examples/round-trip/topology-v2.drawio >/dev/null
-go run ./cmd/netdiag diff-layout \
-  examples/round-trip/topology-v1.layout.yaml \
-  examples/round-trip/topology-v2.layout.yaml --json=true >/dev/null
-go run ./cmd/netdiag extract-overrides examples/round-trip/topology-v1.drawio \
-  --source=examples/round-trip/topology-v1.yaml \
-  --output=/tmp/netdiag-ci/key-value.layout.yaml >/dev/null
-go run ./cmd/netdiag discover lldp \
-  examples/discovery/lldp-iosxr-8-site-dual-plane-captures \
-  -o /tmp/lldp-iosxr-8-site-raw.yaml >/dev/null
-go run ./cmd/netdiag render /tmp/lldp-iosxr-8-site-raw.yaml \
-  -o examples/round-trip/iosxr-raw-discovery.svg >/dev/null
-
-git diff --exit-code -- \
-  examples/17-themed-link-status.svg \
-  docs/playground.html \
-  examples/round-trip/topology-v1.drawio \
-  examples/round-trip/topology-v2.drawio \
-  examples/round-trip/topology-v2.layout.yaml \
-  examples/round-trip/iosxr-raw-discovery.svg
+  -o /tmp/netdiag-ci/determinism-drawio-a.drawio >/dev/null
+go run ./cmd/netdiag render examples/round-trip/topology-v2.yaml \
+  --renderer drawio \
+  --layout-overrides examples/round-trip/topology-v1.layout.yaml \
+  -o /tmp/netdiag-ci/determinism-drawio-b.drawio >/dev/null
+cmp /tmp/netdiag-ci/determinism-drawio-a.drawio /tmp/netdiag-ci/determinism-drawio-b.drawio
 end_section
 
 section "Documentation and diff checks"

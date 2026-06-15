@@ -102,8 +102,22 @@ exists.
 
 ## Generated examples
 
-Committed demos are executable documentation. The verification script
-regenerates the canonical demos and fails if they drift.
+Committed demos are executable documentation.
+`.github/scripts/regenerate.sh` is the executable manifest of generated
+artifacts and their reproduction commands. The verification script regenerates
+every path listed by `.github/scripts/regenerate.sh --list`, fails if any
+tracked output drifts, and compares repeated representative renders.
+
+Run the regeneration manifest directly after an intentional renderer,
+discovery, or example change:
+
+```sh
+./.github/scripts/regenerate.sh
+```
+
+Custom icon SVGs, refined discovery YAML, and
+`examples/round-trip/topology-v1.layout.yaml` are hand-authored or curated
+inputs and are deliberately excluded from the generated-output manifest.
 
 Useful locations:
 

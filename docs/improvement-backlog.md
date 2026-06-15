@@ -41,6 +41,8 @@ Candidate areas:
 - orthogonal route construction and obstacle avoidance
 - label offsets, rotations, and collision resolution
 - dense parallel-link and nested-group cases
+- invariant or property-based tests for pure routing helpers where they catch
+  cases more effectively than table-driven examples
 
 **Done when:** each geometry defect receives a focused regression test, and
 high-risk pure helpers have direct boundary-case coverage.
@@ -59,9 +61,24 @@ Focused parser tests cover input-first options, aliases, boolean flags, stdin
 exercises `--key=value` through real render, extraction, discovery, expansion,
 repair, inspection, and layout-diff commands.
 
+### Strengthen deterministic output regression coverage
+
+**Status:** addressed
+
+**Priority:** high
+
+`.github/scripts/regenerate.sh` is the executable manifest for every committed
+generated artifact. CI regenerates every listed SVG, Draw.io, layout, discovery,
+and playground output and fails on drift. It also compares repeated native and
+Draw.io renders, while Draw.io extraction retains its byte-identical
+render-extract-render test. Hand-authored custom icons and the initial round-trip
+layout intent are explicitly excluded, as are curated discovery YAML files that
+preserve refinements beyond raw import output.
+
 ### Linting and error-handling audit
 
-**Status:** open  
+**Status:** open
+
 **Priority:** medium-high
 
 CI currently runs formatting, `go vet`, tests, example validation/rendering,
@@ -79,6 +96,55 @@ benefit.
 
 **Done when:** `errcheck` is pinned, reproducible, low-noise, and enforced in
 CI; any further lint rules have separately demonstrated value.
+
+### Bound resource use for untrusted inputs
+
+**Status:** open
+
+**Priority:** high
+
+Custom SVG icons already have a size cap, an element and attribute allowlist,
+and focused unsafe-input tests. Other inputs are less consistently bounded.
+In particular, compressed Draw.io page payloads are inflated with an unbounded
+read, and several YAML, discovery, include, and stdin paths read the complete
+input before parsing.
+
+This is primarily a denial-of-service and accidental-resource-exhaustion risk
+when processing very large or highly compressed files. It is not evidence that
+the current XML parser expands external entities.
+
+**Done when:**
+
+- Draw.io file and decompressed-page sizes have explicit limits with clear
+  diagnostics
+- YAML, include, discovery, and stdin reads use documented practical limits
+- parsers cap relevant object counts or nesting where file-size limits alone are
+  insufficient
+- tests cover oversized files and compressed payloads with extreme expansion
+- a consistently named CLI or configuration option lets trusted workflows
+  deliberately raise documented default limits when needed
+
+### Add large-topology performance budgets
+
+**Status:** open
+
+**Priority:** medium-high
+
+The repository has substantial topology fixtures, including the 80-node IOS XR
+example, but it has no Go benchmarks or documented performance budgets. That
+makes regressions in render, inspect, discovery, and layout work difficult to
+detect before users notice them.
+
+**Done when:**
+
+- representative small, medium, and large fixtures have benchmarks for the
+  important lifecycle operations
+- benchmarks report allocations and separate build/startup cost from command
+  execution cost
+- Draw.io round-tripping and other memory-heavy paths record peak-memory or
+  high-water-mark measurements in addition to Go allocation counts
+- CI or a documented release check tracks practical regression budgets
+- profiling identifies measured hotspots before optimization work is accepted
 
 ## Medium-term maintainability
 
@@ -100,9 +166,68 @@ invalid states and duplicated string comparisons.
 `spec.Validate` is a large sequential validator. Split it into focused
 validators for diagram metadata, nodes, links, groups, and cross-references
 while preserving deterministic problem ordering and existing error messages.
+It currently collects plain strings, which also makes validation output
+difficult for other tools to consume reliably.
 
-**Done when:** validation rules are easier to test and extend without changing
-the public validation contract.
+**Done when:** validation rules are easier to test and extend; failures expose a
+stable structured form such as code, object path, and message; and CLI text
+output remains compatible and readable.
+
+### Make CLI command execution directly testable
+
+**Status:** open
+
+The shared `flag.FlagSet` layer fixed the inconsistent option parsing problem,
+but command orchestration still mixes output, process exit behavior, and command
+logic in places. This encourages subprocess-only testing and makes individual
+failure paths harder to exercise.
+
+**Done when:** command helpers return errors or explicit result/status values;
+`main` owns final stderr formatting and exit-code selection; representative
+success and failure paths can be tested in-process; and user-facing output and
+exit-code compatibility are preserved.
+
+### Measure and control the native CLI build footprint
+
+**Status:** open
+
+A current Darwin arm64 Go 1.26.3 build is approximately 35 MB and the CLI
+dependency graph contains roughly 325 packages. The optional D2 backend brings
+in a substantial part of that graph. This is not automatically a defect, but
+the cost should be measured and intentional.
+
+**Done when:** release builds record binary-size and dependency-footprint
+baselines; optional backend costs are measured; unnecessary dependencies are
+removed where doing so has a meaningful benefit; and packaging changes such as
+build tags or split binaries are adopted only if measurements justify the added
+complexity.
+
+### Automate releases and binary distribution
+
+**Status:** open
+
+CI verifies the repository, but there is no automated tagged release workflow
+for distributing versioned CLI binaries and checksums.
+
+**Done when:** a tagged release produces tested binaries for supported
+platforms, artifacts include checksums and reproducible version information,
+the container image release path is documented or automated, and additional
+channels such as Homebrew are added only when demand justifies their maintenance
+cost.
+
+### Define schema evolution and migration tooling
+
+**Status:** open
+
+The topology, template, and layout-override formats currently require
+`version: 1` and reject other versions. That is appropriate today, but a
+compatibility and migration path should be designed before the first v2 format
+change rather than after users have incompatible files.
+
+**Done when:** supported-version policy is documented; compatibility fixtures
+exist for every supported version; deprecated or moved fields produce actionable
+diagnostics; and a `migrate` command or equivalent safe rewrite path can upgrade
+files when a new schema version is introduced.
 
 ### Refactor native renderer shared state
 
@@ -168,3 +293,26 @@ policy decision, not an automatic downgrade.
 
 Do not treat historical counts as current facts. Re-audit the current tree
 before creating work from them.
+
+### “Replace CLI parsing with Cobra to support `--key=value`”
+
+Outdated. Commands now use the shared standard-library `flag.FlagSet` parser,
+support both option forms, and have focused parsing tests. A framework change is
+not justified without a remaining concrete problem.
+
+### “Custom SVG icons lack input safety controls”
+
+Outdated as a general claim. Icons have a size cap, allowlisted SVG content,
+external-reference rejection, and unsafe-input tests. Broader input resource
+limits remain open above.
+
+### Introduce a layout-engine interface immediately
+
+Not promoted. Layout behavior is already separated in `internal/svg/layout.go`;
+an interface should be introduced only when a concrete second implementation or
+testing need makes it useful.
+
+### Bundle a pure-Go or browser-based export converter
+
+Not promoted. Host-side PNG/PDF conversion remains an explicit dependency, and
+the Docker workflow provides the supported packaged path.
