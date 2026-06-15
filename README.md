@@ -42,10 +42,12 @@ good fit for YAML-owned topology, deterministic publication output, discovery
 workflows, and Draw.io refinement with durable layout intent.
 
 It is deliberately not a general-purpose diagramming canvas or a live
-monitoring system. Dense topologies may still need human refinement, the D2
-backend remains experimental, templates have Phase 1 limits, and host PNG/PDF
-exports require a local converter. The project also currently has a small
-community and example ecosystem.
+monitoring system. Dense topologies may still need human refinement. D2/ELK is
+deterministic and useful for generic containment and parallel routing, but
+explicit endpoint-side control is partial and it lacks the native renderer's
+network-specific finishing layer. Templates have Phase 1 limits, and host
+PNG/PDF exports require a local converter. The project also currently has a
+small community and example ecosystem.
 
 See [Fit and limitations](docs/fit-and-limitations.md) for the candid scope,
 current maturity constraints, mitigations, and features that are not promised.
@@ -181,9 +183,12 @@ converted into diagram YAML; see [docs/lldp.md](docs/lldp.md).
 Cisco IOS XR IS-IS neighbor output can be converted into routing topology
 YAML; see [docs/isis.md](docs/isis.md).
 
-D2 is used as an automatic-layout experiment, not assumed to solve every
-network-diagram requirement. See [docs/d2-elk-spike.md](docs/d2-elk-spike.md)
-for the hard-case results and [SKILLS.md](SKILLS.md) for the LLM repair loop.
+D2/ELK is an optional automatic-layout backend. It produces deterministic
+output and handles nested containment and parallel links, but explicit endpoint
+side hints are only partially enforced and it does not provide the native
+renderer's network-aware finishing layer. See
+[docs/d2-elk-spike.md](docs/d2-elk-spike.md) for the hard-case evidence and
+[SKILLS.md](SKILLS.md) for the LLM repair loop.
 
 ## Architecture
 

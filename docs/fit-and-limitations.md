@@ -34,7 +34,7 @@ These are product-scope decisions, not missing general-diagramming features:
 | Area | Current limitation | Mitigation |
 | --- | --- | --- |
 | Layout | Very dense or unusual topologies may still need manual refinement | Use `inspect`, `improve-layout`, Draw.io refinement, and layout overrides |
-| D2 backend | Retained as an experimental comparison/fallback backend | Prefer the native renderer or Draw.io workflow for supported production use cases |
+| D2 backend | D2/ELK is deterministic and handles nested groups and parallel links, but explicit endpoint-side hints are only partially enforced and it lacks netdiag's network-specific finishing layer: device cards, role-specific icons, bundle semantics, and predictable interface-label placement | Use D2 when generic containment/routing is the priority; prefer native or Draw.io when network-specific presentation and endpoint control matter. See [d2-elk-spike.md](d2-elk-spike.md) |
 | Templates | Phase 1 templates intentionally omit loops, conditionals, inheritance, and nested instantiation | Compose includes and explicit template instances |
 | Learning curve | The schema and CLI expose many network-specific controls | Start with the gallery, templates, and worked round-trip example |
 | PNG/PDF | Host exports require a local SVG converter | Use SVG directly or the provided Docker image |
