@@ -29,9 +29,10 @@ Run the same verification used by GitHub Actions:
 ```
 
 The lint script runs the pinned, low-noise golangci-lint configuration used by
-CI. The verification script runs formatting checks, vet, tests, example
-validation and smoke rendering, generated-artifact freshness checks,
-Markdown-link validation, and `git diff --check`.
+CI, including correctness analyzers and `gosec` security checks. The
+verification script runs formatting checks, vet, tests, example validation and
+smoke rendering, generated-artifact freshness checks, Markdown-link validation,
+and `git diff --check`.
 
 ## Architecture and ownership
 

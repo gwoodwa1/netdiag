@@ -41,6 +41,7 @@ func convert(path, format string, svg []byte) error {
 	if err != nil {
 		return err
 	}
+	// #nosec G204 -- NETDIAG_CONVERTER explicitly allows a user-selected converter.
 	output, err := exec.Command(command, args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("export %s using %s: %w: %s", format, command, err, strings.TrimSpace(string(output)))

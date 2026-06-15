@@ -252,6 +252,7 @@ func doctor(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: netdiag doctor drawio <diagram.drawio>")
 		os.Exit(2)
 	}
+	// #nosec G703 -- doctor intentionally inspects the Draw.io path selected by the user.
 	data, err := os.ReadFile(args[1])
 	exitOnError(err)
 	report, err := drawio.Doctor(data)

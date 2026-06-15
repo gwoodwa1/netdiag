@@ -4,6 +4,19 @@ linters:
   default: standard
   enable:
     - errorlint
+    - gosec
+  settings:
+    gosec:
+      excludes:
+        # netdiag is a file-oriented CLI: users deliberately select topology,
+        # capture, icon, template, and output paths.
+        - G304
+        - G703
+        # Generated diagrams, fixtures, and examples are intended to be
+        # shareable rather than secret.
+        - G306
+        # Directory modes flagged by this rule occur in test/example fixtures.
+        - G301
   exclusions:
     rules:
       - linters:

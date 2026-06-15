@@ -116,11 +116,15 @@ that latent flakiness directly.
 **Priority:** medium-high
 
 CI and local development run pinned golangci-lint `v2.12.2` with its
-conservative standard analyzer set plus `errorlint`. This includes `errcheck`,
-`govet`, `ineffassign`, `staticcheck`, and `unused` without enabling the noisy
-style-heavy full set. The initial audit fixed ignored flag/output/temporary-file
-errors, wrapped EOF comparisons, and a dead helper. Quick-fix and error-string
-style suggestions are explicitly excluded.
+conservative standard analyzer set plus `errorlint` and `gosec`. This includes
+`errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`, and focused
+security checks without enabling the noisy style-heavy full set. The initial
+audit fixed ignored flag/output/temporary-file errors, wrapped EOF comparisons,
+and a dead helper. Quick-fix and error-string style suggestions are explicitly
+excluded. Gosec's generic user-path and restrictive-file-mode rules are also
+excluded because netdiag intentionally reads user-selected topology assets and
+writes shareable diagrams; deliberate subprocess and tainted-path cases retain
+local rationale comments.
 
 After the initial audit, evaluate:
 
