@@ -1,0 +1,738 @@
+version: 1
+diagram:
+    title: LLDP discovered topology
+    badge: NETWORK DIAGRAM
+    layout: hub-spoke
+    direction: down
+    link_style: clean
+    route_clearance: 200
+    endpoint_clearance: 56
+    interface_labels: ends
+    interface_label_style:
+        fill: '#ffffff'
+        color: '#334155'
+        border: '#94a3b8'
+        radius: 6
+        padding_x: 10
+        padding_y: 5
+groups:
+    core-a:
+        label: CORE-A
+        kind: discovered-cluster
+        nodes:
+            core-a-p1: {}
+            core-a-p2: {}
+    core-b:
+        label: CORE-B
+        kind: discovered-cluster
+        nodes:
+            core-b-p1: {}
+            core-b-p2: {}
+    dal:
+        label: DAL
+        kind: discovered-cluster
+        nodes:
+            dal-pe1: {}
+            dal-pe2: {}
+    lax:
+        label: LAX
+        kind: discovered-cluster
+        nodes:
+            lax-pe1: {}
+            lax-pe2: {}
+    nyc:
+        label: NYC
+        kind: discovered-cluster
+        nodes:
+            nyc-pe1: {}
+            nyc-pe2: {}
+    orl:
+        label: ORL
+        kind: discovered-cluster
+        nodes:
+            orl-pe1: {}
+            orl-pe2: {}
+    phx:
+        label: PHX
+        kind: discovered-cluster
+        nodes:
+            phx-pe1: {}
+            phx-pe2: {}
+    san:
+        label: SAN
+        kind: discovered-cluster
+        nodes:
+            san-pe1: {}
+            san-pe2: {}
+    sfo:
+        label: SFO
+        kind: discovered-cluster
+        nodes:
+            sfo-pe1: {}
+            sfo-pe2: {}
+    was:
+        label: WAS
+        kind: discovered-cluster
+        nodes:
+            was-pe1: {}
+            was-pe2: {}
+nodes:
+    core-a-p1:
+        label: CORE-A-P1
+        role: core-router
+        icon_label: P
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    core-a-p2:
+        label: CORE-A-P2
+        role: core-router
+        icon_label: P
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    core-b-p1:
+        label: CORE-B-P1
+        role: core-router
+        icon_label: P
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    core-b-p2:
+        label: CORE-B-P2
+        role: core-router
+        icon_label: P
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    dal-pe1:
+        label: DAL-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    dal-pe2:
+        label: DAL-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    lax-pe1:
+        label: LAX-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    lax-pe2:
+        label: LAX-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    nyc-pe1:
+        label: NYC-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    nyc-pe2:
+        label: NYC-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    orl-pe1:
+        label: ORL-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    orl-pe2:
+        label: ORL-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    phx-pe1:
+        label: PHX-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    phx-pe2:
+        label: PHX-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    san-pe1:
+        label: SAN-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    san-pe2:
+        label: SAN-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    sfo-pe1:
+        label: SFO-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    sfo-pe2:
+        label: SFO-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    was-pe1:
+        label: WAS-PE1
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+    was-pe2:
+        label: WAS-PE2
+        role: edge-router
+        icon_label: PE
+        metadata:
+            capabilities: R
+            discovery: lldp
+            local: true
+links:
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: nyc-pe1
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      to:
+        node: was-pe1
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/2
+        side: bottom
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: phx-pe1
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/3
+        side: top
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: lax-pe1
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/4
+        side: top
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: orl-pe1
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/5
+        side: bottom
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: sfo-pe1
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/6
+        side: bottom
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: san-pe1
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/0/7
+        side: top
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: dal-pe1
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p1
+        port: HundredGigE0/0/1/0
+        label_rotation: 90
+      to:
+        node: core-a-p2
+        port: HundredGigE0/0/1/0
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: nyc-pe1
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: was-pe1
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/2
+        side: bottom
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: phx-pe1
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/3
+        side: top
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: lax-pe1
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/4
+        side: top
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: orl-pe1
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/5
+        side: bottom
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: sfo-pe1
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/6
+        side: bottom
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: san-pe1
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-a-p2
+        port: HundredGigE0/0/0/7
+        side: top
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: dal-pe1
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: nyc-pe2
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: was-pe2
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/2
+        side: bottom
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: phx-pe2
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/3
+        side: top
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: lax-pe2
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/4
+        side: top
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: orl-pe2
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/5
+        side: bottom
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: sfo-pe2
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/6
+        side: bottom
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: san-pe2
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/0/7
+        side: top
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: dal-pe2
+        port: HundredGigE0/0/0/0
+        side: bottom
+        position: 0.25
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p1
+        port: HundredGigE0/0/1/0
+        label_rotation: 90
+      to:
+        node: core-b-p2
+        port: HundredGigE0/0/1/0
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/0
+        side: top
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: nyc-pe2
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: was-pe2
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/2
+        side: bottom
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: phx-pe2
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/3
+        side: top
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: lax-pe2
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/4
+        side: top
+        position: 0.88
+        stub: 140
+        label_rotation: 90
+      to:
+        node: orl-pe2
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/5
+        side: bottom
+        position: 0.64
+        stub: 140
+        label_rotation: 90
+      to:
+        node: sfo-pe2
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/6
+        side: bottom
+        position: 0.36
+        stub: 140
+        label_rotation: 90
+      to:
+        node: san-pe2
+        port: HundredGigE0/0/0/1
+        side: top
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp
+    - from:
+        node: core-b-p2
+        port: HundredGigE0/0/0/7
+        side: top
+        position: 0.12
+        stub: 140
+        label_rotation: 90
+      to:
+        node: dal-pe2
+        port: HundredGigE0/0/0/1
+        side: bottom
+        position: 0.75
+        stub: 180
+        label_rotation: 90
+      protocol: lldp

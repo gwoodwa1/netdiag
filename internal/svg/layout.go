@@ -175,12 +175,16 @@ func hubGroupGap(ids []string, nodes map[string]model.Node) float64 {
 	if len(ids) < 2 {
 		return gap
 	}
+	allEdge := true
 	for _, id := range ids {
 		if nodes[id].Role != "edge-router" {
-			return gap
+			allEdge = false
 		}
 	}
-	return hubSpokePEGap
+	if allEdge {
+		return hubSpokePEGap
+	}
+	return gap
 }
 
 func placeSiteLayout(doc *model.Diagram) layoutResult {

@@ -45,6 +45,13 @@ Prefer schema-owned spacing controls:
   `port`, not `interface`
 - never remove endpoint ports while adjusting labels; label controls are
   additional endpoint fields, not replacements for `port`
+- for dense hub/spoke links, prefer a straight endpoint lead-out followed by a
+  diagonal transit lane: set endpoint `side`, `position`, and `stub` instead of
+  forcing one long diagonal directly from the card edge
+- when a second PE/spoke layer sits behind the first, keep the PE cards spaced
+  far enough apart for transit lanes to route through the gaps; increase real
+  node `width`/`height`, group spacing, and `route_clearance` before adding
+  many manual label offsets
 
 Valid link endpoint shapes:
 

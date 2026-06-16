@@ -635,6 +635,43 @@ func TestStubbedRouteEndpointLabelUsesStraightSection(t *testing.T) {
 	}
 }
 
+func TestStubbedRouteEndpointLabelDefaultsToStubCenterline(t *testing.T) {
+	route := routedDiagonalRoute(routedLink{
+		Start:     point{X: 100, Y: 100},
+		End:       point{X: 500, Y: 500},
+		StartSide: "bottom",
+		StartStub: 120,
+	}, 0)
+	location, ok := routeEndpointLabelLocation(route, true, 2, 0, model.LinkEndpoint{})
+	if !ok || location != (point{X: 100, Y: 166}) {
+		t.Fatalf("source stub label location = %+v, %t; want {100 166}, true", location, ok)
+	}
+	offset := 20.0
+	nudged, ok := routeEndpointLabelLocation(route, true, 2, 0, model.LinkEndpoint{LabelOffset: &offset})
+	if !ok || nudged == location {
+		t.Fatalf("explicit label_offset was not honored: base=%+v nudged=%+v ok=%t", location, nudged, ok)
+	}
+}
+
+func TestDetouredRouteEndpointLabelStillUsesEndpointStub(t *testing.T) {
+	route := linkRoute{Points: []point{
+		{X: 100, Y: 100},
+		{X: 100, Y: 220},
+		{X: 260, Y: 260},
+		{X: 380, Y: 380},
+		{X: 500, Y: 380},
+		{X: 500, Y: 500},
+	}}
+	source, ok := routeEndpointLabelLocation(route, true, 2, 0, model.LinkEndpoint{})
+	if !ok || source != (point{X: 100, Y: 166}) {
+		t.Fatalf("source detoured stub label = %+v, %t; want {100 166}, true", source, ok)
+	}
+	target, ok := routeEndpointLabelLocation(route, false, 2, 0, model.LinkEndpoint{})
+	if !ok || target != (point{X: 500, Y: 434}) {
+		t.Fatalf("target detoured stub label = %+v, %t; want {500 434}, true", target, ok)
+	}
+}
+
 func TestRotatedEndpointLabelRotatesCompleteBadge(t *testing.T) {
 	var out bytes.Buffer
 	renderRotatedInterfaceLabel(&out, 100, 200, "Hu0/0/0/0", 90, model.InterfaceLabelStyle{})

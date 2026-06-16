@@ -48,6 +48,9 @@ func routeEndpointLabelLocation(route linkRoute, source bool, degree, lane int, 
 	}
 	if endpoint.LabelAlong == nil {
 		if location, ok := routeStubLabelPoint(route, source); ok {
+			if endpoint.LabelOffset == nil {
+				return location, true
+			}
 			return offsetRouteLabelPoint(route, source, location, 0.05, endpoint), true
 		}
 	}
@@ -98,17 +101,21 @@ func routeNormalAt(route linkRoute, position float64) point {
 }
 
 func routeStubLabelPoint(route linkRoute, source bool) (point, bool) {
-	if len(route.Points) != 5 {
+	if len(route.Points) < 3 {
 		return point{}, false
 	}
 	start, end := route.Points[0], route.Points[1]
 	if !source {
-		start, end = route.Points[4], route.Points[3]
+		start, end = route.Points[len(route.Points)-1], route.Points[len(route.Points)-2]
 	}
-	if samePoint(start, end) {
+	if samePoint(start, end) || !axisAlignedSegment(start, end) {
 		return point{}, false
 	}
 	return pointAlongLine(start, end, 0.55), true
+}
+
+func axisAlignedSegment(start, end point) bool {
+	return math.Abs(start.X-end.X) < 0.001 || math.Abs(start.Y-end.Y) < 0.001
 }
 
 func renderEndpointAddress(out *bytes.Buffer, endpoint point, address, side string, lane int, color string) {
