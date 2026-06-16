@@ -45,6 +45,7 @@ type inspectedLabel struct {
 	Node   string
 	Source bool
 	Box    box
+	Center point
 }
 
 // Inspect measures the geometry produced by the native renderer. It does not
@@ -312,6 +313,14 @@ func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[st
 				})
 			}
 		}
+		if distance := labelDistanceToRoute(label.Center, routes[label.Link-1]); distance > 160 {
+			findings = append(findings, InspectionFinding{
+				Code: "label_detached_from_route", Severity: InspectionWarning,
+				Message: fmt.Sprintf("interface label for link %d is %.1fpx away from its route", label.Link, distance),
+				Nodes:   []string{label.Node}, Links: []int{label.Link},
+				Suggestion: "reduce label_offset or adjust label_along so the label remains visually attached to the route",
+			})
+		}
 	}
 	for left := 0; left < len(labels); left++ {
 		for right := left + 1; right < len(labels); right++ {
@@ -346,7 +355,6 @@ func inspectionLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map
 	}
 	degrees := nodeDegrees(doc)
 	var labels []inspectedLabel
-	useDiagonal := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
 	for index, link := range doc.Links {
 		for _, source := range []bool{true, false} {
 			endpoint := link.To
@@ -359,8 +367,11 @@ func inspectionLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map
 				continue
 			}
 			item := geometry[endpointKey(index, source)]
-			location := endpointLabelLocation(routes[index], item, source, degrees[endpoint.Node], useDiagonal)
-			labels = append(labels, inspectedLabel{Link: index + 1, Node: endpoint.Node, Source: source, Box: interfaceLabelBox(location, label, endpoint.LabelRotation, doc.Theme.InterfaceLabelStyle)})
+			location, ok := routeEndpointLabelLocation(routes[index], source, degrees[endpoint.Node], item.LabelLane, endpoint)
+			if !ok {
+				location = fallbackEndpointLabelLocation(item)
+			}
+			labels = append(labels, inspectedLabel{Link: index + 1, Node: endpoint.Node, Source: source, Center: location, Box: interfaceLabelBox(location, label, endpoint.LabelRotation, doc.Theme.InterfaceLabelStyle)})
 		}
 	}
 	return labels
@@ -372,23 +383,7 @@ func labelBoxDistance(left, right box) float64 {
 	return math.Hypot(dx, dy)
 }
 
-func endpointLabelLocation(route linkRoute, endpoint endpointGeometry, source bool, degree int, useDiagonal bool) point {
-	if useDiagonal {
-		if location, ok := routeStubLabelPoint(route, source); ok {
-			location.Y += 4
-			return location
-		}
-		position := 0.13 + float64(endpoint.LabelLane%3)*0.025
-		if degree > 4 {
-			position = 0.28 + float64(endpoint.LabelLane%3)*0.025
-		}
-		if !source {
-			position = 1 - position
-		}
-		location := pointAlongRoute(route, position)
-		location.Y += 4
-		return location
-	}
+func fallbackEndpointLabelLocation(endpoint endpointGeometry) point {
 	location := endpoint.Point
 	location.Y -= 12
 	switch endpoint.Side {
@@ -400,6 +395,30 @@ func endpointLabelLocation(route linkRoute, endpoint endpointGeometry, source bo
 		location.X = endpoint.Point.X + horizontalLabelOffset
 	}
 	return location
+}
+
+func labelDistanceToRoute(location point, route linkRoute) float64 {
+	points := sampleRoute(route, 48)
+	if len(points) == 0 {
+		return 0
+	}
+	minimum := math.Inf(1)
+	for index := 1; index < len(points); index++ {
+		minimum = math.Min(minimum, distancePointToSegment(location, points[index-1], points[index]))
+	}
+	return minimum
+}
+
+func distancePointToSegment(value, start, end point) float64 {
+	dx, dy := end.X-start.X, end.Y-start.Y
+	lengthSquared := dx*dx + dy*dy
+	if lengthSquared == 0 {
+		return math.Hypot(value.X-start.X, value.Y-start.Y)
+	}
+	position := ((value.X-start.X)*dx + (value.Y-start.Y)*dy) / lengthSquared
+	position = math.Max(0, math.Min(1, position))
+	projection := point{X: start.X + position*dx, Y: start.Y + position*dy}
+	return math.Hypot(value.X-projection.X, value.Y-projection.Y)
 }
 
 func interfaceLabelBox(location point, label string, rotation int, style model.InterfaceLabelStyle) box {

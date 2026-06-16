@@ -31,26 +31,70 @@ func renderRotatedEndpointLabel(out *bytes.Buffer, endpoint point, label, side s
 }
 
 func renderRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, source bool, degree, lane int, style model.InterfaceLabelStyle) {
-	renderRotatedRouteEndpointLabel(out, route, label, source, degree, lane, 0, style)
+	renderRotatedRouteEndpointLabel(out, route, label, source, degree, lane, 0, model.LinkEndpoint{}, style)
 }
 
-func renderRotatedRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, source bool, degree, lane, rotation int, style model.InterfaceLabelStyle) {
-	if len(route.Points) < 2 {
+func renderRotatedRouteEndpointLabel(out *bytes.Buffer, route linkRoute, label string, source bool, degree, lane, rotation int, endpoint model.LinkEndpoint, style model.InterfaceLabelStyle) {
+	location, ok := routeEndpointLabelLocation(route, source, degree, lane, endpoint)
+	if !ok {
 		return
 	}
-	if location, ok := routeStubLabelPoint(route, source); ok {
-		renderRotatedInterfaceLabel(out, location.X, location.Y+4, label, rotation, style)
-		return
+	renderRotatedInterfaceLabel(out, location.X, location.Y, label, rotation, style)
+}
+
+func routeEndpointLabelLocation(route linkRoute, source bool, degree, lane int, endpoint model.LinkEndpoint) (point, bool) {
+	if len(route.Points) < 2 {
+		return point{}, false
+	}
+	if endpoint.LabelAlong == nil {
+		if location, ok := routeStubLabelPoint(route, source); ok {
+			return offsetRouteLabelPoint(route, source, location, 0.05, endpoint), true
+		}
 	}
 	position := 0.13 + float64(lane%3)*0.025
 	if degree > 4 {
 		position = 0.28 + float64(lane%3)*0.025
 	}
+	if endpoint.LabelAlong != nil {
+		position = *endpoint.LabelAlong
+	}
 	if !source {
 		position = 1 - position
 	}
 	location := pointAlongRoute(route, position)
-	renderRotatedInterfaceLabel(out, location.X, location.Y+4, label, rotation, style)
+	return offsetRouteLabelPoint(route, source, location, position, endpoint), true
+}
+
+func offsetRouteLabelPoint(route linkRoute, source bool, location point, position float64, endpoint model.LinkEndpoint) point {
+	offset := 18.0
+	if endpoint.LabelOffset != nil {
+		offset = *endpoint.LabelOffset
+	}
+	normal := routeNormalAt(route, position)
+	if normal.X == 0 && normal.Y == 0 {
+		if source {
+			normal.Y = -1
+		} else {
+			normal.Y = 1
+		}
+	}
+	return point{X: location.X + normal.X*offset, Y: location.Y + normal.Y*offset}
+}
+
+func routeNormalAt(route linkRoute, position float64) point {
+	before := pointAlongRoute(route, math.Max(0, position-0.01))
+	after := pointAlongRoute(route, math.Min(1, position+0.01))
+	dx, dy := after.X-before.X, after.Y-before.Y
+	length := math.Hypot(dx, dy)
+	if length == 0 {
+		start, end := route.Points[0], route.Points[len(route.Points)-1]
+		dx, dy = end.X-start.X, end.Y-start.Y
+		length = math.Hypot(dx, dy)
+	}
+	if length == 0 {
+		return point{}
+	}
+	return point{X: -dy / length, Y: dx / length}
 }
 
 func routeStubLabelPoint(route linkRoute, source bool) (point, bool) {
@@ -114,6 +158,27 @@ func renderRotatedInterfaceLabel(out *bytes.Buffer, x, y float64, label string, 
 	if rotation != 0 {
 		out.WriteString(`</g>`)
 	}
+}
+
+func clampInterfaceLabelLocation(location point, label string, rotation int, style model.InterfaceLabelStyle, width, height float64) point {
+	if width <= 0 || height <= 0 {
+		return location
+	}
+	labelBox := interfaceLabelBox(location, label, rotation, style)
+	if labelBox.X < 0 {
+		location.X -= labelBox.X
+	}
+	if labelBox.Y < 0 {
+		location.Y -= labelBox.Y
+	}
+	labelBox = interfaceLabelBox(location, label, rotation, style)
+	if labelBox.X+labelBox.W > width {
+		location.X -= labelBox.X + labelBox.W - width
+	}
+	if labelBox.Y+labelBox.H > height {
+		location.Y -= labelBox.Y + labelBox.H - height
+	}
+	return location
 }
 
 func renderPortMarker(out *bytes.Buffer, endpoint point, color string, premium bool) {

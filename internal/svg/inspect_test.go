@@ -124,10 +124,10 @@ func TestInspectFindsEndpointLabelsTooCloseOnSameLink(t *testing.T) {
 	}
 	geometry := map[string]endpointGeometry{
 		endpointKey(0, true):  {Point: point{X: 100, Y: 100}, Side: "right"},
-		endpointKey(0, false): {Point: point{X: 220, Y: 100}, Side: "left"},
+		endpointKey(0, false): {Point: point{X: 140, Y: 100}, Side: "left"},
 	}
 	routes := map[int]linkRoute{
-		0: directRoute(point{X: 100, Y: 100}, point{X: 220, Y: 100}, "right", "left", ""),
+		0: directRoute(point{X: 100, Y: 100}, point{X: 140, Y: 100}, "right", "left", ""),
 	}
 	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
 	found := false
@@ -173,12 +173,12 @@ func TestInspectFindsLinkThroughInterfaceLabel(t *testing.T) {
 	geometry := map[string]endpointGeometry{
 		endpointKey(0, true):  {Point: point{X: 100, Y: 100}, Side: "top"},
 		endpointKey(0, false): {Point: point{X: 500, Y: 100}, Side: "top"},
-		endpointKey(1, true):  {Point: point{X: 50, Y: 88}, Side: "right"},
-		endpointKey(1, false): {Point: point{X: 150, Y: 88}, Side: "left"},
+		endpointKey(1, true):  {Point: point{X: 50, Y: 118}, Side: "right"},
+		endpointKey(1, false): {Point: point{X: 150, Y: 118}, Side: "left"},
 	}
 	routes := map[int]linkRoute{
 		0: directRoute(point{X: 100, Y: 100}, point{X: 500, Y: 100}, "top", "top", ""),
-		1: directRoute(point{X: 50, Y: 88}, point{X: 150, Y: 88}, "right", "left", ""),
+		1: directRoute(point{X: 50, Y: 118}, point{X: 150, Y: 118}, "right", "left", ""),
 	}
 	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
 	found := false

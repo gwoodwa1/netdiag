@@ -82,6 +82,8 @@ type LinkEndpoint struct {
 	Position      *float64 `yaml:"position,omitempty"`
 	Stub          float64  `yaml:"stub,omitempty"`
 	LabelRotation int      `yaml:"label_rotation,omitempty"`
+	LabelAlong    *float64 `yaml:"label_along,omitempty"`
+	LabelOffset   *float64 `yaml:"label_offset,omitempty"`
 	Label         string   `yaml:"label,omitempty"`
 	Address       string   `yaml:"address,omitempty"`
 }
@@ -108,6 +110,8 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 		Position      *float64 `yaml:"position"`
 		Stub          float64  `yaml:"stub"`
 		LabelRotation int      `yaml:"label_rotation"`
+		LabelAlong    *float64 `yaml:"label_along"`
+		LabelOffset   *float64 `yaml:"label_offset"`
 		Label         string   `yaml:"label"`
 		Address       string   `yaml:"address"`
 	}
@@ -121,6 +125,8 @@ func (le *LinkEndpoint) UnmarshalYAML(value *yaml.Node) error {
 	le.Position = raw.Position
 	le.Stub = raw.Stub
 	le.LabelRotation = raw.LabelRotation
+	le.LabelAlong = raw.LabelAlong
+	le.LabelOffset = raw.LabelOffset
 	le.Label = raw.Label
 	le.Address = raw.Address
 	return nil
@@ -366,6 +372,12 @@ func Validate(doc *Document) error {
 			}
 			if endpoint.LabelRotation != 0 && endpoint.LabelRotation != 90 && endpoint.LabelRotation != 180 && endpoint.LabelRotation != 270 {
 				problems = append(problems, fmt.Sprintf("link %d %s label_rotation must be 0, 90, 180, or 270", i+1, endpointName))
+			}
+			if endpoint.LabelAlong != nil && (*endpoint.LabelAlong < 0 || *endpoint.LabelAlong > 1) {
+				problems = append(problems, fmt.Sprintf("link %d %s label_along must be between 0 and 1", i+1, endpointName))
+			}
+			if endpoint.LabelOffset != nil && (*endpoint.LabelOffset < -200 || *endpoint.LabelOffset > 200) {
+				problems = append(problems, fmt.Sprintf("link %d %s label_offset must be between -200 and 200", i+1, endpointName))
 			}
 			if endpoint.Address != "" {
 				if _, _, err := net.ParseCIDR(endpoint.Address); err != nil {

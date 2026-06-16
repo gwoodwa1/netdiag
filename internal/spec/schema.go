@@ -82,6 +82,8 @@ func JSONSchema() ([]byte, error) {
 							"position":       map[string]interface{}{"type": "number", "minimum": 0, "maximum": 1},
 							"stub":           map[string]interface{}{"type": "number", "minimum": 0},
 							"label_rotation": map[string]interface{}{"enum": []int{0, 90, 180, 270}},
+							"label_along":    map[string]interface{}{"type": "number", "minimum": 0, "maximum": 1},
+							"label_offset":   map[string]interface{}{"type": "number", "minimum": -200, "maximum": 200},
 							"label":          map[string]interface{}{"type": "string"},
 							"address":        map[string]interface{}{"type": "string"},
 						},

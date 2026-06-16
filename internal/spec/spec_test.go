@@ -374,6 +374,30 @@ func TestValidateLinkEndpointLabelRotation(t *testing.T) {
 	}
 }
 
+func TestValidateLinkEndpointLabelPlacementHints(t *testing.T) {
+	offset := -32.0
+	doc := &Document{
+		Version: 1,
+		Nodes:   map[string]Node{"a": {Role: "router"}, "b": {Role: "router"}},
+		Links: []Link{{
+			From: LinkEndpoint{Node: "a", Port: "Eth0/0", LabelAlong: floatTestPointer(0.2), LabelOffset: &offset},
+			To:   LinkEndpoint{Node: "b", Port: "Eth0/0", LabelAlong: floatTestPointer(0.4)},
+		}},
+	}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("valid endpoint label placement hints rejected: %v", err)
+	}
+	doc.Links[0].From.LabelAlong = floatTestPointer(1.2)
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected out-of-range label_along validation error")
+	}
+	doc.Links[0].From.LabelAlong = floatTestPointer(0.2)
+	doc.Links[0].From.LabelOffset = floatTestPointer(250)
+	if err := Validate(doc); err == nil {
+		t.Fatal("expected out-of-range label_offset validation error")
+	}
+}
+
 func TestValidateRouteClearance(t *testing.T) {
 	doc := &Document{
 		Version: 1,

@@ -75,6 +75,8 @@ type LinkEndpoint struct {
 	Position      *float64
 	Stub          float64
 	LabelRotation int
+	LabelAlong    *float64
+	LabelOffset   *float64
 	Label         string
 	Address       string
 }
@@ -272,6 +274,8 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 				Position:      linkSpec.From.Position,
 				Stub:          linkSpec.From.Stub,
 				LabelRotation: linkSpec.From.LabelRotation,
+				LabelAlong:    linkSpec.From.LabelAlong,
+				LabelOffset:   linkSpec.From.LabelOffset,
 				Label:         linkSpec.From.Label,
 				Address:       linkSpec.From.Address,
 			},
@@ -282,6 +286,8 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 				Position:      linkSpec.To.Position,
 				Stub:          linkSpec.To.Stub,
 				LabelRotation: linkSpec.To.LabelRotation,
+				LabelAlong:    linkSpec.To.LabelAlong,
+				LabelOffset:   linkSpec.To.LabelOffset,
 				Label:         linkSpec.To.Label,
 				Address:       linkSpec.To.Address,
 			},

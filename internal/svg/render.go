@@ -114,7 +114,7 @@ func (renderer *renderer) renderDocument(doc *model.Diagram, roles []string, byR
 		renderRowHeadings(&renderer.out, roles, byRole)
 	}
 	var linkAnnotations bytes.Buffer
-	if err := renderLinks(&renderer.out, &linkAnnotations, doc, layout.Nodes); err != nil {
+	if err := renderLinks(&renderer.out, &linkAnnotations, doc, layout.Nodes, layout.Width, layout.Height); err != nil {
 		return err
 	}
 	renderNodes(&renderer.out, layout.Nodes, renderer.iconPack, renderer.premium)
@@ -280,7 +280,7 @@ func nodeWidth(role string) float64 {
 	}
 }
 
-func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[string]placedNode) error {
+func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[string]placedNode, canvasWidth, canvasHeight float64) error {
 	geometry, err := endpointAttachments(doc, nodes)
 	if err != nil {
 		return err
@@ -371,12 +371,13 @@ func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[s
 		renderPortMarker(out, end, color, premium)
 		fmt.Fprintf(annotations, `<g id="link-annotation-%d" class="link-annotation">`, index+1)
 		if doc.Theme.InterfaceLabels != "none" {
-			if useDiagonalRoute {
-				renderRotatedRouteEndpointLabel(annotations, route, link.SourceLabel(), true, degrees[from.Node], startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
-				renderRotatedRouteEndpointLabel(annotations, route, link.TargetLabel(), false, degrees[to.Node], endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
-			} else {
-				renderRotatedEndpointLabel(annotations, start, link.SourceLabel(), startGeometry.Side, startGeometry.LabelLane, from.LabelRotation, doc.Theme.InterfaceLabelStyle)
-				renderRotatedEndpointLabel(annotations, end, link.TargetLabel(), endGeometry.Side, endGeometry.LabelLane, to.LabelRotation, doc.Theme.InterfaceLabelStyle)
+			if location, ok := routeEndpointLabelLocation(route, true, degrees[from.Node], startGeometry.LabelLane, from); ok {
+				location = clampInterfaceLabelLocation(location, link.SourceLabel(), from.LabelRotation, doc.Theme.InterfaceLabelStyle, canvasWidth, canvasHeight)
+				renderRotatedInterfaceLabel(annotations, location.X, location.Y, link.SourceLabel(), from.LabelRotation, doc.Theme.InterfaceLabelStyle)
+			}
+			if location, ok := routeEndpointLabelLocation(route, false, degrees[to.Node], endGeometry.LabelLane, to); ok {
+				location = clampInterfaceLabelLocation(location, link.TargetLabel(), to.LabelRotation, doc.Theme.InterfaceLabelStyle, canvasWidth, canvasHeight)
+				renderRotatedInterfaceLabel(annotations, location.X, location.Y, link.TargetLabel(), to.LabelRotation, doc.Theme.InterfaceLabelStyle)
 			}
 		}
 		renderEndpointAddress(annotations, start, from.Address, startGeometry.Side, startGeometry.LabelLane, color)

@@ -3,6 +3,7 @@ package svg
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -560,7 +561,7 @@ func TestDiagonalRouteAndEndpointLabelsFollowLineGeometry(t *testing.T) {
 	renderRouteEndpointLabel(&out, route, "Hu0/0/0/0", true, 2, 0, model.InterfaceLabelStyle{})
 	renderRouteEndpointLabel(&out, route, "Hu0/0/0/1", false, 2, 0, model.InterfaceLabelStyle{})
 	got := out.String()
-	if !strings.Contains(got, `x="152.0"`) || !strings.Contains(got, `x="448.0"`) {
+	if !strings.Contains(got, `x="144.0"`) || !strings.Contains(got, `x="440.0"`) {
 		t.Fatalf("route labels did not follow diagonal geometry: %s", got)
 	}
 }
@@ -569,8 +570,28 @@ func TestHighDegreeDiagonalEndpointLabelMovesAwayFromHub(t *testing.T) {
 	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300}, 0)
 	var out bytes.Buffer
 	renderRouteEndpointLabel(&out, route, "Hu0/0/0/0", true, 9, 0, model.InterfaceLabelStyle{})
-	if !strings.Contains(out.String(), `x="212.0"`) {
+	if !strings.Contains(out.String(), `x="204.0"`) {
 		t.Fatalf("high-degree endpoint label did not move along route: %s", out.String())
+	}
+}
+
+func TestRouteEndpointLabelPlacementHints(t *testing.T) {
+	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300}, 0)
+	along, offset := 0.5, 0.0
+	location, ok := routeEndpointLabelLocation(route, true, 2, 0, model.LinkEndpoint{LabelAlong: &along, LabelOffset: &offset})
+	if !ok {
+		t.Fatal("expected label location")
+	}
+	if location.X != 300 || location.Y != 200 {
+		t.Fatalf("label location = %+v, want {300 200}", location)
+	}
+	offset = 40
+	nudged, ok := routeEndpointLabelLocation(route, true, 2, 0, model.LinkEndpoint{LabelAlong: &along, LabelOffset: &offset})
+	if !ok {
+		t.Fatal("expected nudged label location")
+	}
+	if math.Hypot(nudged.X-location.X, nudged.Y-location.Y) < 39 {
+		t.Fatalf("label offset did not nudge away from route: base=%+v nudged=%+v", location, nudged)
 	}
 }
 
