@@ -46,7 +46,7 @@ func planDiagonalRoutesWithObstacles(links []routedLink, clearance float64, node
 		}
 	}
 	for _, link := range links {
-		routes[link.Index] = avoidRouteObstacles(link, routes[link.Index], nodes, clearance)
+		routes[link.Index] = avoidRouteObstacles(link, routes[link.Index], nodes, clearance, protectedEndpointStubObstacles(link, links, clearance))
 	}
 	return routes
 }
@@ -96,13 +96,18 @@ func diagonalRouteScore(link routedLink, candidate linkRoute, links []routedLink
 	return score
 }
 
-func routeObstacleCount(link routedLink, route linkRoute, nodes map[string]placedNode, clearance float64) int {
+func routeObstacleCount(link routedLink, route linkRoute, nodes map[string]placedNode, clearance float64, protected []box) int {
 	count := 0
 	for nodeID, node := range nodes {
 		if nodeID == link.FromNode || nodeID == link.ToNode {
 			continue
 		}
 		if routeIntersectsObstacle(route, expandBox(node.Box, clearance)) {
+			count++
+		}
+	}
+	for _, obstacle := range protected {
+		if routeIntersectsObstacle(route, obstacle) {
 			count++
 		}
 	}
@@ -119,11 +124,11 @@ func routeIntersectsObstacle(route linkRoute, obstacle box) bool {
 	return false
 }
 
-func avoidRouteObstacles(link routedLink, route linkRoute, nodes map[string]placedNode, clearance float64) linkRoute {
-	if len(nodes) == 0 || routeObstacleCount(link, route, nodes, clearance) == 0 {
+func avoidRouteObstacles(link routedLink, route linkRoute, nodes map[string]placedNode, clearance float64, protected []box) linkRoute {
+	if len(nodes) == 0 && len(protected) == 0 || routeObstacleCount(link, route, nodes, clearance, protected) == 0 {
 		return route
 	}
-	obstacles := make([]box, 0, len(nodes))
+	obstacles := make([]box, 0, len(nodes)+len(protected))
 	nodeIDs := make([]string, 0, len(nodes))
 	for nodeID := range nodes {
 		if nodeID != link.FromNode && nodeID != link.ToNode {
@@ -134,6 +139,7 @@ func avoidRouteObstacles(link routedLink, route linkRoute, nodes map[string]plac
 	for _, nodeID := range nodeIDs {
 		obstacles = append(obstacles, expandBox(nodes[nodeID].Box, clearance))
 	}
+	obstacles = append(obstacles, protected...)
 	start, end := link.Start, link.End
 	if link.StartStub > 0 {
 		start = movePoint(link.Start, link.StartSide, link.StartStub)
@@ -150,6 +156,40 @@ func avoidRouteObstacles(link routedLink, route linkRoute, nodes map[string]plac
 	points = simplifyPolyline(points)
 	label, horizontal := longestSegmentLabel(points)
 	return linkRoute{Points: points, Path: polylinePath(points), Label: label, LabelHorizontal: horizontal}
+}
+
+func protectedEndpointStubObstacles(link routedLink, links []routedLink, clearance float64) []box {
+	padding := math.Min(42, math.Max(18, clearance*0.25))
+	var obstacles []box
+	for _, other := range links {
+		if other.Index == link.Index || routedLinksShareNode(link, other) {
+			continue
+		}
+		if obstacle, ok := endpointStubObstacle(other.Start, other.StartSide, other.StartStub, padding); ok {
+			obstacles = append(obstacles, obstacle)
+		}
+		if obstacle, ok := endpointStubObstacle(other.End, other.EndSide, other.EndStub, padding); ok {
+			obstacles = append(obstacles, obstacle)
+		}
+	}
+	return obstacles
+}
+
+func endpointStubObstacle(start point, side string, stub, padding float64) (box, bool) {
+	if stub <= 0 {
+		return box{}, false
+	}
+	end := movePoint(start, side, stub)
+	minX := math.Min(start.X, end.X) - padding
+	minY := math.Min(start.Y, end.Y) - padding
+	maxX := math.Max(start.X, end.X) + padding
+	maxY := math.Max(start.Y, end.Y) + padding
+	return box{X: minX, Y: minY, W: maxX - minX, H: maxY - minY}, true
+}
+
+func routedLinksShareNode(a, b routedLink) bool {
+	return a.FromNode == b.FromNode || a.FromNode == b.ToNode ||
+		a.ToNode == b.FromNode || a.ToNode == b.ToNode
 }
 
 func visibilityRoute(start, end point, obstacles []box) []point {

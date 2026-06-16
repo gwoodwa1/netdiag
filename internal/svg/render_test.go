@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -552,6 +553,51 @@ func TestHubSpokeLayoutReservesRoutingSpaceBetweenEveryDualPEPair(t *testing.T) 
 	}
 }
 
+func TestHubSpokeLayoutExpandsCanvasForManySpokeSites(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Groups: []model.Group{
+			{ID: "core", NodeIDs: []string{"p1", "p2"}},
+		},
+		Nodes: []model.Node{
+			{ID: "p1", Role: "core-router"},
+			{ID: "p2", Role: "core-router"},
+		},
+	}
+	for site := 1; site <= 9; site++ {
+		groupID := fmt.Sprintf("site-%d", site)
+		pe1 := groupID + "-pe1"
+		pe2 := groupID + "-pe2"
+		diagram.Groups = append(diagram.Groups, model.Group{ID: groupID, NodeIDs: []string{pe1, pe2}})
+		diagram.Nodes = append(diagram.Nodes,
+			model.Node{ID: pe1, Role: "edge-router"},
+			model.Node{ID: pe2, Role: "edge-router"},
+		)
+	}
+
+	layout := placeHubSpokeLayout(diagram)
+	if layout.Width <= hubSpokeCanvasWidth {
+		t.Fatalf("hub-spoke canvas width = %.1f, want wider than %.1f for many spoke sites", layout.Width, hubSpokeCanvasWidth)
+	}
+
+	var topRow []placedGroup
+	for _, group := range layout.Groups {
+		if strings.HasPrefix(group.ID, "site-") && group.Box.Y < hubSpokeCanvasHeight/2 {
+			topRow = append(topRow, group)
+		}
+	}
+	sort.Slice(topRow, func(i, j int) bool { return topRow[i].Box.X < topRow[j].Box.X })
+	if len(topRow) != 5 {
+		t.Fatalf("top row site count = %d, want 5", len(topRow))
+	}
+	for i := 1; i < len(topRow); i++ {
+		gap := topRow[i].Box.X - (topRow[i-1].Box.X + topRow[i-1].Box.W)
+		if gap < hubSpokeSiteGroupGap {
+			t.Fatalf("site group gap %d = %.1f, want at least %.1f", i, gap, hubSpokeSiteGroupGap)
+		}
+	}
+}
+
 func TestDiagonalRouteAndEndpointLabelsFollowLineGeometry(t *testing.T) {
 	route := diagonalRoute(point{X: 100, Y: 100}, point{X: 500, Y: 300}, 0)
 	if route.Path != "M 100.0 100.0 Q 300.0 200.0 500.0 300.0" {
@@ -729,6 +775,33 @@ func TestDiagonalPlannerKeepsClearRouteCurved(t *testing.T) {
 	route := planDiagonalRoutesWithObstacles(links, 24, nodes)[0]
 	if !strings.Contains(route.Path, " Q ") {
 		t.Fatalf("clear diagonal route unnecessarily lost its curve: %+v", route)
+	}
+}
+
+func TestDiagonalPlannerProtectsUnrelatedEndpointStubs(t *testing.T) {
+	links := []routedLink{
+		{
+			Index: 0, FromNode: "dal-pe2", ToNode: "core",
+			Start: point{X: 100, Y: 100}, StartSide: "top", StartStub: 100,
+			End: point{X: 500, Y: 20}, EndSide: "bottom",
+		},
+		{
+			Index: 1, FromNode: "lax-pe1", ToNode: "other-core",
+			Start: point{X: 0, Y: 50}, StartSide: "right",
+			End: point{X: 220, Y: 50}, EndSide: "left",
+		},
+	}
+	protected, ok := endpointStubObstacle(links[0].Start, links[0].StartSide, links[0].StartStub, 18)
+	if !ok {
+		t.Fatal("expected protected endpoint stub obstacle")
+	}
+	if !routeIntersectsObstacle(routedDiagonalRoute(links[1], 0), protected) {
+		t.Fatal("test setup route did not cross protected endpoint stub")
+	}
+
+	route := planDiagonalRoutesWithObstacles(links, 72, nil)[1]
+	if routeIntersectsObstacle(route, protected) {
+		t.Fatalf("route still crosses protected endpoint stub: %+v", route)
 	}
 }
 

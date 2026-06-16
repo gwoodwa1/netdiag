@@ -23,8 +23,10 @@ const (
 	hubSpokeHubNodeHeight   = 220.0
 	hubSpokeSpokeNodeWidth  = 420.0
 	hubSpokeSpokeNodeHeight = 140.0
+	hubSpokeCanvasWidth     = 6400.0
 	hubSpokeCanvasHeight    = 3400.0
 	hubSpokeCoreGroupGap    = 360.0
+	hubSpokeSiteGroupGap    = 280.0
 )
 
 type placedGroup struct {
@@ -60,12 +62,10 @@ func layoutDiagram(doc *model.Diagram, roles []string, byRole map[string][]strin
 
 func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 	const (
-		width       = 6400.0
 		spokeWidth  = 1400.0
 		spokeHeight = 340.0
 		coreWidth   = 2700.0
 		coreHeight  = 560.0
-		sideMargin  = 70.0
 		top         = headerHeight + 55
 	)
 	nodes := make(map[string]model.Node)
@@ -93,6 +93,13 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 		return placeSiteLayout(doc)
 	}
 
+	split := (len(spokes) + 1) / 2
+	maxRowGroups := split
+	if bottomRowGroups := len(spokes) - split; bottomRowGroups > maxRowGroups {
+		maxRowGroups = bottomRowGroups
+	}
+	minWidth := float64(maxRowGroups)*spokeWidth + float64(maxRowGroups+1)*hubSpokeSiteGroupGap
+	width := math.Max(hubSpokeCanvasWidth, minWidth)
 	result := layoutResult{Nodes: make(map[string]placedNode), Width: width, Height: hubSpokeCanvasHeight}
 	coreX := (width - coreWidth) / 2
 	coreTotalHeight := float64(len(cores))*coreHeight + float64(len(cores)-1)*hubSpokeCoreGroupGap
@@ -102,7 +109,6 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
 		placeHubGroupNodes(&result, group, groupBox, nodes, degrees, true)
 	}
-	split := (len(spokes) + 1) / 2
 	for index, group := range spokes {
 		rowGroups := split
 		rowIndex := index
@@ -112,9 +118,8 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 			rowIndex -= split
 			y = hubSpokeCanvasHeight - spokeHeight - 120
 		}
-		available := width - sideMargin*2
-		step := available / float64(rowGroups)
-		x := sideMargin + step*(float64(rowIndex)+0.5) - spokeWidth/2
+		rowWidth := float64(rowGroups)*spokeWidth + float64(rowGroups-1)*hubSpokeSiteGroupGap
+		x := (width-rowWidth)/2 + float64(rowIndex)*(spokeWidth+hubSpokeSiteGroupGap)
 		groupBox := box{X: x, Y: y, W: spokeWidth, H: spokeHeight}
 		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
 		placeHubGroupNodes(&result, group, groupBox, nodes, degrees, false)

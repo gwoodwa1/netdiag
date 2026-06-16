@@ -294,8 +294,8 @@ links:
         node: lax-pe1
         port: HundredGigE0/0/0/0
         side: bottom
-        position: 0.25
-        stub: 180
+        position: 0.18
+        stub: 400
         label_rotation: 90
       protocol: lldp
     - from:
@@ -355,7 +355,7 @@ links:
         port: HundredGigE0/0/0/0
         side: bottom
         position: 0.25
-        stub: 180
+        stub: 800
         label_rotation: 90
       protocol: lldp
     - from:
@@ -423,8 +423,8 @@ links:
         node: lax-pe1
         port: HundredGigE0/0/0/1
         side: bottom
-        position: 0.75
-        stub: 180
+        position: 0.82
+        stub: 240
         label_rotation: 90
       protocol: lldp
     - from:
@@ -484,7 +484,7 @@ links:
         port: HundredGigE0/0/0/1
         side: bottom
         position: 0.75
-        stub: 180
+        stub: 800
         label_rotation: 90
       protocol: lldp
     - from:
@@ -603,8 +603,8 @@ links:
         node: dal-pe2
         port: HundredGigE0/0/0/0
         side: bottom
-        position: 0.25
-        stub: 180
+        position: 0.12
+        stub: 800
         label_rotation: 90
       protocol: lldp
     - from:
@@ -732,7 +732,7 @@ links:
         node: dal-pe2
         port: HundredGigE0/0/0/1
         side: bottom
-        position: 0.75
-        stub: 180
+        position: 0.82
+        stub: 240
         label_rotation: 90
       protocol: lldp
