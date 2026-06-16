@@ -156,6 +156,23 @@ to:
 `position` ranges from `0.0` to `1.0` and requires `side`. This keeps manual
 adjustments stable when the canvas or device box changes size.
 
+Endpoint interface labels are attached to the rendered route. If a label is too
+close to a hub, overlaps another label, or needs to sit on the other side of a
+lane, use `label_along` and `label_offset`:
+
+```yaml
+from:
+  node: core-a-p1
+  port: HundredGigE0/0/0/1
+  label_along: 0.24
+  label_offset: -36
+  label_rotation: 90
+```
+
+`label_along` is measured from that endpoint toward its peer. `label_offset` is
+perpendicular to the rendered route, and negative values flip the label to the
+other side of the line.
+
 Use `stub` when a link should leave an endpoint in a straight line before
 turning diagonal:
 

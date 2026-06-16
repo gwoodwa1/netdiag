@@ -398,6 +398,23 @@ crossing between layers. Bundled members converge through a compact circular
 port-channel marker, keeping trunk metadata separate from physical interface
 labels.
 
+Interface labels are attached to the rendered route geometry. When a dense
+diagram still needs manual label polish, endpoint labels can be nudged in YAML:
+
+```yaml
+from:
+  node: core-hub-01
+  port: HundredGigE0/0/0/0
+  label_along: 0.22
+  label_offset: 34
+  label_rotation: 90
+```
+
+`label_along` is the normalized distance from that endpoint toward its peer.
+`label_offset` moves the label perpendicular to the rendered route; negative
+values flip it to the other side. These controls preserve manual intent during
+regeneration better than moving generated labels in Draw.io.
+
 Device cards include deterministic, original isometric SVG role icons inspired
 by familiar network-stencil conventions. Spine switches use a multilayer
 fabric-switch chassis, while leaf switches use a low-profile access-switch

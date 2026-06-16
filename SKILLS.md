@@ -37,6 +37,8 @@ Prefer schema-owned spacing controls:
 - increase `diagram.route_clearance` when links run too close together
 - use endpoint `side`, `position`, `stub`, and `label_rotation` on the busiest
   links
+- use endpoint `label_along` and `label_offset` when an interface label needs a
+  durable route-relative nudge
 
 Example extra card sizing for dense hub-and-spoke diagrams:
 
@@ -64,6 +66,17 @@ radius, and padding rather than asking the editor to redraw labels manually.
 Avoid automatic `label_rotation: 180` as a default; use side, position, stubs,
 and larger hub cards first, and reserve 180-degree labels for explicit user
 intent.
+
+Example durable label nudge:
+
+```yaml
+from:
+  node: core-hub-01
+  port: HundredGigE0/0/0/0
+  label_along: 0.22
+  label_offset: 34
+  label_rotation: 90
+```
 
 Use Draw.io for durable polish only after the YAML can render legibly:
 
