@@ -23,6 +23,8 @@ const (
 	hubSpokeHubNodeHeight   = 220.0
 	hubSpokeSpokeNodeWidth  = 420.0
 	hubSpokeSpokeNodeHeight = 140.0
+	hubSpokeCanvasHeight    = 3400.0
+	hubSpokeCoreGroupGap    = 360.0
 )
 
 type placedGroup struct {
@@ -59,14 +61,12 @@ func layoutDiagram(doc *model.Diagram, roles []string, byRole map[string][]strin
 func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 	const (
 		width       = 6400.0
-		height      = 3000.0
 		spokeWidth  = 1400.0
 		spokeHeight = 340.0
 		coreWidth   = 2700.0
 		coreHeight  = 560.0
 		sideMargin  = 70.0
 		top         = headerHeight + 55
-		rowGap      = 90.0
 	)
 	nodes := make(map[string]model.Node)
 	for _, node := range doc.Nodes {
@@ -93,12 +93,12 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 		return placeSiteLayout(doc)
 	}
 
-	result := layoutResult{Nodes: make(map[string]placedNode), Width: width, Height: height}
+	result := layoutResult{Nodes: make(map[string]placedNode), Width: width, Height: hubSpokeCanvasHeight}
 	coreX := (width - coreWidth) / 2
-	coreTotalHeight := float64(len(cores))*coreHeight + float64(len(cores)-1)*rowGap
-	coreY := (height + headerHeight - coreTotalHeight) / 2
+	coreTotalHeight := float64(len(cores))*coreHeight + float64(len(cores)-1)*hubSpokeCoreGroupGap
+	coreY := (hubSpokeCanvasHeight + headerHeight - coreTotalHeight) / 2
 	for index, group := range cores {
-		groupBox := box{X: coreX, Y: coreY + float64(index)*(coreHeight+rowGap), W: coreWidth, H: coreHeight}
+		groupBox := box{X: coreX, Y: coreY + float64(index)*(coreHeight+hubSpokeCoreGroupGap), W: coreWidth, H: coreHeight}
 		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
 		placeHubGroupNodes(&result, group, groupBox, nodes, degrees, true)
 	}
@@ -110,7 +110,7 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 		if index >= split {
 			rowGroups = len(spokes) - split
 			rowIndex -= split
-			y = height - spokeHeight - 80
+			y = hubSpokeCanvasHeight - spokeHeight - 120
 		}
 		available := width - sideMargin*2
 		step := available / float64(rowGroups)

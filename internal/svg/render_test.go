@@ -455,6 +455,40 @@ func TestHubSpokeLayoutUsesOversizedDefaultCards(t *testing.T) {
 	}
 }
 
+func TestHubSpokeLayoutSeparatesCorePlanes(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Groups: []model.Group{
+			{ID: "core-a", NodeIDs: []string{"p1"}},
+			{ID: "core-b", NodeIDs: []string{"p2"}},
+			{ID: "site-a", NodeIDs: []string{"pe1"}},
+			{ID: "site-b", NodeIDs: []string{"pe2"}},
+		},
+		Nodes: []model.Node{
+			{ID: "p1", Role: "core-router"},
+			{ID: "p2", Role: "core-router"},
+			{ID: "pe1", Role: "edge-router"},
+			{ID: "pe2", Role: "edge-router"},
+		},
+	}
+	layout := placeHubSpokeLayout(diagram)
+	var coreA, coreB box
+	for _, group := range layout.Groups {
+		switch group.ID {
+		case "core-a":
+			coreA = group.Box
+		case "core-b":
+			coreB = group.Box
+		}
+	}
+	if got := coreB.Y - (coreA.Y + coreA.H); got < hubSpokeCoreGroupGap {
+		t.Fatalf("core plane gap = %.1f, want at least %.1f", got, hubSpokeCoreGroupGap)
+	}
+	if layout.Height != hubSpokeCanvasHeight {
+		t.Fatalf("hub-spoke canvas height = %.1f, want %.1f", layout.Height, hubSpokeCanvasHeight)
+	}
+}
+
 func TestHubSpokeLayoutAllowsExplicitCardSizeOverride(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme: model.Theme{Layout: "hub-spoke"},
