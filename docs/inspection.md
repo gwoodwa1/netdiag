@@ -50,3 +50,8 @@ identical reports.
 Hub-spoke diagonal routing treats unrelated node boxes as hard obstacles. It
 uses `diagram.route_clearance` around those boxes and inserts deterministic
 waypoint detours when the crossing-aware curved route would hit a device.
+Groups are visual/container structure, not general-purpose no-route zones, and
+netdiag does not currently support first-class YAML blackout rectangles. Avoid
+adding fake invisible nodes or empty spacer groups just to influence routing;
+use route clearance, endpoint sides/positions/stubs, larger real device cards,
+or Draw.io layout overrides for per-link waypoint control.

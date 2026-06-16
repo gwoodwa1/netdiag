@@ -123,6 +123,32 @@ from:
   label_rotation: 90
 ```
 
+## Routing around busy areas
+
+Native hub-and-spoke routing treats unrelated **device node boxes** as hard
+obstacles. It does not currently have first-class YAML blackout rectangles, and
+groups are visual/container structure rather than general routing-obstacle
+objects.
+
+Do not create fake invisible nodes or empty "spacer" groups just to force
+routing. That pollutes the topology model and can confuse validation,
+inspection, discovery diffs, and future regeneration.
+
+Preferred current controls:
+
+- increase `diagram.route_clearance` to separate busy link bundles
+- increase `diagram.endpoint_clearance` to spread ports on crowded node sides
+- enlarge real hub/spoke device cards with node `width` and `height`
+- pin endpoint `side` and `position` on specific busy links
+- add endpoint `stub` so a link leaves the card cleanly before turning
+- use `label_along` and `label_offset` for durable route-relative label nudges
+- use Draw.io layout overrides for per-link waypoints when native YAML controls
+  are not enough
+
+If the user needs true no-route zones, describe that as a future feature:
+explicit YAML obstacle/blackout rectangles that the native router avoids while
+remaining separate from network topology.
+
 Use Draw.io for durable polish only after the YAML can render legibly:
 
 1. Render Draw.io:
