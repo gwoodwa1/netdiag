@@ -346,9 +346,9 @@ links:
     - from:
         node: core-a-p1
         port: HundredGigE0/0/0/7
-        side: top
-        position: 0.12
-        stub: 140
+        side: left
+        position: 0.92
+        stub: 220
         label_rotation: 90
       to:
         node: dal-pe1
@@ -595,9 +595,9 @@ links:
     - from:
         node: core-b-p1
         port: HundredGigE0/0/0/7
-        side: top
-        position: 0.12
-        stub: 140
+        side: left
+        position: 0.92
+        stub: 220
         label_rotation: 90
       to:
         node: dal-pe2
