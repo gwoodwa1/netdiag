@@ -39,6 +39,51 @@ Prefer schema-owned spacing controls:
   links
 - use endpoint `label_along` and `label_offset` when an interface label needs a
   durable route-relative nudge
+- put `label_rotation`, `label_along`, and `label_offset` inside the link
+  endpoint block (`from:` or `to:`), never at the top level of a link item
+- every link endpoint must include both `node` and `port`; the YAML key is
+  `port`, not `interface`
+- never remove endpoint ports while adjusting labels; label controls are
+  additional endpoint fields, not replacements for `port`
+
+Valid link endpoint shapes:
+
+```yaml
+links:
+  - from: core-hub-01:HundredGigE0/0/0/0
+    to: spoke-pe-17:HundredGigE0/0/0/0
+```
+
+```yaml
+links:
+  - from:
+      node: core-hub-01
+      port: HundredGigE0/0/0/0
+      side: bottom
+      position: 0.35
+      stub: 120
+      label_along: 0.22
+      label_offset: 34
+      label_rotation: 90
+    to:
+      node: spoke-pe-17
+      port: HundredGigE0/0/0/0
+```
+
+Invalid endpoint shapes:
+
+```yaml
+links:
+  - from: {node: core-hub-01}          # missing port
+    to: {node: spoke-pe-17}            # missing port
+  - from:
+      node: core-hub-01
+      interface: HundredGigE0/0/0/0    # wrong key; use port
+    to:
+      node: spoke-pe-17
+      port: HundredGigE0/0/0/0
+    label_rotation: 90                 # wrong level; put under from/to
+```
 
 Example extra card sizing for dense hub-and-spoke diagrams:
 

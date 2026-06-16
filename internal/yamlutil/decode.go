@@ -58,5 +58,14 @@ func Context(data []byte, err error) error {
 	if column > 0 {
 		location += fmt.Sprintf(", column %d", column)
 	}
-	return fmt.Errorf("%s: %s%s", location, match[3], excerpt.String())
+	return fmt.Errorf("%s: %s%s", location, messageHint(match[3]), excerpt.String())
+}
+
+func messageHint(message string) string {
+	if strings.Contains(message, "field label_rotation not found") ||
+		strings.Contains(message, "field label_along not found") ||
+		strings.Contains(message, "field label_offset not found") {
+		return message + "; label_rotation, label_along, and label_offset are endpoint settings and must be nested under a link's from: or to: block"
+	}
+	return message
 }

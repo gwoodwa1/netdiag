@@ -211,11 +211,11 @@ func Prepare(doc *Document) error {
 func ParseEndpoint(value string) (Endpoint, error) {
 	node, port, ok := strings.Cut(value, ":")
 	if !ok {
-		return Endpoint{}, fmt.Errorf("endpoint %q must use node:interface", value)
+		return Endpoint{}, fmt.Errorf("endpoint %q must use node:port", value)
 	}
 	node, port = strings.TrimSpace(node), strings.TrimSpace(port)
 	if node == "" || port == "" {
-		return Endpoint{}, fmt.Errorf("endpoint %q must include both node and interface", value)
+		return Endpoint{}, fmt.Errorf("endpoint %q must include both node and port", value)
 	}
 	return Endpoint{Node: node, Port: port}, nil
 }
@@ -343,13 +343,13 @@ func Validate(doc *Document) error {
 		}
 		from := link.From
 		if from.Node == "" || from.Port == "" {
-			problems = append(problems, fmt.Sprintf("link %d from: endpoint must include both node and interface", i+1))
+			problems = append(problems, fmt.Sprintf("link %d from: endpoint must include both node and port", i+1))
 		} else if _, ok := doc.Nodes[from.Node]; !ok {
 			problems = append(problems, fmt.Sprintf("link %d references unknown node %q", i+1, from.Node))
 		}
 		to := link.To
 		if to.Node == "" || to.Port == "" {
-			problems = append(problems, fmt.Sprintf("link %d to: endpoint must include both node and interface", i+1))
+			problems = append(problems, fmt.Sprintf("link %d to: endpoint must include both node and port", i+1))
 		} else if _, ok := doc.Nodes[to.Node]; !ok {
 			problems = append(problems, fmt.Sprintf("link %d references unknown node %q", i+1, to.Node))
 		}

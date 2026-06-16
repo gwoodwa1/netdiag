@@ -19,6 +19,15 @@ func TestParseEndpoint(t *testing.T) {
 	}
 }
 
+func TestParseEndpointErrorUsesPortTerminology(t *testing.T) {
+	if _, err := ParseEndpoint("leaf-01"); err == nil || !strings.Contains(err.Error(), "node:port") {
+		t.Fatalf("expected node:port error, got %v", err)
+	}
+	if _, err := ParseEndpoint("leaf-01:"); err == nil || !strings.Contains(err.Error(), "node and port") {
+		t.Fatalf("expected node and port error, got %v", err)
+	}
+}
+
 func TestDisplayPort(t *testing.T) {
 	tests := map[string]string{
 		"Ethernet0/0":              "Eth0/0",
@@ -50,6 +59,21 @@ func TestValidateUnknownNode(t *testing.T) {
 	}
 	if err := Validate(doc); err == nil {
 		t.Fatal("expected unknown node validation error")
+	}
+}
+
+func TestValidateLinkEndpointErrorUsesPortTerminology(t *testing.T) {
+	doc := &Document{
+		Version: 1,
+		Nodes: map[string]Node{
+			"spine-01": {Role: "spine"},
+			"leaf-01":  {Role: "leaf"},
+		},
+		Links: []Link{{From: LinkEndpoint{Node: "spine-01"}, To: LinkEndpoint{Node: "leaf-01", Port: "Ethernet1/1"}}},
+	}
+	err := Validate(doc)
+	if err == nil || !strings.Contains(err.Error(), "link 1 from: endpoint must include both node and port") {
+		t.Fatalf("expected node and port validation error, got %v", err)
 	}
 }
 
