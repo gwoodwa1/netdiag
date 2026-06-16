@@ -139,6 +139,75 @@ func TestInspectFindsEndpointLabelsTooCloseOnSameLink(t *testing.T) {
 	}
 }
 
+func TestInspectFindsMissingInterfaceLabels(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "rows"},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "p1"},
+			To:   model.LinkEndpoint{Node: "p2", Port: "Ethernet0/0"},
+		}},
+	}
+	findings := inspectLabels(diagram, map[int]linkRoute{}, map[string]endpointGeometry{}, map[string]placedNode{}, 1000, 1000)
+	found := false
+	for _, finding := range findings {
+		found = found || finding.Code == "missing_interface_label" && finding.Nodes[0] == "p1"
+	}
+	if !found {
+		t.Fatalf("missing source interface label was not reported: %+v", findings)
+	}
+}
+
+func TestInspectFindsClippedInterfaceLabels(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "rows"},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "p1", Port: "HundredGigE0/0/1/0"},
+			To:   model.LinkEndpoint{Node: "p2", Port: "HundredGigE0/0/1/1"},
+		}},
+	}
+	geometry := map[string]endpointGeometry{
+		endpointKey(0, true):  {Point: point{X: 10, Y: 10}, Side: "right"},
+		endpointKey(0, false): {Point: point{X: 200, Y: 10}, Side: "left"},
+	}
+	routes := map[int]linkRoute{
+		0: directRoute(point{X: 10, Y: 10}, point{X: 200, Y: 10}, "right", "left", ""),
+	}
+	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 160, 80)
+	found := false
+	for _, finding := range findings {
+		found = found || finding.Code == "label_clipped_by_canvas"
+	}
+	if !found {
+		t.Fatalf("clipped interface label was not reported: %+v", findings)
+	}
+}
+
+func TestInspectFindsOffsetInterfaceLabels(t *testing.T) {
+	offset := 190.0
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "rows"},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "p1", Port: "Eth0/0", LabelOffset: &offset},
+			To:   model.LinkEndpoint{Node: "p2", Port: "Eth0/1"},
+		}},
+	}
+	geometry := map[string]endpointGeometry{
+		endpointKey(0, true):  {Point: point{X: 100, Y: 300}, Side: "right"},
+		endpointKey(0, false): {Point: point{X: 500, Y: 300}, Side: "left"},
+	}
+	routes := map[int]linkRoute{
+		0: directRoute(point{X: 100, Y: 300}, point{X: 500, Y: 300}, "right", "left", ""),
+	}
+	findings := inspectLabels(diagram, routes, geometry, map[string]placedNode{}, 1000, 1000)
+	found := false
+	for _, finding := range findings {
+		found = found || finding.Code == "label_offset_from_route"
+	}
+	if !found {
+		t.Fatalf("offset interface label was not reported: %+v", findings)
+	}
+}
+
 func TestInspectAllowsSeparatedEndpointLabelsOnSameLink(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme: model.Theme{Layout: "rows"},

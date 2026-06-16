@@ -22,10 +22,19 @@ Current finding codes:
 - `crowded_endpoints`: link terminations on one device side are too close.
 - `endpoint_labels_too_close`: a link's source and target interface labels do
   not have enough clearance to remain independently readable.
+- `missing_interface_label`: interface labels are enabled, but a source or
+  target endpoint has no resolved port or explicit label text.
+- `label_clipped_by_canvas`: an interface label is clipped by the canvas bounds.
+- `label_offset_from_route`: an interface label is far enough from its route to
+  look detached from the line.
 - `label_overlap`: interface-label boxes overlap.
 - `label_link_overlap`: an unrelated link passes through an interface label.
 - `label_node_overlap`: an interface label overlaps an unrelated device.
-- `label_outside_canvas`: an interface label extends beyond the canvas.
+
+For label findings, first try endpoint-level controls such as `side`,
+`position`, `stub`, `label_along`, `label_offset`, and `label_rotation`. For
+large telco hub-and-spoke diagrams, larger hub/spoke card sizes and more layout
+spacing are usually better than compact unreadable labels.
 
 Use `--fail-on` in CI. Findings are printed before the command exits non-zero:
 

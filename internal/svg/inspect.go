@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/gwoodwa1/netdiag/internal/model"
 )
@@ -277,14 +278,14 @@ func inspectEndpointCrowding(doc *model.Diagram, geometry map[string]endpointGeo
 
 func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[string]endpointGeometry, nodes map[string]placedNode, width, height float64) []InspectionFinding {
 	labels := inspectionLabels(doc, routes, geometry)
-	var findings []InspectionFinding
+	findings := inspectMissingInterfaceLabels(doc)
 	for _, label := range labels {
 		if label.Box.X < 0 || label.Box.Y < 0 || label.Box.X+label.Box.W > width || label.Box.Y+label.Box.H > height {
 			findings = append(findings, InspectionFinding{
-				Code: "label_outside_canvas", Severity: InspectionError,
-				Message: fmt.Sprintf("interface label for link %d extends outside the canvas", label.Link),
+				Code: "label_clipped_by_canvas", Severity: InspectionError,
+				Message: fmt.Sprintf("interface label for link %d is clipped by the canvas bounds", label.Link),
 				Nodes:   []string{label.Node}, Links: []int{label.Link},
-				Suggestion: "change the endpoint side or increase canvas/layout spacing",
+				Suggestion: "change the endpoint side, reduce label_offset, or increase canvas/layout spacing",
 			})
 		}
 		for nodeID, node := range nodes {
@@ -315,7 +316,7 @@ func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[st
 		}
 		if distance := labelDistanceToRoute(label.Center, routes[label.Link-1]); distance > 160 {
 			findings = append(findings, InspectionFinding{
-				Code: "label_detached_from_route", Severity: InspectionWarning,
+				Code: "label_offset_from_route", Severity: InspectionWarning,
 				Message: fmt.Sprintf("interface label for link %d is %.1fpx away from its route", label.Link, distance),
 				Nodes:   []string{label.Node}, Links: []int{label.Link},
 				Suggestion: "reduce label_offset or adjust label_along so the label remains visually attached to the route",
@@ -347,6 +348,39 @@ func inspectLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[st
 		}
 	}
 	return findings
+}
+
+func inspectMissingInterfaceLabels(doc *model.Diagram) []InspectionFinding {
+	if doc.Theme.InterfaceLabels == "none" {
+		return nil
+	}
+	var findings []InspectionFinding
+	for index, link := range doc.Links {
+		if strings.TrimSpace(link.SourceLabel()) == "" {
+			findings = append(findings, missingInterfaceLabelFinding(index, true, link))
+		}
+		if strings.TrimSpace(link.TargetLabel()) == "" {
+			findings = append(findings, missingInterfaceLabelFinding(index, false, link))
+		}
+	}
+	return findings
+}
+
+func missingInterfaceLabelFinding(index int, source bool, link model.Link) InspectionFinding {
+	endpointName := "target"
+	nodeID := link.To.Node
+	if source {
+		endpointName = "source"
+		nodeID = link.From.Node
+	}
+	return InspectionFinding{
+		Code:       "missing_interface_label",
+		Severity:   InspectionWarning,
+		Message:    fmt.Sprintf("%s interface label for link %d (%s) is empty", endpointName, index+1, describeLink(link)),
+		Nodes:      []string{nodeID},
+		Links:      []int{index + 1},
+		Suggestion: "set the endpoint port or explicit endpoint label, or disable interface labels if this is intentional",
+	}
 }
 
 func inspectionLabels(doc *model.Diagram, routes map[int]linkRoute, geometry map[string]endpointGeometry) []inspectedLabel {

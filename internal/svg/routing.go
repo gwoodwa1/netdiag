@@ -473,6 +473,9 @@ func pointAlongRoute(route linkRoute, position float64) point {
 	if len(route.Points) == 3 && strings.Contains(route.Path, " Q ") {
 		return quadraticPoint(route.Points[0], route.Points[1], route.Points[2], position)
 	}
+	if len(route.Points) > 2 {
+		return pointAlongSampledRoute(route.Points, position)
+	}
 	return pointAlongLine(route.Points[0], route.Points[len(route.Points)-1], position)
 }
 
