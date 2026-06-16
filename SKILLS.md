@@ -20,6 +20,40 @@ Use this workflow when an LLM creates or repairs a network diagram.
 10. If required, compare ELK explicitly:
    `netdiag render diagram.yaml --renderer d2 --layout elk -o diagram.d2.svg`.
 
+## Dense telco hub-and-spoke diagrams
+
+For large PE/P or core/edge diagrams, do not try to solve interface-label
+collisions by moving generated labels in Draw.io. Netdiag does not currently
+preserve manually moved generated labels during `extract-overrides`.
+
+Prefer schema-owned spacing controls:
+
+- enlarge high-degree hub/core nodes with explicit `width` and `height`
+- increase `diagram.endpoint_clearance` when labels crowd node edges
+- increase `diagram.route_clearance` when links run too close together
+- use endpoint `side`, `position`, `stub`, and `label_rotation` on the busiest
+  links
+- keep `diagram.layout: hub-spoke` for PE/P topologies when the source data has
+  a clear hub/core
+
+Use Draw.io for durable polish only after the YAML can render legibly:
+
+1. Render Draw.io:
+   `netdiag render diagram.yaml --renderer drawio -o diagram.drawio`.
+2. Move or resize nodes/groups and adjust connector waypoints.
+3. Do not rely on moved generated labels being preserved.
+4. Check round-trip safety:
+   `netdiag doctor drawio diagram.drawio`.
+5. Extract durable layout intent:
+   `netdiag extract-overrides diagram.drawio --source diagram.yaml -o diagram.layout.yaml --report`.
+6. Re-render with overrides:
+   `netdiag render diagram.yaml --renderer drawio --layout-overrides diagram.layout.yaml -o diagram.drawio`.
+
+Preserved Draw.io edits include node/group geometry, link waypoints,
+source/target attachment sides, routing style, and lock state. Unsupported
+manual annotations or generated-label movements should be treated as final
+publication edits, not durable topology layout intent.
+
 Do not assume D2 endpoint-side hints are authoritative. The D2 spike proves
 nested groups, routed links, three link-label positions, and parallel links.
 Precise port-side placement and collision-free network labels remain owned by
