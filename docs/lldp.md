@@ -126,8 +126,10 @@ and P roles from those suffixes, while site layout expands high-degree P
 routers to spread their many port labels across a larger device and canvas.
 Because the topology contains a clear P-router core and several PE sites,
 auto-layout selects `hub-spoke`: the two P planes are stacked centrally and
-the eight sites are distributed above and below them. Hub-and-spoke links use
-separated curved lanes with white crossing gaps. Interface labels are placed
+the eight sites are distributed above and below them. Hub-spoke mode uses very
+large hub cards and large spoke cards by default so dense telco interface
+labels have room before any manual polish. Hub-and-spoke links use separated
+curved lanes with white crossing gaps. Interface labels are placed
 proportionally along those routes, with labels for high-degree P routers moved
 farther away from the hub to reduce core-label overlap. Lane geometry is
 derived from endpoints and deterministic link order rather than device names

@@ -28,15 +28,17 @@ preserve manually moved generated labels during `extract-overrides`.
 
 Prefer schema-owned spacing controls:
 
-- enlarge high-degree hub/core nodes with explicit `width` and `height`
+- keep `diagram.layout: hub-spoke` for PE/P topologies when the source data has
+  a clear hub/core; this layout intentionally uses very large hub cards and
+  large spoke cards by default
+- further enlarge unusual high-degree hub/core or spoke nodes with explicit
+  `width` and `height`
 - increase `diagram.endpoint_clearance` when labels crowd node edges
 - increase `diagram.route_clearance` when links run too close together
 - use endpoint `side`, `position`, `stub`, and `label_rotation` on the busiest
   links
-- keep `diagram.layout: hub-spoke` for PE/P topologies when the source data has
-  a clear hub/core
 
-Example card sizing for dense hub-and-spoke diagrams:
+Example extra card sizing for dense hub-and-spoke diagrams:
 
 ```yaml
 diagram:
@@ -47,18 +49,21 @@ nodes:
   core-hub-01:
     label: Core Hub 01
     role: core-router
-    width: 560
-    height: 160
+    width: 900
+    height: 260
   spoke-pe-17:
     label: Spoke PE 17
     role: edge-router
-    width: 340
-    height: 110
+    width: 480
+    height: 170
 ```
 
 Native interface labels already render as filled badge rectangles with a
 stroke. Use `diagram.interface_label_style` for badge fill, text color, border,
 radius, and padding rather than asking the editor to redraw labels manually.
+Avoid automatic `label_rotation: 180` as a default; use side, position, stubs,
+and larger hub cards first, and reserve 180-degree labels for explicit user
+intent.
 
 Use Draw.io for durable polish only after the YAML can render legibly:
 

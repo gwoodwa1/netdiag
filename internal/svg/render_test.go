@@ -432,6 +432,50 @@ func TestHubSpokeLayoutPlacesCoreBetweenSpokes(t *testing.T) {
 	}
 }
 
+func TestHubSpokeLayoutUsesOversizedDefaultCards(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Groups: []model.Group{
+			{ID: "core", NodeIDs: []string{"p1", "p2"}},
+			{ID: "site", NodeIDs: []string{"pe1", "pe2"}},
+		},
+		Nodes: []model.Node{
+			{ID: "p1", Role: "core-router"},
+			{ID: "p2", Role: "core-router"},
+			{ID: "pe1", Role: "edge-router"},
+			{ID: "pe2", Role: "edge-router"},
+		},
+	}
+	layout := placeHubSpokeLayout(diagram)
+	if got := layout.Nodes["p1"].Box; got.W != hubSpokeHubNodeWidth || got.H != hubSpokeHubNodeHeight {
+		t.Fatalf("hub box = %.1fx%.1f, want %.1fx%.1f", got.W, got.H, hubSpokeHubNodeWidth, hubSpokeHubNodeHeight)
+	}
+	if got := layout.Nodes["pe1"].Box; got.W != hubSpokeSpokeNodeWidth || got.H != hubSpokeSpokeNodeHeight {
+		t.Fatalf("spoke box = %.1fx%.1f, want %.1fx%.1f", got.W, got.H, hubSpokeSpokeNodeWidth, hubSpokeSpokeNodeHeight)
+	}
+}
+
+func TestHubSpokeLayoutAllowsExplicitCardSizeOverride(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "hub-spoke"},
+		Groups: []model.Group{
+			{ID: "core", NodeIDs: []string{"p1"}},
+			{ID: "site", NodeIDs: []string{"pe1"}},
+		},
+		Nodes: []model.Node{
+			{ID: "p1", Role: "core-router", Width: 900, Height: 260},
+			{ID: "pe1", Role: "edge-router", Width: 480, Height: 170},
+		},
+	}
+	layout := placeHubSpokeLayout(diagram)
+	if got := layout.Nodes["p1"].Box; got.W != 900 || got.H != 260 {
+		t.Fatalf("hub override box = %.1fx%.1f, want 900x260", got.W, got.H)
+	}
+	if got := layout.Nodes["pe1"].Box; got.W != 480 || got.H != 170 {
+		t.Fatalf("spoke override box = %.1fx%.1f, want 480x170", got.W, got.H)
+	}
+}
+
 func TestHubSpokeLayoutReservesRoutingSpaceBetweenEveryDualPEPair(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme: model.Theme{Layout: "hub-spoke"},

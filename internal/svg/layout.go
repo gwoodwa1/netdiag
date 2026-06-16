@@ -18,6 +18,13 @@ const (
 	siteCanvasMax  = 5600.0
 )
 
+const (
+	hubSpokeHubNodeWidth    = 760.0
+	hubSpokeHubNodeHeight   = 220.0
+	hubSpokeSpokeNodeWidth  = 420.0
+	hubSpokeSpokeNodeHeight = 140.0
+)
+
 type placedGroup struct {
 	ID       string
 	Label    string
@@ -93,7 +100,7 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 	for index, group := range cores {
 		groupBox := box{X: coreX, Y: coreY + float64(index)*(coreHeight+rowGap), W: coreWidth, H: coreHeight}
 		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
-		placeHubGroupNodes(&result, group, groupBox, nodes, degrees)
+		placeHubGroupNodes(&result, group, groupBox, nodes, degrees, true)
 	}
 	split := (len(spokes) + 1) / 2
 	for index, group := range spokes {
@@ -110,29 +117,57 @@ func placeHubSpokeLayout(doc *model.Diagram) layoutResult {
 		x := sideMargin + step*(float64(rowIndex)+0.5) - spokeWidth/2
 		groupBox := box{X: x, Y: y, W: spokeWidth, H: spokeHeight}
 		result.Groups = append(result.Groups, placedGroup{ID: group.ID, Label: group.Label, Kind: group.Kind, Box: groupBox})
-		placeHubGroupNodes(&result, group, groupBox, nodes, degrees)
+		placeHubGroupNodes(&result, group, groupBox, nodes, degrees, false)
 	}
 	return result
 }
 
-func placeHubGroupNodes(result *layoutResult, group model.Group, groupBox box, nodes map[string]model.Node, degrees map[string]int) {
+func placeHubGroupNodes(result *layoutResult, group model.Group, groupBox box, nodes map[string]model.Node, degrees map[string]int, coreGroup bool) {
 	ids := append([]string(nil), group.NodeIDs...)
 	sort.Strings(ids)
 	totalWidth := 0.0
 	for _, id := range ids {
-		totalWidth += siteNodeWidth(nodes[id], degrees[id])
+		totalWidth += hubSpokeNodeWidth(nodes[id], degrees[id], coreGroup)
 	}
 	gap := hubGroupGap(ids, nodes)
 	totalWidth += float64(len(ids)-1) * gap
 	x := groupBox.X + (groupBox.W-totalWidth)/2
 	for _, id := range ids {
 		node := nodes[id]
-		width := siteNodeWidth(node, degrees[id])
-		height := siteNodeHeight(node, degrees[id])
+		width := hubSpokeNodeWidth(node, degrees[id], coreGroup)
+		height := hubSpokeNodeHeight(node, degrees[id], coreGroup)
 		y := groupBox.Y + siteHeader + (groupBox.H-siteHeader-height)/2
 		result.Nodes[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: height}}
 		x += width + gap
 	}
+}
+
+func hubSpokeNodeWidth(node model.Node, degree int, coreGroup bool) float64 {
+	if node.Width > 0 {
+		return node.Width
+	}
+	width := hubSpokeSpokeNodeWidth
+	if coreGroup || node.Role == "core-router" {
+		width = hubSpokeHubNodeWidth
+	}
+	if degree <= 4 {
+		return width
+	}
+	return width + float64(degree-4)*70
+}
+
+func hubSpokeNodeHeight(node model.Node, degree int, coreGroup bool) float64 {
+	if node.Height > 0 {
+		return node.Height
+	}
+	height := hubSpokeSpokeNodeHeight
+	if coreGroup || node.Role == "core-router" {
+		height = hubSpokeHubNodeHeight
+	}
+	if degree <= 4 {
+		return height
+	}
+	return height + float64(degree-4)*22
 }
 
 func hubGroupGap(ids []string, nodes map[string]model.Node) float64 {
