@@ -175,6 +175,21 @@ func TestValidateInterfaceLabelModes(t *testing.T) {
 	}
 }
 
+func TestValidateNodeSizeHints(t *testing.T) {
+	doc := &Document{Version: 1, Nodes: map[string]Node{"router": {Role: "router", Width: 420, Height: 140}}}
+	if err := Validate(doc); err != nil {
+		t.Fatalf("positive node size hints should validate: %v", err)
+	}
+	doc.Nodes["router"] = Node{Role: "router", Width: -1}
+	if err := Validate(doc); err == nil || !strings.Contains(err.Error(), "width cannot be negative") {
+		t.Fatalf("expected negative width validation error, got %v", err)
+	}
+	doc.Nodes["router"] = Node{Role: "router", Height: -1}
+	if err := Validate(doc); err == nil || !strings.Contains(err.Error(), "height cannot be negative") {
+		t.Fatalf("expected negative height validation error, got %v", err)
+	}
+}
+
 func floatTestPointer(value float64) *float64 {
 	return &value
 }

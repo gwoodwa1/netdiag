@@ -108,6 +108,8 @@ func JSONSchema() ([]byte, error) {
 					"icon":       map[string]interface{}{"type": "string"},
 					"icon_label": map[string]interface{}{"type": "string", "maxLength": 6},
 					"color":      map[string]interface{}{"type": "string"},
+					"width":      map[string]interface{}{"type": "number", "minimum": 0},
+					"height":     map[string]interface{}{"type": "number", "minimum": 0},
 					"order":      map[string]interface{}{"type": "integer"},
 					"metadata":   map[string]interface{}{"type": "object"},
 				},

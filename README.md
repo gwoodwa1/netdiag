@@ -342,6 +342,24 @@ nodes:
   east-router: {label: East Router, role: router, order: 30}
 ```
 
+Dense hub-and-spoke diagrams can also give individual cards explicit
+dimensions. This is useful when a high-degree hub or spoke needs more room for
+interface labels and connector attachment points:
+
+```yaml
+nodes:
+  core-hub-01:
+    label: Core Hub 01
+    role: core-router
+    width: 560
+    height: 160
+  spoke-pe-17:
+    label: Spoke PE 17
+    role: edge-router
+    width: 340
+    height: 110
+```
+
 Set `diagram.layout: ring` to arrange ordered nodes clockwise around a resilient
 ring. The first node is placed at the top:
 

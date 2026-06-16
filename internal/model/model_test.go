@@ -36,6 +36,8 @@ nodes:
   leaf-01:
     role: leaf
     icon_label: PE
+    width: 420
+    height: 120
     metadata:
       mgmt_ip: 10.0.0.1
   leaf-02:
@@ -88,6 +90,9 @@ links:
 	}
 	if diag.Nodes[0].IconLabel != "PE" {
 		t.Errorf("expected icon label PE, got %q", diag.Nodes[0].IconLabel)
+	}
+	if diag.Nodes[0].Width != 420 || diag.Nodes[0].Height != 120 {
+		t.Errorf("expected node size 420x120, got %.1fx%.1f", diag.Nodes[0].Width, diag.Nodes[0].Height)
 	}
 
 	// Verify groups

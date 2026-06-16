@@ -140,7 +140,7 @@ func renderWithOptions(diagram *model.Diagram, options Options) ([]byte, error) 
 			stroke = node.Color
 		}
 		style := fmt.Sprintf("shape=%s;whiteSpace=wrap;html=1;rounded=1;fillColor=%s;strokeColor=%s;fontStyle=1;", visual.Shape, visual.Fill, stroke)
-		width, height := 170.0, 70.0
+		width, height := nodeDrawIOSize(node)
 		if override, ok := overrides.Nodes[node.ID]; ok {
 			x, y, width, height = applyBounds(x, y, width, height, override)
 			style = applyBoundsStyle(style, override)
@@ -231,10 +231,22 @@ func overriddenNodePlacements(nodes []model.Node, nodeParent map[string]string, 
 		if parent == "" {
 			parent = "1"
 		}
-		_, _, width, height := applyBounds(0, 0, 170, 70, override)
+		defaultWidth, defaultHeight := nodeDrawIOSize(node)
+		_, _, width, height := applyBounds(0, 0, defaultWidth, defaultHeight, override)
 		result[node.ID] = nodePlacement{Parent: parent, X: *override.X, Y: *override.Y, Width: width, Height: height}
 	}
 	return result
+}
+
+func nodeDrawIOSize(node model.Node) (float64, float64) {
+	width, height := 170.0, 70.0
+	if node.Width > 0 {
+		width = node.Width
+	}
+	if node.Height > 0 {
+		height = node.Height
+	}
+	return width, height
 }
 
 func placementIDs(placed map[string]nodePlacement) map[string]bool {

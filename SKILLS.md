@@ -36,6 +36,30 @@ Prefer schema-owned spacing controls:
 - keep `diagram.layout: hub-spoke` for PE/P topologies when the source data has
   a clear hub/core
 
+Example card sizing for dense hub-and-spoke diagrams:
+
+```yaml
+diagram:
+  layout: hub-spoke
+  endpoint_clearance: 36
+  route_clearance: 28
+nodes:
+  core-hub-01:
+    label: Core Hub 01
+    role: core-router
+    width: 560
+    height: 160
+  spoke-pe-17:
+    label: Spoke PE 17
+    role: edge-router
+    width: 340
+    height: 110
+```
+
+Native interface labels already render as filled badge rectangles with a
+stroke. Use `diagram.interface_label_style` for badge fill, text color, border,
+radius, and padding rather than asking the editor to redraw labels manually.
+
 Use Draw.io for durable polish only after the YAML can render legibly:
 
 1. Render Draw.io:

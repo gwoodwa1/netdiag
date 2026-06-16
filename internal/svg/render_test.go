@@ -384,6 +384,31 @@ func TestSiteLayoutExpandsHighDegreeCoreRouters(t *testing.T) {
 	}
 }
 
+func TestNodeSizeHintsControlNativeLayout(t *testing.T) {
+	diagram := &model.Diagram{
+		Theme: model.Theme{Layout: "sites"},
+		Groups: []model.Group{
+			{ID: "core", Kind: "core", NodeIDs: []string{"hub"}},
+			{ID: "edge", Kind: "site", NodeIDs: []string{"spoke"}},
+		},
+		Nodes: []model.Node{
+			{ID: "hub", Role: "core-router", Width: 520, Height: 150},
+			{ID: "spoke", Role: "edge-router", Width: 320, Height: 110},
+		},
+		Links: []model.Link{{
+			From: model.LinkEndpoint{Node: "hub", Port: "Hu0/0/0/0"},
+			To:   model.LinkEndpoint{Node: "spoke", Port: "Hu0/0/0/0"},
+		}},
+	}
+	layout := placeSiteLayout(diagram)
+	if got := layout.Nodes["hub"].Box; got.W != 520 || got.H != 150 {
+		t.Fatalf("hub box = %.1fx%.1f, want 520x150", got.W, got.H)
+	}
+	if got := layout.Nodes["spoke"].Box; got.W != 320 || got.H != 110 {
+		t.Fatalf("spoke box = %.1fx%.1f, want 320x110", got.W, got.H)
+	}
+}
+
 func TestHubSpokeLayoutPlacesCoreBetweenSpokes(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme: model.Theme{Layout: "hub-spoke"},

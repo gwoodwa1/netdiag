@@ -197,10 +197,12 @@ func placeRowNodes(doc *model.Diagram, roles []string, byRole map[string][]strin
 		ids := byRole[rowRole]
 		spacing := (width - diagramLeft - diagramRight) / float64(len(ids))
 		for column, id := range ids {
-			width := nodeWidth(rowRole)
+			node := nodesByID[id]
+			width := nodeBoxWidth(node)
+			height := nodeBoxHeight(node)
 			x := diagramLeft + spacing*(float64(column)+0.5) - width/2
 			y := headerHeight + float64(row)*rowHeight + 112
-			result[id] = placedNode{ID: id, Node: nodesByID[id], Box: box{X: x, Y: y, W: width, H: nodeHeight}}
+			result[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: height}}
 		}
 	}
 	return result
@@ -219,7 +221,7 @@ func rowLayoutWidth(doc *model.Diagram, roles []string, byRole map[string][]stri
 		}
 		maxNodeWidth := 0.0
 		for _, id := range ids {
-			maxNodeWidth = math.Max(maxNodeWidth, nodeWidth(nodesByID[id].Role))
+			maxNodeWidth = math.Max(maxNodeWidth, nodeBoxWidth(nodesByID[id]))
 		}
 		required := diagramLeft + diagramRight + float64(len(ids))*(maxNodeWidth+rowLinkGap)
 		width = math.Max(width, required)
@@ -241,13 +243,28 @@ func placeRingNodes(doc *model.Diagram, roles []string, byRole map[string][]stri
 	radiusX, radiusY := 700.0, 385.0
 	for index, id := range ids {
 		node := nodesByID[id]
-		width := nodeWidth(node.Role)
+		width := nodeBoxWidth(node)
+		height := nodeBoxHeight(node)
 		angle := -math.Pi/2 + 2*math.Pi*float64(index)/float64(len(ids))
 		x := centerX + radiusX*math.Cos(angle) - width/2
-		y := centerY + radiusY*math.Sin(angle) - nodeHeight/2
-		result[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: nodeHeight}}
+		y := centerY + radiusY*math.Sin(angle) - height/2
+		result[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: height}}
 	}
 	return result
+}
+
+func nodeBoxWidth(node model.Node) float64 {
+	if node.Width > 0 {
+		return node.Width
+	}
+	return nodeWidth(node.Role)
+}
+
+func nodeBoxHeight(node model.Node) float64 {
+	if node.Height > 0 {
+		return node.Height
+	}
+	return nodeHeight
 }
 
 func nodeWidth(role string) float64 {

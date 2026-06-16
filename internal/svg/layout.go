@@ -128,7 +128,7 @@ func placeHubGroupNodes(result *layoutResult, group model.Group, groupBox box, n
 	for _, id := range ids {
 		node := nodes[id]
 		width := siteNodeWidth(node, degrees[id])
-		height := siteNodeHeight(degrees[id])
+		height := siteNodeHeight(node, degrees[id])
 		y := groupBox.Y + siteHeader + (groupBox.H-siteHeader-height)/2
 		result.Nodes[id] = placedNode{ID: id, Node: node, Box: box{X: x, Y: y, W: width, H: height}}
 		x += width + gap
@@ -236,7 +236,7 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 		for index, role := range roles {
 			rowHeight := siteRoleHeight
 			for _, nodeID := range byRole[role] {
-				rowHeight = math.Max(rowHeight, siteNodeHeight(degrees[nodeID])+123)
+				rowHeight = math.Max(rowHeight, siteNodeHeight(nodesByID[nodeID], degrees[nodeID])+123)
 			}
 			rowHeights[index] = rowHeight
 		}
@@ -277,7 +277,7 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 			for _, nodeID := range ids {
 				node := nodesByID[nodeID]
 				width := siteNodeWidth(node, degrees[nodeID])
-				height := siteNodeHeight(degrees[nodeID])
+				height := siteNodeHeight(node, degrees[nodeID])
 				result.Nodes[nodeID] = placedNode{ID: nodeID, Node: node, Box: box{X: nodeX, Y: nodeY, W: width, H: height}}
 				nodeX += width + gap
 			}
@@ -307,6 +307,9 @@ func nodeDegrees(doc *model.Diagram) map[string]int {
 }
 
 func siteNodeWidth(node model.Node, degree int) float64 {
+	if node.Width > 0 {
+		return node.Width
+	}
 	width := nodeWidth(node.Role)
 	if degree <= 4 {
 		return width
@@ -314,7 +317,10 @@ func siteNodeWidth(node model.Node, degree int) float64 {
 	return width + float64(degree-4)*70
 }
 
-func siteNodeHeight(degree int) float64 {
+func siteNodeHeight(node model.Node, degree int) float64 {
+	if node.Height > 0 {
+		return node.Height
+	}
 	if degree <= 4 {
 		return nodeHeight
 	}

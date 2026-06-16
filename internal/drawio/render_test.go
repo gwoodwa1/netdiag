@@ -140,6 +140,21 @@ func TestRenderAppliesLayoutOverrides(t *testing.T) {
 	}
 }
 
+func TestRenderUsesNodeSizeHints(t *testing.T) {
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "hub", Label: "Hub", Role: "core-router", Width: 520, Height: 150}},
+	}
+	got, err := Render(diagram)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`id="node-hub"`, `width="520" height="150"`} {
+		if !strings.Contains(string(got), want) {
+			t.Errorf("draw.io output does not contain %q\n%s", want, got)
+		}
+	}
+}
+
 func TestRenderRejectsUnknownOverrideReference(t *testing.T) {
 	diagram := &model.Diagram{Nodes: []model.Node{{ID: "a"}}}
 	overrides := &layoutoverride.Document{

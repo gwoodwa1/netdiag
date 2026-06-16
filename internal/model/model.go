@@ -26,6 +26,8 @@ type Node struct {
 	Icon      string
 	IconLabel string
 	Color     string
+	Width     float64
+	Height    float64
 	Order     int
 	Metadata  map[string]interface{}
 }
@@ -218,6 +220,8 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 			Icon:      nodeSpec.Icon,
 			IconLabel: nodeSpec.IconLabel,
 			Color:     nodeSpec.Color,
+			Width:     nodeSpec.Width,
+			Height:    nodeSpec.Height,
 			Order:     nodeSpec.Order,
 			Metadata:  nodeSpec.Metadata,
 		})

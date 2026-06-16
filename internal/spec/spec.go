@@ -69,6 +69,8 @@ type Node struct {
 	Icon      string                 `yaml:"icon,omitempty"`
 	IconLabel string                 `yaml:"icon_label,omitempty"`
 	Color     string                 `yaml:"color,omitempty"`
+	Width     float64                `yaml:"width,omitempty"`
+	Height    float64                `yaml:"height,omitempty"`
 	Order     int                    `yaml:"order,omitempty"`
 	Metadata  map[string]interface{} `yaml:"metadata,omitempty"`
 }
@@ -297,6 +299,12 @@ func Validate(doc *Document) error {
 		}
 		if len([]rune(strings.TrimSpace(node.IconLabel))) > 6 {
 			problems = append(problems, fmt.Sprintf("node %q icon_label must be at most 6 characters", id))
+		}
+		if node.Width < 0 {
+			problems = append(problems, fmt.Sprintf("node %q width cannot be negative", id))
+		}
+		if node.Height < 0 {
+			problems = append(problems, fmt.Sprintf("node %q height cannot be negative", id))
 		}
 	}
 
