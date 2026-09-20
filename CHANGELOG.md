@@ -4,6 +4,14 @@ All notable changes to netdiag are documented here. Releases follow [Semantic Ve
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-20
+
+### Security
+
+- Upgraded the build, test, release, and container toolchain from Go 1.26.6 to Go 1.27.1.
+- Pinned the Docker builder and CI toolchain checks to the exact Go patch release.
+- Updated golangci-lint to v2.13.2 for Go 1.27 analysis support.
+
 ## [0.1.0] - 2026-09-20
 
 ### Added
@@ -35,6 +43,7 @@ All notable changes to netdiag are documented here. Releases follow [Semantic Ve
 
 - Initial YAML-driven network diagram renderer with deterministic SVG output and premium themes.
 
-[Unreleased]: https://github.com/gwoodwa1/netdiag/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/gwoodwa1/netdiag/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/gwoodwa1/netdiag/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/gwoodwa1/netdiag/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/gwoodwa1/netdiag/releases/tag/v0.0.1
