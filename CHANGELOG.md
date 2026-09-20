@@ -11,6 +11,7 @@ All notable changes to netdiag are documented here. Releases follow [Semantic Ve
 - Upgraded the build, test, release, and container toolchain from Go 1.26.6 to Go 1.27.1.
 - Pinned the Docker builder and CI toolchain checks to the exact Go patch release.
 - Updated golangci-lint to v2.13.2 for Go 1.27 analysis support.
+- Updated gosec to v2.28.0 for Go 1.27 analysis support.
 
 ## [0.1.0] - 2026-09-20
 
