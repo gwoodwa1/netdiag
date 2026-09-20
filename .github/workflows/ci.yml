@@ -4,16 +4,21 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "41 4 * * 1"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  GOVULNCHECK_VERSION: v1.7.0
+
 jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: aquasecurity/trivy-action@0.35.0
         with:
@@ -42,9 +47,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
@@ -56,13 +61,83 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
 
+      - name: Download verified dependencies with retries
+        env:
+          GODEBUG: http2client=0
+        run: |
+          for attempt in 1 2 3 4; do
+            if go mod download && go mod verify; then
+              exit 0
+            fi
+            if [ "${attempt}" -eq 4 ]; then
+              exit 1
+            fi
+            sleep "$((attempt * 10))"
+          done
+
+      - name: Verify dependency files
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Build all packages
+        run: go build -trimpath ./...
+
       - name: Verify
         run: ./.github/scripts/verify.sh
+
+      - name: Test with race detector and coverage
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out
+
+      - name: Install govulncheck
+        run: |
+          mkdir -p "${RUNNER_TEMP}/security-tools"
+          GOBIN="${RUNNER_TEMP}/security-tools" go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+          echo "${RUNNER_TEMP}/security-tools" >> "${GITHUB_PATH}"
+
+      - name: Go source and test vulnerability scans
+        run: |
+          govulncheck -show verbose ./...
+          govulncheck -test -show verbose ./...
+
+      - name: Build and scan every command binary
+        run: scripts/scan-go-binaries.sh "${RUNNER_TEMP}/security-scan"
+
+      - name: Security static analysis
+        run: go run github.com/securego/gosec/v2/cmd/gosec@v2.25.0 -exclude-generated -severity high ./...
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: go-coverage
+          path: coverage.out
+          if-no-files-found: error
+
+  container-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build release image
+        run: docker build -t netdiag:security-scan .
+
+      - name: Scan runtime image packages
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: netdiag:security-scan
+          format: table
+          exit-code: "1"
+          ignore-unfixed: false
+          severity: CRITICAL,HIGH
