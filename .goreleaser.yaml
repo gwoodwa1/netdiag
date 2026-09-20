@@ -1,0 +1,49 @@
+version: 2
+
+project_name: netdiag
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: netdiag
+    main: ./cmd/netdiag
+    binary: netdiag
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - >-
+        -s -w
+        -X main.version={{.Version}}
+        -X main.commit={{.Commit}}
+        -X main.date={{.Date}}
+
+archives:
+  - ids: [netdiag]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - VERSION
+      - examples/**/*.yaml
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  prerelease: auto
+  header: |
+    Netdiag {{.Tag}}
+
+    See `CHANGELOG.md` for the release notes and included examples for complete starting points.

@@ -26,8 +26,13 @@ Build a standalone CLI:
 
 ```sh
 go build -o netdiag ./cmd/netdiag
+./netdiag version
 ./netdiag render examples/spine-leaf.yaml
 ```
+
+The current release is recorded in [`VERSION`](VERSION). Release notes are in
+[`CHANGELOG.md`](CHANGELOG.md), and tagged releases provide binaries for macOS,
+Linux, and Windows on AMD64 and ARM64.
 
 Try it in Docker with no local Go installation:
 

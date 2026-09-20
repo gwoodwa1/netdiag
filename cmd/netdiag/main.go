@@ -26,6 +26,12 @@ import (
 	"github.com/gwoodwa1/netdiag/internal/templates"
 )
 
+var (
+	version = "0.1.0"
+	commit  = "unknown"
+	date    = "unknown"
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -33,6 +39,8 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "version", "--version":
+		printVersion()
 	case "render":
 		render(os.Args[2:])
 	case "validate":
@@ -74,6 +82,10 @@ func main() {
 		usage()
 		os.Exit(2)
 	}
+}
+
+func printVersion() {
+	fmt.Printf("netdiag %s (commit %s, built %s)\n", version, commit, date)
 }
 
 func extractOverrides(args []string) {
@@ -951,5 +963,6 @@ Usage:
   netdiag templates [--json]
   netdiag icons [--json]
   netdiag schema
+  netdiag version
 `)
 }

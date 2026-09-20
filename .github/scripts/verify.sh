@@ -81,6 +81,9 @@ end_section
 
 section "Documentation and diff checks"
 python3 .github/scripts/check_markdown_links.py
+release_version="$(cat VERSION)"
+go run ./cmd/netdiag version | grep -F "netdiag ${release_version} " >/dev/null
+grep -F "## [${release_version}]" CHANGELOG.md >/dev/null
 git diff --check
 end_section
 
