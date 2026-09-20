@@ -24,7 +24,7 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           format: json
-          output: /tmp/trivy-results.json
+          output: trivy-results.json
           exit-code: 0
           skip-dirs: .git,.gocache,.gomodcache,cmd/netdiag/netdiag
 
@@ -36,7 +36,7 @@ jobs:
             | select(.Severity == "HIGH" or .Severity == "CRITICAL")
             | [($result.Target // "unknown"), .Severity, (.VulnerabilityID // .ID // "unknown"), (.Title // .Message // "")]
             | @tsv
-          ' /tmp/trivy-results.json | tee /tmp/trivy-findings.txt
+          ' trivy-results.json | tee /tmp/trivy-findings.txt
           test ! -s /tmp/trivy-findings.txt
 
   lint:
