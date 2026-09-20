@@ -266,7 +266,7 @@ func placeSiteLayout(doc *model.Diagram) layoutResult {
 		for _, nodeID := range nodeIDs {
 			byRole[nodesByID[nodeID].Role] = append(byRole[nodesByID[nodeID].Role], nodeID)
 		}
-		roles := orderedRoles(byRole, nodesByID)
+		roles := orderedRoles(doc, byRole, nodesByID)
 		maxRowWidth := 0.0
 		rowHeights := make([]float64, len(roles))
 		for _, role := range roles {
@@ -415,8 +415,8 @@ func appendNestedGroupBoxes(result *layoutResult, groupID string, depth int, gro
 	}
 }
 
-func orderedRoles(byRole map[string][]string, nodesByID map[string]model.Node) []string {
-	temp := &model.Diagram{}
+func orderedRoles(doc *model.Diagram, byRole map[string][]string, nodesByID map[string]model.Node) []string {
+	temp := &model.Diagram{Constraints: doc.Constraints}
 	for _, ids := range byRole {
 		for _, id := range ids {
 			temp.Nodes = append(temp.Nodes, nodesByID[id])

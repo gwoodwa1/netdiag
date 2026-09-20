@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gwoodwa1/netdiag/internal/constraint"
 	"github.com/gwoodwa1/netdiag/internal/model"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 )
@@ -277,6 +278,20 @@ func TestNodeOrderControlsPlacementWithinRole(t *testing.T) {
 	nodes := placeNodes(diag, roles, byRole)
 	if !(nodes["charlie"].Box.X < nodes["alpha"].Box.X && nodes["alpha"].Box.X < nodes["bravo"].Box.X) {
 		t.Fatal("expected ordered nodes to be placed left-to-right")
+	}
+}
+
+func TestConstraintOrderControlsPlacement(t *testing.T) {
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "alpha", Role: "router", Order: 1}, {ID: "bravo", Role: "router", Order: 2}},
+		Constraints: constraint.Set{
+			Ranks:  []constraint.Rank{{ID: "router", Nodes: []string{"alpha", "bravo"}}},
+			Orders: []constraint.Order{{Scope: "router", Axis: constraint.Horizontal, Items: []constraint.OrderedItem{{NodeID: "bravo", Position: 1}, {NodeID: "alpha", Position: 2}}}},
+		},
+	}
+	_, byRole := groupNodes(diagram)
+	if got := byRole["router"]; len(got) != 2 || got[0] != "bravo" || got[1] != "alpha" {
+		t.Fatalf("constraint order was not consumed: %v", got)
 	}
 }
 

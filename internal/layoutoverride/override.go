@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gwoodwa1/netdiag/internal/constraint"
 	"github.com/gwoodwa1/netdiag/internal/yamlutil"
 	"gopkg.in/yaml.v3"
 )
@@ -41,6 +42,61 @@ type Link struct {
 type Point struct {
 	X float64 `yaml:"x"`
 	Y float64 `yaml:"y"`
+}
+
+// ApplyConstraints converts persisted manual edits into the same internal
+// representation used by automatic layout. Existing endpoint constraints are
+// updated in place so node and port identity are retained.
+func (doc *Document) ApplyConstraints(base constraint.Set) constraint.Set {
+	if doc == nil {
+		return base
+	}
+	result := base
+	for id, bounds := range doc.LayoutOverrides.Nodes {
+		result.Geometry = append(result.Geometry, geometryConstraint(id, false, bounds))
+	}
+	for id, bounds := range doc.LayoutOverrides.Groups {
+		result.Geometry = append(result.Geometry, geometryConstraint(id, true, bounds))
+	}
+	for id, link := range doc.LayoutOverrides.Links {
+		for index := range result.Ports {
+			if result.Ports[index].LinkID != id {
+				continue
+			}
+			if result.Ports[index].Endpoint == constraint.Source && link.SourceSide != "" {
+				result.Ports[index].Side = link.SourceSide
+			}
+			if result.Ports[index].Endpoint == constraint.Target && link.TargetSide != "" {
+				result.Ports[index].Side = link.TargetSide
+			}
+		}
+		if len(link.Waypoints) > 0 {
+			route := constraint.Route{LinkID: id, Locked: link.Locked, Strength: constraint.Strong}
+			for _, point := range link.Waypoints {
+				route.Waypoints = append(route.Waypoints, constraint.Point{X: point.X, Y: point.Y})
+			}
+			result.Routes = append(result.Routes, route)
+		}
+	}
+	return result
+}
+
+func geometryConstraint(id string, group bool, bounds Bounds) constraint.Geometry {
+	strength := constraint.Strong
+	if bounds.Locked {
+		strength = constraint.Required
+	}
+	return constraint.Geometry{
+		TargetID: id, IsGroup: group, X: scalar(bounds.X), Y: scalar(bounds.Y),
+		Width: scalar(bounds.Width), Height: scalar(bounds.Height), Locked: bounds.Locked, Strength: strength,
+	}
+}
+
+func scalar(value *float64) constraint.Scalar {
+	if value == nil {
+		return constraint.Scalar{}
+	}
+	return constraint.Scalar{Value: *value, Set: true}
 }
 
 func Load(path string) (*Document, error) {

@@ -37,7 +37,7 @@ type Rank struct {
 // OrderedItem gives a node an authored position within a scope. Gaps are
 // meaningful, so engines can insert unconstrained nodes between items.
 type OrderedItem struct {
-	NodeID  string
+	NodeID   string
 	Position int
 }
 

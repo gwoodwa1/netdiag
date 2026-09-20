@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/gwoodwa1/netdiag/internal/constraint"
 	"github.com/gwoodwa1/netdiag/internal/icons"
 	"github.com/gwoodwa1/netdiag/internal/model"
 )
@@ -136,11 +137,12 @@ func groupNodes(doc *model.Diagram) ([]string, map[string][]string) {
 	for role := range byRole {
 		sort.SliceStable(byRole[role], func(i, j int) bool {
 			leftID, rightID := byRole[role][i], byRole[role][j]
-			leftOrder, rightOrder := nodesByID[leftID].Order, nodesByID[rightID].Order
-			if leftOrder == 0 {
+			leftOrder, leftSet := authoredOrder(doc, role, leftID, nodesByID)
+			rightOrder, rightSet := authoredOrder(doc, role, rightID, nodesByID)
+			if !leftSet {
 				leftOrder = int(^uint(0) >> 1)
 			}
-			if rightOrder == 0 {
+			if !rightSet {
 				rightOrder = int(^uint(0) >> 1)
 			}
 			if leftOrder == rightOrder {
@@ -161,8 +163,22 @@ func groupNodes(doc *model.Diagram) ([]string, map[string][]string) {
 		"super-spine", "spine", "leaf", "server", "endpoint",
 	}
 	var roles []string
+	if len(doc.Constraints.Ranks) > 0 {
+		ranks := append([]constraint.Rank(nil), doc.Constraints.Ranks...)
+		sort.SliceStable(ranks, func(i, j int) bool {
+			if ranks[i].Order == ranks[j].Order {
+				return ranks[i].ID < ranks[j].ID
+			}
+			return ranks[i].Order < ranks[j].Order
+		})
+		for _, rank := range ranks {
+			if len(byRole[rank.ID]) > 0 {
+				roles = append(roles, rank.ID)
+			}
+		}
+	}
 	for _, role := range preferred {
-		if len(byRole[role]) > 0 {
+		if len(byRole[role]) > 0 && !containsRole(roles, role) {
 			roles = append(roles, role)
 		}
 	}
@@ -180,6 +196,23 @@ func groupNodes(doc *model.Diagram) ([]string, map[string][]string) {
 	roles = append(roles, rest...)
 	orderNodesByConnectivity(doc, roles, byRole, nodesByID)
 	return roles, byRole
+}
+
+func containsRole(roles []string, role string) bool {
+	for _, existing := range roles {
+		if existing == role {
+			return true
+		}
+	}
+	return false
+}
+
+func authoredOrder(doc *model.Diagram, scope, nodeID string, nodes map[string]model.Node) (int, bool) {
+	if order, ok := doc.Constraints.OrderFor(scope, nodeID); ok {
+		return order, true
+	}
+	order := nodes[nodeID].Order
+	return order, order != 0
 }
 
 func orderNodesByConnectivity(doc *model.Diagram, roles []string, byRole map[string][]string, nodes map[string]model.Node) {
@@ -204,12 +237,13 @@ func orderNodesByConnectivity(doc *model.Diagram, roles []string, byRole map[str
 		for _, role := range orderedRoles {
 			sort.SliceStable(byRole[role], func(i, j int) bool {
 				left, right := byRole[role][i], byRole[role][j]
-				leftOrder, rightOrder := nodes[left].Order, nodes[right].Order
-				if leftOrder != 0 || rightOrder != 0 {
-					if leftOrder == 0 {
+				leftOrder, leftSet := authoredOrder(doc, role, left, nodes)
+				rightOrder, rightSet := authoredOrder(doc, role, right, nodes)
+				if leftSet || rightSet {
+					if !leftSet {
 						leftOrder = int(^uint(0) >> 1)
 					}
-					if rightOrder == 0 {
+					if !rightSet {
 						rightOrder = int(^uint(0) >> 1)
 					}
 					if leftOrder != rightOrder {
@@ -359,8 +393,7 @@ func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[s
 	premium := doc.Theme.Name == "premium"
 	degrees := nodeDegrees(doc)
 	for index, link := range doc.Links {
-		from := link.From
-		to := link.To
+		from, to := constrainedEndpoints(doc, link)
 		startGeometry := geometry[endpointKey(index, true)]
 		endGeometry := geometry[endpointKey(index, false)]
 		start, end := startGeometry.Point, endGeometry.Point
@@ -597,8 +630,7 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 	attachments := make(map[string][]attachment)
 	rootGroups := nodeRootGroups(doc)
 	for index, link := range doc.Links {
-		from := link.From
-		to := link.To
+		from, to := constrainedEndpoints(doc, link)
 		fromNode, toNode := nodes[from.Node], nodes[to.Node]
 		fromCenter := point{X: fromNode.Box.X + fromNode.Box.W/2, Y: fromNode.Box.Y + fromNode.Box.H/2}
 		toCenter := point{X: toNode.Box.X + toNode.Box.W/2, Y: toNode.Box.Y + toNode.Box.H/2}
@@ -703,6 +735,17 @@ func endpointAttachments(doc *model.Diagram, nodes map[string]placedNode) (map[s
 	}
 	enforceEndpointClearance(result, attachments, nodes, clearance)
 	return result, nil
+}
+
+func constrainedEndpoints(doc *model.Diagram, link model.Link) (model.LinkEndpoint, model.LinkEndpoint) {
+	from, to := link.From, link.To
+	if port, ok := doc.Constraints.PortFor(link.StableID(), constraint.Source); ok {
+		from.Side, from.Position = port.Side, port.Position
+	}
+	if port, ok := doc.Constraints.PortFor(link.StableID(), constraint.Target); ok {
+		to.Side, to.Position = port.Side, port.Position
+	}
+	return from, to
 }
 
 func enforceEndpointClearance(result map[string]endpointGeometry, attachments map[string][]attachment, nodes map[string]placedNode, clearance float64) {

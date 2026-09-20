@@ -206,6 +206,12 @@ code consume that IR rather than parsing source YAML. Renderer support is
 advertised through the planner's `RendererCapability` contract, keeping
 recommendation logic separate from backend implementation details.
 
+The IR also carries a solver-neutral constraint set for ranks, ordering,
+containment, endpoint ports, fixed geometry, and routed waypoints. Current YAML
+fields and extracted layout overrides compile into that shared representation,
+so layout engines can preserve authored intent without depending on source
+syntax or another renderer's private options.
+
 ## Template blocks
 
 Reusable template blocks compose larger telco-style diagrams while keeping the

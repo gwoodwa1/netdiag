@@ -3,6 +3,7 @@ package model
 import (
 	"testing"
 
+	"github.com/gwoodwa1/netdiag/internal/constraint"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 	"gopkg.in/yaml.v3"
 )
@@ -125,6 +126,37 @@ links:
 	}
 	if l.To.Node != "server-01" || l.To.Port != "eth0" || l.To.Side != "top" {
 		t.Errorf("unexpected link to: %+v", l.To)
+	}
+	if rank, ok := diag.Constraints.RankFor("leaf-01"); !ok || rank.ID != "leaf" {
+		t.Errorf("missing compiled leaf rank: %+v, %v", rank, ok)
+	}
+	if port, ok := diag.Constraints.PortFor(l.StableID(), constraint.Target); !ok || port.Side != "top" || port.NodeID != "server-01" {
+		t.Errorf("missing compiled target port: %+v, %v", port, ok)
+	}
+	foundRack := false
+	for _, item := range diag.Constraints.Containment {
+		foundRack = foundRack || (item.ChildID == "leaf-01" && item.ParentID == "rack-a")
+	}
+	if !foundRack {
+		t.Fatal("missing compiled node containment")
+	}
+}
+
+func TestCompileConstraintsPreservesAuthoredOrder(t *testing.T) {
+	doc := &spec.Document{Version: 1, Nodes: map[string]spec.Node{
+		"later": {Role: "router", Order: 20},
+		"first": {Role: "router", Order: 10},
+		"free":  {Role: "router"},
+	}}
+	diagram, err := Compile(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := diagram.Constraints.OrderFor("router", "first"); !ok || got != 10 {
+		t.Fatalf("first order = %d, %v", got, ok)
+	}
+	if _, ok := diagram.Constraints.OrderFor("router", "free"); ok {
+		t.Fatal("unconstrained node acquired an authored order")
 	}
 }
 

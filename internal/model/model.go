@@ -14,10 +14,10 @@ import (
 // expanded and validated source document. Rendering backends must consume this
 // type rather than authored YAML or spec.Document.
 type Diagram struct {
-	Nodes  []Node
-	Groups []Group
-	Links  []Link
-	Theme  Theme
+	Nodes       []Node
+	Groups      []Group
+	Links       []Link
+	Theme       Theme
 	Constraints constraint.Set
 }
 
