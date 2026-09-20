@@ -108,6 +108,8 @@ func extractOverrides(args []string) {
 	if output == "" {
 		output = strings.TrimSuffix(input, filepath.Ext(input)) + ".layout.yaml"
 	}
+	// #nosec G703 -- the output path is an explicit CLI destination, as with the
+	// other commands that write rendered and expanded artifacts.
 	exitOnError(os.WriteFile(output, result, 0o644))
 	fmt.Printf("extracted layout overrides to %s\n", output)
 	if *report {

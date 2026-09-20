@@ -9,9 +9,10 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[2]
 LINK = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)")
 problems = []
+IGNORED_DIRECTORIES = {".git", ".gocache", ".gomodcache"}
 
 for markdown in sorted(ROOT.rglob("*.md")):
-    if ".git" in markdown.parts:
+    if IGNORED_DIRECTORIES.intersection(markdown.relative_to(ROOT).parts):
         continue
     for line_number, line in enumerate(markdown.read_text(encoding="utf-8").splitlines(), 1):
         for target in LINK.findall(line):
