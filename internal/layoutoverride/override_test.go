@@ -47,6 +47,9 @@ func TestApplyConstraintsAddsManualIntent(t *testing.T) {
 	if got.Ports[0].Side != "right" || got.Ports[0].NodeID != "core-a" {
 		t.Fatalf("unexpected port constraint: %+v", got.Ports[0])
 	}
+	if base.Ports[0].Side != "top" {
+		t.Fatalf("applying overrides mutated base constraints: %+v", base.Ports[0])
+	}
 	if len(got.Routes) != 1 || got.Routes[0].Waypoints[0] != (constraint.Point{X: 10, Y: 20}) {
 		t.Fatalf("unexpected route constraint: %+v", got.Routes)
 	}

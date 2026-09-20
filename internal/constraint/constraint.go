@@ -108,6 +108,28 @@ type Set struct {
 	Routes      []Route
 }
 
+// Clone returns an independently mutable copy of the set.
+func (set Set) Clone() Set {
+	result := Set{
+		Ranks:       append([]Rank(nil), set.Ranks...),
+		Orders:      append([]Order(nil), set.Orders...),
+		Containment: append([]Containment(nil), set.Containment...),
+		Ports:       append([]Port(nil), set.Ports...),
+		Geometry:    append([]Geometry(nil), set.Geometry...),
+		Routes:      append([]Route(nil), set.Routes...),
+	}
+	for index := range result.Ranks {
+		result.Ranks[index].Nodes = append([]string(nil), result.Ranks[index].Nodes...)
+	}
+	for index := range result.Orders {
+		result.Orders[index].Items = append([]OrderedItem(nil), result.Orders[index].Items...)
+	}
+	for index := range result.Routes {
+		result.Routes[index].Waypoints = append([]Point(nil), result.Routes[index].Waypoints...)
+	}
+	return result
+}
+
 func (set Set) RankFor(nodeID string) (Rank, bool) {
 	for _, rank := range set.Ranks {
 		for _, id := range rank.Nodes {

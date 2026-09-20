@@ -51,7 +51,7 @@ func (doc *Document) ApplyConstraints(base constraint.Set) constraint.Set {
 	if doc == nil {
 		return base
 	}
-	result := base
+	result := base.Clone()
 	for id, bounds := range doc.LayoutOverrides.Nodes {
 		result.Geometry = append(result.Geometry, geometryConstraint(id, false, bounds))
 	}
