@@ -177,7 +177,70 @@ func groupNodes(doc *model.Diagram) ([]string, map[string][]string) {
 		}
 	}
 	sort.Strings(rest)
-	return append(roles, rest...), byRole
+	roles = append(roles, rest...)
+	orderNodesByConnectivity(doc, roles, byRole, nodesByID)
+	return roles, byRole
+}
+
+func orderNodesByConnectivity(doc *model.Diagram, roles []string, byRole map[string][]string, nodes map[string]model.Node) {
+	neighbors := make(map[string][]string)
+	for _, link := range doc.Links {
+		neighbors[link.From.Node] = append(neighbors[link.From.Node], link.To.Node)
+		neighbors[link.To.Node] = append(neighbors[link.To.Node], link.From.Node)
+	}
+	for pass := 0; pass < 4; pass++ {
+		rank := make(map[string]float64)
+		for roleIndex, role := range roles {
+			for index, id := range byRole[role] {
+				rank[id] = float64(roleIndex*10000 + index)
+			}
+		}
+		orderedRoles := append([]string(nil), roles...)
+		if pass%2 == 1 {
+			for left, right := 0, len(orderedRoles)-1; left < right; left, right = left+1, right-1 {
+				orderedRoles[left], orderedRoles[right] = orderedRoles[right], orderedRoles[left]
+			}
+		}
+		for _, role := range orderedRoles {
+			sort.SliceStable(byRole[role], func(i, j int) bool {
+				left, right := byRole[role][i], byRole[role][j]
+				leftOrder, rightOrder := nodes[left].Order, nodes[right].Order
+				if leftOrder != 0 || rightOrder != 0 {
+					if leftOrder == 0 {
+						leftOrder = int(^uint(0) >> 1)
+					}
+					if rightOrder == 0 {
+						rightOrder = int(^uint(0) >> 1)
+					}
+					if leftOrder != rightOrder {
+						return leftOrder < rightOrder
+					}
+				}
+				leftRank, rightRank := averageNeighborRank(neighbors[left], rank), averageNeighborRank(neighbors[right], rank)
+				if leftRank == rightRank {
+					return left < right
+				}
+				return leftRank < rightRank
+			})
+		}
+	}
+}
+
+func averageNeighborRank(neighbors []string, rank map[string]float64) float64 {
+	if len(neighbors) == 0 {
+		return math.Inf(1)
+	}
+	total, count := 0.0, 0
+	for _, id := range neighbors {
+		if value, ok := rank[id]; ok {
+			total += value
+			count++
+		}
+	}
+	if count == 0 {
+		return math.Inf(1)
+	}
+	return total / float64(count)
 }
 
 func placeNodes(doc *model.Diagram, roles []string, byRole map[string][]string) map[string]placedNode {
@@ -285,33 +348,12 @@ func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[s
 	if err != nil {
 		return err
 	}
-	useDiagonalRoutes := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
-	diagonalRoutes := make(map[int]linkRoute)
-	if useDiagonalRoutes {
-		links := make([]routedLink, 0, len(doc.Links))
-		for index, link := range doc.Links {
-			links = append(links, routedLink{
-				Index:     index,
-				FromNode:  link.From.Node,
-				ToNode:    link.To.Node,
-				Start:     geometry[endpointKey(index, true)].Point,
-				End:       geometry[endpointKey(index, false)].Point,
-				StartSide: geometry[endpointKey(index, true)].Side,
-				EndSide:   geometry[endpointKey(index, false)].Side,
-				StartStub: link.From.Stub,
-				EndStub:   link.To.Stub,
-			})
-		}
-		clearance := doc.Theme.RouteClearance
-		if clearance == 0 {
-			clearance = 24
-		}
-		diagonalRoutes = planDiagonalRoutesWithObstacles(links, clearance, nodes)
-	}
 	bundleVisuals, err := buildBundleVisuals(doc, geometry)
 	if err != nil {
 		return err
 	}
+	routes := planDocumentRoutes(doc, nodes, geometry, bundleVisuals)
+	useDiagonalRoutes := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
 
 	out.WriteString(`<g id="links">`)
 	premium := doc.Theme.Name == "premium"
@@ -341,17 +383,8 @@ func renderLinks(out, annotations *bytes.Buffer, doc *model.Diagram, nodes map[s
 
 		useDiagonalRoute := useDiagonalRoutes
 		useOrthogonalRoute := doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal"
-		route := directRoute(start, end, startGeometry.Side, endGeometry.Side, doc.Theme.LinkStyle)
-		if useDiagonalRoute {
-			route = diagonalRoutes[index]
-		} else if useOrthogonalRoute {
-			route = orthogonalRoute(start, end, startGeometry.Side, endGeometry.Side, nodes, index)
-		}
+		route := routes[index]
 		path := route.Path
-		if link.Bundle != "" {
-			visual := bundleVisuals[link.Bundle]
-			path = pathDataVia(start, point{X: visual.X, Y: visual.Y}, end, doc.Theme.LinkStyle)
-		}
 		fmt.Fprintf(out, `<g id="link-%d" data-netdiag-kind="link">`, index+1)
 		if premium || useDiagonalRoute {
 			underlayWidth := strokeWidth + 3.8
@@ -443,6 +476,103 @@ func buildBundleVisuals(doc *model.Diagram, geometry map[string]endpointGeometry
 		visual.Y /= float64(visual.Count)
 	}
 	return visuals, nil
+}
+
+// planDocumentRoutes is the single geometry source for rendering and
+// inspection. Keeping bundle, obstacle and endpoint handling here prevents the
+// inspector from evaluating a path other than the one users see.
+func planDocumentRoutes(doc *model.Diagram, nodes map[string]placedNode, geometry map[string]endpointGeometry, bundles map[string]*bundleVisual) map[int]linkRoute {
+	links := make([]routedLink, 0, len(doc.Links))
+	for index, link := range doc.Links {
+		links = append(links, routedLink{
+			Index: index, FromNode: link.From.Node, ToNode: link.To.Node,
+			Start: geometry[endpointKey(index, true)].Point, End: geometry[endpointKey(index, false)].Point,
+			StartSide: geometry[endpointKey(index, true)].Side, EndSide: geometry[endpointKey(index, false)].Side,
+			StartStub: link.From.Stub, EndStub: link.To.Stub,
+		})
+	}
+	clearance := doc.Theme.RouteClearance
+	if clearance <= 0 {
+		clearance = 24
+	}
+	routes := make(map[int]linkRoute, len(links))
+	useDiagonal := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
+	useOrthogonal := doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal"
+	if useDiagonal {
+		routes = planDiagonalRoutesWithObstacles(links, clearance, nodes)
+	} else if useOrthogonal {
+		routes = planOrthogonalRoutes(links, nodes, clearance)
+		degrees := nodeDegrees(doc)
+		for pass := 0; pass < 1; pass++ {
+			labelObstacles := routeLabelObstacles(doc, routes, geometry, degrees)
+			for index := range links {
+				links[index].Avoid = links[index].Avoid[:0]
+				for owner := range links {
+					obstacles := labelObstacles[owner]
+					if owner != links[index].Index {
+						links[index].Avoid = append(links[index].Avoid, obstacles...)
+					}
+				}
+			}
+			routes = planOrthogonalRoutes(links, nodes, clearance)
+		}
+	} else {
+		for _, link := range links {
+			routes[link.Index] = directRoute(link.Start, link.End, link.StartSide, link.EndSide, doc.Theme.LinkStyle)
+		}
+	}
+	for index, link := range doc.Links {
+		if link.Bundle == "" {
+			continue
+		}
+		visual := bundles[link.Bundle]
+		routes[index] = routeVia(links[index].Start, point{X: visual.X, Y: visual.Y}, links[index].End, doc.Theme.LinkStyle)
+	}
+	return routes
+}
+
+func routeLabelObstacles(doc *model.Diagram, routes map[int]linkRoute, geometry map[string]endpointGeometry, degrees map[string]int) map[int][]box {
+	result := make(map[int][]box)
+	if doc.Theme.InterfaceLabels == "none" {
+		return result
+	}
+	for index, link := range doc.Links {
+		for _, source := range []bool{true, false} {
+			endpoint, label := link.To, link.TargetLabel()
+			if source {
+				endpoint, label = link.From, link.SourceLabel()
+			}
+			if label == "" {
+				continue
+			}
+			item := geometry[endpointKey(index, source)]
+			location, ok := routeEndpointLabelLocation(routes[index], source, degrees[endpoint.Node], item.LabelLane, endpoint)
+			if !ok {
+				continue
+			}
+			result[index] = append(result[index], expandBox(interfaceLabelBox(location, label, endpoint.LabelRotation, doc.Theme.InterfaceLabelStyle), 4))
+		}
+		if label := link.MiddleLabel(); label != "" && link.Bundle == "" {
+			location := routes[index].Label
+			offset := []float64{-18, -36, 18}[index%3]
+			if routes[index].LabelHorizontal {
+				location.Y += offset
+			} else {
+				location.X += offset
+			}
+			width := math.Max(38, float64(len([]rune(label)))*6.7+16)
+			result[index] = append(result[index], box{X: location.X - width/2 - 4, Y: location.Y - 18, W: width + 8, H: 26})
+		}
+		if tags := link.Tags(); len(tags) > 0 && link.Bundle == "" {
+			width := float64(len(tags)-1) * 4
+			for _, tag := range tags {
+				width += math.Max(35, float64(len([]rune(tag)))*6.1+14)
+			}
+			location := routes[index].Label
+			result[index] = append(result[index], box{X: location.X - width/2 - 4, Y: location.Y - 18, W: width + 8, H: 26})
+		}
+	}
+	return result
 }
 
 func computeDefaultSides(fromCenter, toCenter point, layout string) (string, string) {

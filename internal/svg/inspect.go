@@ -110,45 +110,8 @@ func severityRank(severity InspectionSeverity) int {
 }
 
 func inspectionRoutes(doc *model.Diagram, nodes map[string]placedNode, geometry map[string]endpointGeometry) map[int]linkRoute {
-	result := make(map[int]linkRoute, len(doc.Links))
-	useDiagonal := doc.Theme.Layout == "hub-spoke" && doc.Theme.LinkStyle != "orthogonal"
-	if useDiagonal {
-		links := make([]routedLink, 0, len(doc.Links))
-		for index, link := range doc.Links {
-			links = append(links, routedLink{
-				Index: index, FromNode: link.From.Node, ToNode: link.To.Node,
-				Start: geometry[endpointKey(index, true)].Point, End: geometry[endpointKey(index, false)].Point,
-				StartSide: geometry[endpointKey(index, true)].Side, EndSide: geometry[endpointKey(index, false)].Side,
-				StartStub: link.From.Stub, EndStub: link.To.Stub,
-			})
-		}
-		clearance := doc.Theme.RouteClearance
-		if clearance == 0 {
-			clearance = 24
-		}
-		result = planDiagonalRoutesWithObstacles(links, clearance, nodes)
-	} else {
-		for index := range doc.Links {
-			start := geometry[endpointKey(index, true)]
-			end := geometry[endpointKey(index, false)]
-			route := directRoute(start.Point, end.Point, start.Side, end.Side, doc.Theme.LinkStyle)
-			if doc.Theme.Layout == "sites" || doc.Theme.LinkStyle == "orthogonal" {
-				route = orthogonalRoute(start.Point, end.Point, start.Side, end.Side, nodes, index)
-			}
-			result[index] = route
-		}
-	}
 	bundles, _ := buildBundleVisuals(doc, geometry)
-	for index, link := range doc.Links {
-		if link.Bundle == "" {
-			continue
-		}
-		start := geometry[endpointKey(index, true)].Point
-		end := geometry[endpointKey(index, false)].Point
-		visual := bundles[link.Bundle]
-		result[index] = routeVia(start, point{X: visual.X, Y: visual.Y}, end, doc.Theme.LinkStyle)
-	}
-	return result
+	return planDocumentRoutes(doc, nodes, geometry, bundles)
 }
 
 func routeVia(start, via, end point, style string) linkRoute {
@@ -187,10 +150,7 @@ func inspectRouteCrossings(doc *model.Diagram, routes map[int]linkRoute) []Inspe
 	var findings []InspectionFinding
 	for left := 0; left < len(doc.Links); left++ {
 		for right := left + 1; right < len(doc.Links); right++ {
-			if linksShareNode(doc.Links[left], doc.Links[right]) {
-				continue
-			}
-			if count := routeIntersectionCount(routes[left], routes[right]); count > 0 {
+			if count := routeIntersectionCountIgnoringCommonEndpoints(routes[left], routes[right]); count > 0 {
 				findings = append(findings, InspectionFinding{
 					Code: "link_crossing", Severity: InspectionWarning,
 					Message:    fmt.Sprintf("link %d (%s) crosses link %d (%s)", left+1, describeLink(doc.Links[left]), right+1, describeLink(doc.Links[right])),

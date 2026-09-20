@@ -68,6 +68,35 @@ func TestApplyUsesBalancedGroupsWithoutHostnamePrefixes(t *testing.T) {
 	}
 }
 
+func TestBalancedGroupsKeepConnectedComponentsTogether(t *testing.T) {
+	doc := &spec.Document{Version: 1, Nodes: make(map[string]spec.Node)}
+	for index := 1; index <= 20; index++ {
+		id := fmt.Sprintf("router%02d", index)
+		doc.Nodes[id] = spec.Node{Label: id, Role: "router"}
+	}
+	// Interleave names from two components so alphabetical batching would mix them.
+	for index := 1; index < 10; index++ {
+		doc.Links = append(doc.Links,
+			spec.Link{From: spec.LinkEndpoint{Node: fmt.Sprintf("router%02d", index*2-1)}, To: spec.LinkEndpoint{Node: fmt.Sprintf("router%02d", index*2+1)}},
+			spec.Link{From: spec.LinkEndpoint{Node: fmt.Sprintf("router%02d", index*2)}, To: spec.LinkEndpoint{Node: fmt.Sprintf("router%02d", index*2+2)}},
+		)
+	}
+	groups := balancedGroups(doc)
+	for _, group := range groups {
+		parity := -1
+		for id := range group.Nodes {
+			var number int
+			_, _ = fmt.Sscanf(id, "router%d", &number)
+			if parity < 0 {
+				parity = number % 2
+			}
+			if number%2 != parity {
+				t.Fatalf("connected components were mixed: %+v", group.Nodes)
+			}
+		}
+	}
+}
+
 func TestApplyDisambiguatesNormalizedHostnameGroupIDs(t *testing.T) {
 	doc := &spec.Document{Version: 1, Nodes: make(map[string]spec.Node)}
 	for index := 1; index <= 10; index++ {

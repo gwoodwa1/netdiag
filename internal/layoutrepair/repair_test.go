@@ -12,9 +12,9 @@ func TestImproveRoutesAroundIntermediateNode(t *testing.T) {
 		Version: 1,
 		Diagram: spec.Diagram{Layout: "rows", LinkStyle: "clean"},
 		Nodes: map[string]spec.Node{
-			"a": {Role: "router"},
-			"m": {Role: "router"},
-			"z": {Role: "router"},
+			"a": {Role: "router", Order: 1},
+			"m": {Role: "router", Order: 2},
+			"z": {Role: "router", Order: 3},
 		},
 		Links: []spec.Link{{
 			From: spec.LinkEndpoint{Node: "a", Port: "Ethernet0/0"},

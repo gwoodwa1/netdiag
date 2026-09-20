@@ -14,8 +14,8 @@ The shared analyzer currently:
 - keeps small non-ring discoveries in `rows`;
 - selects wrapped `sites` with orthogonal routing for large discoveries;
 - groups large topologies using useful hostname prefixes;
-- falls back to deterministic balanced clusters when names do not expose
-  grouping information;
+- falls back to deterministic, connectivity-aware balanced clusters when names
+  do not expose grouping information;
 - enables endpoint interface-label badges for large diagrams; and
 - suppresses heavily repeated middle labels.
 

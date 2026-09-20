@@ -118,18 +118,68 @@ func balancedGroups(doc *spec.Document) map[string]*spec.Group {
 		ids = append(ids, id)
 	}
 	sort.Strings(ids)
+	neighbors := make(map[string][]string)
+	degree := make(map[string]int)
+	for _, link := range doc.Links {
+		neighbors[link.From.Node] = append(neighbors[link.From.Node], link.To.Node)
+		neighbors[link.To.Node] = append(neighbors[link.To.Node], link.From.Node)
+		degree[link.From.Node]++
+		degree[link.To.Node]++
+	}
+	for id := range neighbors {
+		sort.Strings(neighbors[id])
+	}
+	remaining := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		remaining[id] = true
+	}
 	result := make(map[string]*spec.Group)
-	for start := 0; start < len(ids); start += autoLayoutGroupSize {
-		end := start + autoLayoutGroupSize
-		if end > len(ids) {
-			end = len(ids)
+	for len(remaining) > 0 {
+		seed := ""
+		for _, id := range ids {
+			if remaining[id] && (seed == "" || degree[id] > degree[seed]) {
+				seed = id
+			}
 		}
-		index := start/autoLayoutGroupSize + 1
+		members, queued := []string{}, map[string]bool{seed: true}
+		queue := []string{seed}
+		for len(queue) > 0 && len(members) < autoLayoutGroupSize {
+			id := queue[0]
+			queue = queue[1:]
+			if !remaining[id] {
+				continue
+			}
+			members = append(members, id)
+			delete(remaining, id)
+			for _, peer := range neighbors[id] {
+				if remaining[peer] && !queued[peer] {
+					queue = append(queue, peer)
+					queued[peer] = true
+				}
+			}
+			sort.SliceStable(queue, func(i, j int) bool {
+				if degree[queue[i]] == degree[queue[j]] {
+					return queue[i] < queue[j]
+				}
+				return degree[queue[i]] > degree[queue[j]]
+			})
+		}
+		for _, id := range ids {
+			if len(members) >= autoLayoutGroupSize {
+				break
+			}
+			if remaining[id] {
+				members = append(members, id)
+				delete(remaining, id)
+			}
+		}
+		sort.Strings(members)
+		index := len(result) + 1
 		id := fmt.Sprintf("cluster-%02d", index)
 		result[id] = &spec.Group{
 			Label: fmt.Sprintf("Discovered Cluster %02d", index),
 			Kind:  "discovered-cluster",
-			Nodes: nodeSet(ids[start:end]),
+			Nodes: nodeSet(members),
 		}
 	}
 	return result

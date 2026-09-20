@@ -47,9 +47,13 @@ Inspection measures the native renderer. It does not parse SVG and does not use
 AI, browser rendering, fonts, or image comparison, so identical inputs produce
 identical reports.
 
-Hub-spoke diagonal routing treats unrelated node boxes as hard obstacles. It
-uses `diagram.route_clearance` around those boxes and inserts deterministic
-waypoint detours when the crossing-aware curved route would hit a device.
+Hub-spoke diagonal and orthogonal routing treat unrelated node boxes as hard
+obstacles. Both use `diagram.route_clearance`; orthogonal routes also honor
+endpoint `stub` lengths and keep their first and last segments pointed out of
+the selected device sides. Routing is coordinated across links, with bounded
+penalties for crossings, crowded parallel runs, and interface-label boxes.
+Rendering and inspection consume the same planned route geometry, including
+bundled links.
 Groups are visual/container structure, not general-purpose no-route zones, and
 netdiag does not currently support first-class YAML blackout rectangles. Avoid
 adding fake invisible nodes or empty spacer groups just to influence routing;

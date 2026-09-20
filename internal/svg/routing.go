@@ -29,14 +29,14 @@ func planDiagonalRoutesWithObstacles(links []routedLink, clearance float64, node
 	)
 	routes := make(map[int]linkRoute, len(links))
 	for _, link := range links {
-		routes[link.Index] = routedDiagonalRoute(link, 0)
+		routes[link.Index] = avoidRouteObstacles(link, routedDiagonalRoute(link, 0), nodes, clearance, protectedEndpointStubObstacles(link, links, clearance))
 	}
 	for pass := 0; pass < passes; pass++ {
 		for _, link := range links {
 			best := routes[link.Index]
 			bestScore := diagonalRouteScore(link, best, links, routes, clearance)
 			for lane := 1; lane < candidateCount; lane++ {
-				candidate := routedDiagonalRoute(link, lane)
+				candidate := avoidRouteObstacles(link, routedDiagonalRoute(link, lane), nodes, clearance, protectedEndpointStubObstacles(link, links, clearance))
 				score := diagonalRouteScore(link, candidate, links, routes, clearance)
 				if score < bestScore {
 					best, bestScore = candidate, score
@@ -44,9 +44,6 @@ func planDiagonalRoutesWithObstacles(links []routedLink, clearance float64, node
 			}
 			routes[link.Index] = best
 		}
-	}
-	for _, link := range links {
-		routes[link.Index] = avoidRouteObstacles(link, routes[link.Index], nodes, clearance, protectedEndpointStubObstacles(link, links, clearance))
 	}
 	return routes
 }
@@ -61,6 +58,24 @@ type routedLink struct {
 	EndSide   string
 	StartStub float64
 	EndStub   float64
+	Avoid     []box
+}
+
+func planOrthogonalRoutes(links []routedLink, nodes map[string]placedNode, clearance float64) map[int]linkRoute {
+	const passes = 2
+	if clearance <= 0 {
+		clearance = 24
+	}
+	routes := make(map[int]linkRoute, len(links))
+	for _, link := range links {
+		routes[link.Index] = orthogonalRouteForLink(link, nodes, clearance, link.Index, nil)
+	}
+	for pass := 0; pass < passes; pass++ {
+		for _, link := range links {
+			routes[link.Index] = orthogonalRouteForLink(link, nodes, clearance, link.Index+pass, routes)
+		}
+	}
+	return routes
 }
 
 func routedDiagonalRoute(link routedLink, lane int) linkRoute {
@@ -86,12 +101,14 @@ func routedDiagonalRoute(link routedLink, lane int) linkRoute {
 func diagonalRouteScore(link routedLink, candidate linkRoute, links []routedLink, routes map[int]linkRoute, clearance float64) float64 {
 	score := math.Abs(diagonalRouteOffset(candidate)) * 1.5
 	for _, other := range links {
-		if other.Index == link.Index || linksMeetAtSamePoint(link, other) {
+		if other.Index == link.Index {
 			continue
 		}
 		otherRoute := routes[other.Index]
-		score += float64(routeIntersectionCount(candidate, otherRoute)) * 100000
-		score += routeProximityPenalty(candidate, otherRoute, clearance)
+		score += float64(routeIntersectionCountIgnoringCommonEndpoints(candidate, otherRoute)) * 100000
+		if !linksMeetAtSamePoint(link, other) {
+			score += routeProximityPenaltyIgnoringCommonEndpoints(candidate, otherRoute, clearance)
+		}
 	}
 	return score
 }
@@ -360,6 +377,47 @@ func routeIntersectionCount(a, b linkRoute) int {
 	return count
 }
 
+func routeIntersectionCountIgnoringCommonEndpoints(a, b linkRoute) int {
+	aPoints, bPoints := sampleRoute(a, 16), sampleRoute(b, 16)
+	count := 0
+	for i := 1; i < len(aPoints); i++ {
+		for j := 1; j < len(bPoints); j++ {
+			if !segmentsCross(aPoints[i-1], aPoints[i], bPoints[j-1], bPoints[j]) {
+				continue
+			}
+			shared := sharedSegmentEndpoint(aPoints[i-1], aPoints[i], bPoints[j-1], bPoints[j])
+			if shared && (i == 1 || i == len(aPoints)-1) && (j == 1 || j == len(bPoints)-1) {
+				continue
+			}
+			count++
+		}
+	}
+	return count
+}
+
+func sharedSegmentEndpoint(a, b, c, d point) bool {
+	return samePoint(a, c) || samePoint(a, d) || samePoint(b, c) || samePoint(b, d)
+}
+
+func routeProximityPenaltyIgnoringCommonEndpoints(a, b linkRoute, clearance float64) float64 {
+	aPoints, bPoints := sampleRoute(a, 16), sampleRoute(b, 16)
+	minimum := math.Inf(1)
+	for i := 1; i < len(aPoints); i++ {
+		for j := 1; j < len(bPoints); j++ {
+			if sharedSegmentEndpoint(aPoints[i-1], aPoints[i], bPoints[j-1], bPoints[j]) &&
+				(i == 1 || i == len(aPoints)-1) && (j == 1 || j == len(bPoints)-1) {
+				continue
+			}
+			minimum = math.Min(minimum, segmentDistance(aPoints[i-1], aPoints[i], bPoints[j-1], bPoints[j]))
+		}
+	}
+	if minimum >= clearance || math.IsInf(minimum, 1) {
+		return 0
+	}
+	gap := clearance - minimum
+	return gap * gap * .75
+}
+
 func sampleRoute(route linkRoute, segments int) []point {
 	if len(route.Points) == 5 && strings.Contains(route.Path, " Q ") {
 		result := []point{route.Points[0], route.Points[1]}
@@ -405,10 +463,22 @@ func pointOnSegment(value, start, end point) bool {
 }
 
 func orthogonalRoute(start, end point, startSide, endSide string, nodes map[string]placedNode, lane int) linkRoute {
-	stub := 42.0 + float64(lane%4)*12
-	startStub := movePoint(start, startSide, stub)
-	endStub := movePoint(end, endSide, stub)
-	margin := 34.0 + float64(lane%5)*18
+	return orthogonalRouteForLink(routedLink{Index: lane, Start: start, End: end, StartSide: startSide, EndSide: endSide}, nodes, 22, lane, nil)
+}
+
+func orthogonalRouteForLink(link routedLink, nodes map[string]placedNode, clearance float64, lane int, routes map[int]linkRoute) linkRoute {
+	start, end := link.Start, link.End
+	startLength := link.StartStub
+	if startLength <= 0 {
+		startLength = 42 + float64(lane%4)*12
+	}
+	endLength := link.EndStub
+	if endLength <= 0 {
+		endLength = 42 + float64(lane%4)*12
+	}
+	startStub := movePoint(start, link.StartSide, startLength)
+	endStub := movePoint(end, link.EndSide, endLength)
+	margin := clearance + 12 + float64(lane%5)*18
 
 	minX, minY, maxX, maxY := start.X, start.Y, start.X, start.Y
 	for _, node := range nodes {
@@ -426,18 +496,89 @@ func orthogonalRoute(start, end point, startSide, endSide string, nodes map[stri
 		{start, startStub, {X: minX - margin, Y: startStub.Y}, {X: minX - margin, Y: endStub.Y}, endStub, end},
 		{start, startStub, {X: maxX + margin, Y: startStub.Y}, {X: maxX + margin, Y: endStub.Y}, endStub, end},
 	}
+	// Local obstacle-edge corridors find substantially shorter detours than
+	// sending every obstructed link around the whole diagram.
+	ids := make([]string, 0, len(nodes))
+	for id := range nodes {
+		if id != link.FromNode && id != link.ToNode {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	sort.SliceStable(ids, func(i, j int) bool {
+		left := nodes[ids[i]].Box
+		right := nodes[ids[j]].Box
+		leftDistance := pointSegmentDistance(point{X: left.X + left.W/2, Y: left.Y + left.H/2}, startStub, endStub)
+		rightDistance := pointSegmentDistance(point{X: right.X + right.W/2, Y: right.Y + right.H/2}, startStub, endStub)
+		if leftDistance == rightDistance {
+			return ids[i] < ids[j]
+		}
+		return leftDistance < rightDistance
+	})
+	if len(ids) > 4 {
+		ids = ids[:4]
+	}
+	for _, id := range ids {
+		obstacle := expandBox(nodes[id].Box, clearance)
+		for _, y := range []float64{obstacle.Y - 2, obstacle.Y + obstacle.H + 2} {
+			candidates = append(candidates, []point{start, startStub, {X: startStub.X, Y: y}, {X: endStub.X, Y: y}, endStub, end})
+		}
+		for _, x := range []float64{obstacle.X - 2, obstacle.X + obstacle.W + 2} {
+			candidates = append(candidates, []point{start, startStub, {X: x, Y: startStub.Y}, {X: x, Y: endStub.Y}, endStub, end})
+		}
+	}
 
-	best := simplifyOrthogonal(candidates[0])
-	bestScore := routeScore(best, nodes, start, end)
+	best := simplifyOrthogonalPreservingEnds(candidates[0])
+	bestScore := orthogonalCandidateScore(link, best, nodes, clearance, routes)
 	for _, candidate := range candidates[1:] {
-		candidate = simplifyOrthogonal(candidate)
-		score := routeScore(candidate, nodes, start, end)
+		candidate = simplifyOrthogonalPreservingEnds(candidate)
+		score := orthogonalCandidateScore(link, candidate, nodes, clearance, routes)
 		if score < bestScore {
 			best, bestScore = candidate, score
 		}
 	}
 	label, horizontal := longestSegmentLabel(best)
 	return linkRoute{Points: best, Path: orthogonalPath(best), Label: label, LabelHorizontal: horizontal}
+}
+
+func orthogonalCandidateScore(link routedLink, points []point, nodes map[string]placedNode, clearance float64, routes map[int]linkRoute) float64 {
+	score := float64(len(points)-2) * 35
+	for i := 1; i < len(points); i++ {
+		a, b := points[i-1], points[i]
+		score += math.Abs(a.X-b.X) + math.Abs(a.Y-b.Y)
+		for id, node := range nodes {
+			padding := clearance
+			if id == link.FromNode || id == link.ToNode {
+				padding = 0
+				if i == 1 && id == link.FromNode || i == len(points)-1 && id == link.ToNode {
+					continue
+				}
+			}
+			if generalSegmentIntersectsBox(a, b, expandBox(node.Box, padding)) {
+				score += 100000000
+			}
+		}
+		for _, obstacle := range link.Avoid {
+			if generalSegmentIntersectsBox(a, b, obstacle) {
+				score += 1000000
+			}
+		}
+	}
+	candidate := linkRoute{Points: points, Path: orthogonalPath(points)}
+	indices := make([]int, 0, len(routes))
+	for index := range routes {
+		indices = append(indices, index)
+	}
+	sort.Ints(indices)
+	for _, index := range indices {
+		if index == link.Index {
+			continue
+		}
+		other := routes[index]
+		score += float64(routeIntersectionCountIgnoringCommonEndpoints(candidate, other)) * 100000
+		score += routeProximityPenaltyIgnoringCommonEndpoints(candidate, other, clearance) * 0.6
+	}
+	return score
 }
 
 func directRoute(start, end point, startSide, endSide, style string) linkRoute {
@@ -570,6 +711,22 @@ func simplifyOrthogonal(points []point) []point {
 		result = append(result, current)
 	}
 	return result
+}
+
+func simplifyOrthogonalPreservingEnds(points []point) []point {
+	if len(points) <= 4 {
+		return simplifyOrthogonal(points)
+	}
+	middle := simplifyOrthogonal(points[1 : len(points)-1])
+	result := append([]point{points[0]}, middle...)
+	result = append(result, points[len(points)-1])
+	compact := result[:0]
+	for _, current := range result {
+		if len(compact) == 0 || !samePoint(compact[len(compact)-1], current) {
+			compact = append(compact, current)
+		}
+	}
+	return compact
 }
 
 func routeScore(points []point, nodes map[string]placedNode, start, end point) float64 {

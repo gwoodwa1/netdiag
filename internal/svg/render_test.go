@@ -1005,6 +1005,46 @@ func TestOrthogonalRouteAvoidsDeviceBox(t *testing.T) {
 	}
 }
 
+func TestOrthogonalPlannerHonorsClearanceAndEndpointStubs(t *testing.T) {
+	link := routedLink{
+		Index: 0, FromNode: "a", ToNode: "b",
+		Start: point{X: 100, Y: 100}, End: point{X: 500, Y: 100},
+		StartSide: "left", EndSide: "right", StartStub: 90, EndStub: 110,
+	}
+	nodes := map[string]placedNode{
+		"a": {Box: box{X: 100, Y: 60, W: 100, H: 80}},
+		"b": {Box: box{X: 400, Y: 60, W: 100, H: 80}},
+	}
+	route := planOrthogonalRoutes([]routedLink{link}, nodes, 64)[0]
+	if route.Points[1] != (point{X: 10, Y: 100}) || route.Points[len(route.Points)-2] != (point{X: 610, Y: 100}) {
+		t.Fatalf("explicit endpoint stubs were not preserved: %v", route.Points)
+	}
+	for i := 2; i < len(route.Points)-2; i++ {
+		if pointInsideBox(route.Points[i], nodes["a"].Box) || pointInsideBox(route.Points[i], nodes["b"].Box) {
+			t.Fatalf("route re-entered an endpoint device: %v", route.Points)
+		}
+	}
+}
+
+func TestPlanDocumentRoutesUsesBundleGeometryForLabelsAndRendering(t *testing.T) {
+	doc := &model.Diagram{
+		Theme: model.Theme{LinkStyle: "orthogonal"},
+		Links: []model.Link{{Bundle: "lag", From: model.LinkEndpoint{Node: "a"}, To: model.LinkEndpoint{Node: "b"}}},
+	}
+	geometry := map[string]endpointGeometry{
+		endpointKey(0, true):  {Point: point{X: 0, Y: 0}, Side: "right"},
+		endpointKey(0, false): {Point: point{X: 200, Y: 200}, Side: "left"},
+	}
+	bundles, err := buildBundleVisuals(doc, geometry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	route := planDocumentRoutes(doc, nil, geometry, bundles)[0]
+	if route.Path != pathDataVia(point{X: 0, Y: 0}, point{X: 100, Y: 100}, point{X: 200, Y: 200}, "orthogonal") {
+		t.Fatalf("bundle route geometry diverged: %+v", route)
+	}
+}
+
 func TestHorizontalEndpointLabelsFollowTheirAttachmentLanes(t *testing.T) {
 	var out bytes.Buffer
 	renderEndpointLabel(&out, point{X: 500, Y: 280}, "Hu0/0", "right", 0, model.InterfaceLabelStyle{})

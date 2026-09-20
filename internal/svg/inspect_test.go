@@ -50,6 +50,35 @@ func TestInspectFindsCrossingLinks(t *testing.T) {
 	}
 }
 
+func TestInspectReportsRemoteCrossingForLinksThatShareNode(t *testing.T) {
+	diagram := &model.Diagram{Links: []model.Link{
+		{From: model.LinkEndpoint{Node: "shared"}, To: model.LinkEndpoint{Node: "a"}},
+		{From: model.LinkEndpoint{Node: "shared"}, To: model.LinkEndpoint{Node: "b"}},
+	}}
+	routes := map[int]linkRoute{
+		0: {Points: []point{{X: 0, Y: 0}, {X: 100, Y: 100}}},
+		1: {Points: []point{{X: 0, Y: 100}, {X: 100, Y: 0}}},
+	}
+	findings := inspectRouteCrossings(diagram, routes)
+	if len(findings) != 1 || findings[0].Code != "link_crossing" {
+		t.Fatalf("remote shared-node crossing was missed: %+v", findings)
+	}
+}
+
+func TestInspectIgnoresOnlyCommonEndpointJunction(t *testing.T) {
+	diagram := &model.Diagram{Links: []model.Link{
+		{From: model.LinkEndpoint{Node: "shared"}, To: model.LinkEndpoint{Node: "a"}},
+		{From: model.LinkEndpoint{Node: "shared"}, To: model.LinkEndpoint{Node: "b"}},
+	}}
+	routes := map[int]linkRoute{
+		0: {Points: []point{{X: 0, Y: 0}, {X: 100, Y: 100}}},
+		1: {Points: []point{{X: 0, Y: 0}, {X: 100, Y: 0}}},
+	}
+	if findings := inspectRouteCrossings(diagram, routes); len(findings) != 0 {
+		t.Fatalf("common endpoint junction was reported as a crossing: %+v", findings)
+	}
+}
+
 func TestInspectIsDeterministic(t *testing.T) {
 	diagram := &model.Diagram{
 		Theme: model.Theme{Layout: "ring", InterfaceLabels: "none"},
