@@ -5,6 +5,7 @@ diagram:
   badge: SITE-AWARE NATIVE
   layout: sites
   link_style: orthogonal
+  route_clearance: 48
   renderer: native
 groups:
   london:
@@ -53,12 +54,12 @@ nodes:
   manchester-access: {label: Manchester Access, role: access-switch, icon: access-switch}
   manchester-users: {label: Manchester Users, role: endpoint, icon: users}
 links:
-  - from: {node: london-pe, port: HundredGigE0/0, address: 10.0.0.1/30}
-    to: {node: p-01, port: HundredGigE0/0, address: 10.0.0.2/30}
+  - from: {node: london-pe, port: HundredGigE0/0, side: right, position: 0.35, stub: 100, address: 10.0.0.1/30}
+    to: {node: p-01, port: HundredGigE0/0, side: left, position: 0.35, stub: 100, address: 10.0.0.2/30}
     labels: {middle: LON-P01 · 100G}
     style: wan
-  - from: {node: london-pe, port: HundredGigE0/1, side: top, stub: 140, address: 10.0.0.5/30}
-    to: {node: p-02, port: HundredGigE0/0, side: bottom, stub: 140, address: 10.0.0.6/30}
+  - from: {node: london-pe, port: HundredGigE0/1, side: right, position: 0.75, stub: 140, address: 10.0.0.5/30}
+    to: {node: p-02, port: HundredGigE0/0, side: bottom, position: 0.5, stub: 140, address: 10.0.0.6/30}
     labels: {middle: LON-P02 · 100G}
     style: wan
   - from: {node: p-01, port: HundredGigE0/1, address: 10.0.0.9/30}
@@ -71,9 +72,15 @@ links:
     style: wan
   - {from: p-01:HundredGigE0/2, to: p-02:HundredGigE0/2, label: CORE · 100G, style: wan}
   - {from: london-pe:TenGigabitEthernet0/0, to: london-fw:TenGigabitEthernet0/0, label: INSIDE, style: security}
-  - {from: london-fw:TenGigabitEthernet0/1, to: london-core:TenGigabitEthernet0/1, label: TRUST, style: security}
+  - from: {node: london-fw, port: TenGigabitEthernet0/1, side: bottom, stub: 90, label_along: 0.05}
+    to: {node: london-core, port: TenGigabitEthernet0/1, side: top, stub: 90, label_along: 0.05}
+    label: TRUST
+    style: security
   - {from: london-core:Ethernet1/1, to: london-access:Ethernet1/49, label: 40G}
   - {from: london-access:Ethernet1/1, to: london-users:Ethernet0/0, label: VLAN 10}
   - {from: manchester-pe:TenGigabitEthernet0/0, to: manchester-fw:TenGigabitEthernet0/0, label: INSIDE, style: security}
-  - {from: manchester-fw:TenGigabitEthernet0/1, to: manchester-access:TenGigabitEthernet0/1, label: TRUST, style: security}
+  - from: {node: manchester-fw, port: TenGigabitEthernet0/1, side: bottom, stub: 90, label_along: 0.05}
+    to: {node: manchester-access, port: TenGigabitEthernet0/1, side: top, stub: 90, label_along: 0.05}
+    label: TRUST
+    style: security
   - {from: manchester-access:Ethernet1/1, to: manchester-users:Ethernet0/0, label: VLAN 20}
