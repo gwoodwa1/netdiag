@@ -12,6 +12,7 @@ permissions:
   contents: read
 
 env:
+  EXPECTED_GO_VERSION: go1.26.6
   GOVULNCHECK_VERSION: v1.7.0
 
 jobs:
@@ -20,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: aquasecurity/trivy-action@0.35.0
+      - uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           version: 0.71.1
           scan-type: fs
@@ -54,7 +55,7 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - uses: golangci/golangci-lint-action@v9
+      - uses: golangci/golangci-lint-action@db9de0fc1a667e1a49d2291a1a042dff081d78f6 # v9
         with:
           version: v2.12.2
           args: --timeout=5m
@@ -69,6 +70,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Verify Go toolchain
+        run: |
+          go version
+          go env GOVERSION GOTOOLCHAIN GOPROXY GOSUMDB
+          test "$(go env GOVERSION)" = "${EXPECTED_GO_VERSION}"
 
       - name: Download verified dependencies with retries
         env:
@@ -130,8 +137,27 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: |
+          mkdir -p "${RUNNER_TEMP}/security-tools"
+          GOBIN="${RUNNER_TEMP}/security-tools" go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+          echo "${RUNNER_TEMP}/security-tools" >> "${GITHUB_PATH}"
+
       - name: Build release image
         run: docker build -t netdiag:security-scan .
+
+      - name: Extract and scan embedded Go binary
+        run: |
+          container_id="$(docker create netdiag:security-scan)"
+          trap 'docker rm -f "${container_id}" >/dev/null' EXIT
+          docker cp "${container_id}:/netdiag" "${RUNNER_TEMP}/netdiag"
+          go version -m "${RUNNER_TEMP}/netdiag"
+          govulncheck -mode binary "${RUNNER_TEMP}/netdiag"
 
       - name: Scan runtime image packages
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
