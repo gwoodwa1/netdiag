@@ -4,6 +4,11 @@ All notable changes to netdiag are documented here. Releases follow [Semantic Ve
 
 ## [Unreleased]
 
+### Changed
+
+- Updated D2 to v0.7.2 and `oss.terrastruct.com/util-go` to v0.1.0.
+- Updated the pinned golangci-lint GitHub Action revision for v9.
+
 ## [0.1.1] - 2026-09-20
 
 ### Security
