@@ -729,23 +729,6 @@ func simplifyOrthogonalPreservingEnds(points []point) []point {
 	return compact
 }
 
-func routeScore(points []point, nodes map[string]placedNode, start, end point) float64 {
-	score := float64(len(points)-2) * 35
-	for i := 1; i < len(points); i++ {
-		a, b := points[i-1], points[i]
-		score += math.Abs(a.X-b.X) + math.Abs(a.Y-b.Y)
-		for _, node := range nodes {
-			if pointOnBoxBoundary(start, node.Box) || pointOnBoxBoundary(end, node.Box) {
-				continue
-			}
-			if segmentIntersectsBox(a, b, expandBox(node.Box, 22)) {
-				score += 100000
-			}
-		}
-	}
-	return score
-}
-
 func segmentIntersectsBox(a, b point, obstacle box) bool {
 	if a.X == b.X {
 		return a.X >= obstacle.X && a.X <= obstacle.X+obstacle.W &&
@@ -756,14 +739,6 @@ func segmentIntersectsBox(a, b point, obstacle box) bool {
 			math.Max(a.X, b.X) >= obstacle.X && math.Min(a.X, b.X) <= obstacle.X+obstacle.W
 	}
 	return false
-}
-
-func pointOnBoxBoundary(value point, b box) bool {
-	const tolerance = 0.2
-	onX := value.X >= b.X-tolerance && value.X <= b.X+b.W+tolerance
-	onY := value.Y >= b.Y-tolerance && value.Y <= b.Y+b.H+tolerance
-	return (onX && (math.Abs(value.Y-b.Y) < tolerance || math.Abs(value.Y-(b.Y+b.H)) < tolerance)) ||
-		(onY && (math.Abs(value.X-b.X) < tolerance || math.Abs(value.X-(b.X+b.W)) < tolerance))
 }
 
 func expandBox(value box, padding float64) box {

@@ -426,11 +426,6 @@ func interfaceLabelBox(location point, label string, rotation int, style model.I
 	return box{X: location.X - width/2, Y: centerY - height/2, W: width, H: height}
 }
 
-func linksShareNode(left, right model.Link) bool {
-	return left.From.Node == right.From.Node || left.From.Node == right.To.Node ||
-		left.To.Node == right.From.Node || left.To.Node == right.To.Node
-}
-
 func describeLink(link model.Link) string {
 	return link.From.Node + " -> " + link.To.Node
 }
