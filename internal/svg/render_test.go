@@ -295,6 +295,30 @@ func TestConstraintOrderControlsPlacement(t *testing.T) {
 	}
 }
 
+func TestPortConstraintControlsEndpointGeometry(t *testing.T) {
+	position := 0.25
+	link := model.Link{ID: "link-a-b", From: model.LinkEndpoint{Node: "a", Port: "one"}, To: model.LinkEndpoint{Node: "b", Port: "two"}}
+	diagram := &model.Diagram{
+		Nodes: []model.Node{{ID: "a", Role: "router"}, {ID: "b", Role: "router"}},
+		Links: []model.Link{link},
+		Constraints: constraint.Set{Ports: []constraint.Port{
+			{LinkID: link.ID, Endpoint: constraint.Source, NodeID: "a", Side: "top", Position: &position},
+		}},
+	}
+	nodes := map[string]placedNode{
+		"a": {ID: "a", Node: diagram.Nodes[0], Box: box{X: 100, Y: 200, W: 200, H: 100}},
+		"b": {ID: "b", Node: diagram.Nodes[1], Box: box{X: 500, Y: 200, W: 200, H: 100}},
+	}
+	geometry, err := endpointAttachments(diagram, nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := geometry[endpointKey(0, true)]
+	if got.Side != "top" || got.Point.X != 150 || got.Point.Y != 200 {
+		t.Fatalf("endpoint geometry = %+v", got)
+	}
+}
+
 func TestRingLayoutPlacesNodesAroundCenter(t *testing.T) {
 	doc := &spec.Document{
 		Version: 1,
