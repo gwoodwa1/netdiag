@@ -2,5 +2,6 @@
 .gocache/
 .gomodcache/
 /netdiag
+/cmd/netdiag/netdiag/
 docs/planning.md
 docs/strategy.md
