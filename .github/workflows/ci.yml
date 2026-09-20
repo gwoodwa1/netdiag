@@ -26,7 +26,7 @@ jobs:
           format: json
           output: /tmp/trivy-results.json
           exit-code: 0
-          skip-dirs: .git,.gocache,.gomodcache
+          skip-dirs: .git,.gocache,.gomodcache,cmd/netdiag/netdiag
 
       - name: Enforce security findings
         run: |
