@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gwoodwa1/netdiag/internal/constraint"
 	"github.com/gwoodwa1/netdiag/internal/spec"
 )
 
@@ -17,6 +18,7 @@ type Diagram struct {
 	Groups []Group
 	Links  []Link
 	Theme  Theme
+	Constraints constraint.Set
 }
 
 type Node struct {
@@ -327,12 +329,83 @@ func Compile(doc *spec.Document) (*Diagram, error) {
 		},
 	}
 
-	return &Diagram{
+	diagram := &Diagram{
 		Nodes:  nodes,
 		Groups: groups,
 		Links:  links,
 		Theme:  theme,
-	}, nil
+	}
+	diagram.Constraints = compileConstraints(diagram)
+	return diagram, nil
+}
+
+var preferredRoleRanks = []string{
+	"users", "internet", "public-cloud", "wan-cloud", "dwdm",
+	"ospf-backbone", "ospf-area-10", "ospf-area-20",
+	"isis-level-2", "isis-level-1", "route-reflector", "rr-client", "external-peer",
+	"edge-router", "router", "core-router", "firewall", "core-switch",
+	"distribution-switch", "access-switch", "wireless", "metro-switch",
+	"super-spine", "spine", "leaf", "server", "endpoint",
+}
+
+func compileConstraints(diagram *Diagram) constraint.Set {
+	var result constraint.Set
+	byRole := make(map[string][]string)
+	orders := make(map[string][]constraint.OrderedItem)
+	for _, node := range diagram.Nodes {
+		byRole[node.Role] = append(byRole[node.Role], node.ID)
+		if node.Order != 0 {
+			orders[node.Role] = append(orders[node.Role], constraint.OrderedItem{NodeID: node.ID, Position: node.Order})
+		}
+	}
+	roles := orderedConstraintRoles(byRole)
+	for index, role := range roles {
+		result.Ranks = append(result.Ranks, constraint.Rank{ID: role, Order: index, Nodes: byRole[role], Strength: constraint.Strong})
+		if len(orders[role]) > 0 {
+			sort.Slice(orders[role], func(i, j int) bool {
+				if orders[role][i].Position == orders[role][j].Position {
+					return orders[role][i].NodeID < orders[role][j].NodeID
+				}
+				return orders[role][i].Position < orders[role][j].Position
+			})
+			result.Orders = append(result.Orders, constraint.Order{Scope: role, Axis: constraint.Horizontal, Items: orders[role], Strength: constraint.Strong})
+		}
+	}
+	for _, group := range diagram.Groups {
+		if group.ParentID != "" {
+			result.Containment = append(result.Containment, constraint.Containment{ChildID: group.ID, ParentID: group.ParentID, IsGroup: true, Strength: constraint.Required})
+		}
+		for _, nodeID := range group.NodeIDs {
+			result.Containment = append(result.Containment, constraint.Containment{ChildID: nodeID, ParentID: group.ID, Strength: constraint.Required})
+		}
+	}
+	for _, link := range diagram.Links {
+		id := link.StableID()
+		result.Ports = append(result.Ports,
+			constraint.Port{LinkID: id, Endpoint: constraint.Source, NodeID: link.From.Node, PortID: link.From.Port, Side: link.From.Side, Position: link.From.Position, Strength: constraint.Required},
+			constraint.Port{LinkID: id, Endpoint: constraint.Target, NodeID: link.To.Node, PortID: link.To.Port, Side: link.To.Side, Position: link.To.Position, Strength: constraint.Required},
+		)
+	}
+	return result
+}
+
+func orderedConstraintRoles(byRole map[string][]string) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, role := range preferredRoleRanks {
+		if len(byRole[role]) > 0 {
+			result = append(result, role)
+			seen[role] = true
+		}
+	}
+	var rest []string
+	for role := range byRole {
+		if !seen[role] {
+			rest = append(rest, role)
+		}
+	}
+	sort.Strings(rest)
+	return append(result, rest...)
 }
 
 func floatValue(value *float64, fallback float64) float64 {
