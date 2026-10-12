@@ -1,6 +1,6 @@
 module github.com/gwoodwa1/netdiag
 
-go 1.27.1
+go 1.27.2
 
 require (
 	gopkg.in/yaml.v3 v3.0.1
@@ -26,8 +26,8 @@ require (
 	github.com/yuin/goldmark v1.7.17 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/image v0.45.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
