@@ -115,7 +115,7 @@ that latent flakiness directly.
 
 **Priority:** medium-high
 
-CI and local development run pinned golangci-lint `v2.12.2` with its
+CI and local development run pinned golangci-lint `v2.14.0` with its
 conservative standard analyzer set plus `errorlint` and `gosec`. This includes
 `errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`, and focused
 security checks without enabling the noisy style-heavy full set. The initial

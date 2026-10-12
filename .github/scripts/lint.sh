@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly version="v2.13.2"
+readonly version="v2.14.0"
 
 lint="$(command -v golangci-lint || true)"
 if [[ -z "$lint" ]]; then

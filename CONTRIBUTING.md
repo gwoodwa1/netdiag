@@ -9,7 +9,7 @@ a behavior matters.
 Requirements:
 
 - Go version declared in [`go.mod`](go.mod)
-- golangci-lint `v2.12.2` for the focused lint check
+- golangci-lint `v2.14.0` for the focused lint check
 - Trivy `0.71.1` for dependency and configuration vulnerability scanning
 - Python 3 for the Markdown-link check
 - Git
