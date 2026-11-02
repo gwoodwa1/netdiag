@@ -11,8 +11,8 @@ All notable changes to netdiag are documented here. Releases follow [Semantic Ve
 
 ### Security
 
-- Updated Go to 1.27.2 and `golang.org/x/net` to v0.60.0 to address known vulnerabilities.
-- Updated golangci-lint to v2.14.0 for Go 1.27.2 compatibility.
+- Updated Go to 1.27.3 and `golang.org/x/net` to v0.62.0 to address known vulnerabilities.
+- Updated golangci-lint to v2.14.0 for Go 1.27.3 compatibility.
 
 ## [0.1.1] - 2026-09-20
 
